@@ -164,6 +164,17 @@
   .next-btn:hover{background:var(--medio);}
   .back-btn{background:transparent; color:var(--texto-suave); border:1px solid var(--borde); flex:0 0 100px;}
   .back-btn:hover{border-color:var(--acento);}
+  .nav-links{display:flex; justify-content:center; gap:16px; margin-top:12px; flex-wrap:wrap;}
+  .link-btn{
+    background:none;
+    border:none;
+    color:var(--texto-suave);
+    font-size:12px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:4px;
+  }
+  .link-btn:hover{color:var(--acento);}
 
   .popup-overlay{
     display:none;
@@ -232,6 +243,10 @@ desde el inicio a la propiedad ideal para ti.</p>
     <div class="nav-buttons">
       <button class="nav-btn back-btn" id="back-btn" type="button">Atrás</button>
       <button class="nav-btn next-btn" id="next-btn" type="button">Siguiente</button>
+    </div>
+    <div class="nav-links">
+      <button class="link-btn" id="save-later-btn" type="button">Guardar y continuar después</button>
+      <button class="link-btn" id="call-btn" type="button">Prefiero contestarlo en una llamada</button>
     </div>
   </div>
 
@@ -408,7 +423,7 @@ function renderQuestion(q, index, container){
       const notas = document.createElement('textarea');
       notas.placeholder = 'Notas (opcional)';
       notas.style.marginTop = '8px';
-      notas.addEventListener('input', e=>{ state[q.id].text = e.target.value; });
+      notas.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
       block.appendChild(notas);
     }
   }
@@ -417,7 +432,7 @@ function renderQuestion(q, index, container){
     const t = document.createElement('textarea');
     t.placeholder = q.placeholder || '';
     t.style.minHeight = '64px';
-    t.addEventListener('input', e=>{ state[q.id].text = e.target.value; });
+    t.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
     block.appendChild(t);
   }
 
@@ -450,6 +465,61 @@ function updateProgress(){
   const reqQs = b1.filter(q=>q.req);
   const answered = reqQs.filter(isAnswered).length;
   document.getElementById('progress-text').textContent = answered + ' de ' + reqQs.length + ' preguntas obligatorias respondidas';
+  saveLocal();
+}
+
+const STORAGE_KEY = 'tres65_discovery_state';
+const API_URL = 'https://agente-tres65-production.up.railway.app/discovery/generar-perfil';
+
+function buildAnswers(){
+  const out = {};
+  b1.concat(b2).forEach(q=>{
+    const s = state[q.id];
+    let answer;
+    if(q.multi) answer = Array.from(s.sel);
+    else if(q.rank) answer = s.order;
+    else answer = s.sel;
+    out[q.id] = {title:q.title, answer:answer, notas:s.text || ''};
+  });
+  return out;
+}
+
+function saveLocal(){
+  const snapshot = {};
+  b1.concat(b2).forEach(q=>{
+    const s = state[q.id];
+    snapshot[q.id] = q.multi ? {sel:Array.from(s.sel), text:s.text}
+      : q.rank ? {order:s.order, text:s.text}
+      : {sel:s.sel, text:s.text};
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    page: typeof currentPage === 'number' ? currentPage : 0,
+    snapshot, yucatanDisqualified, rentaDisqualified
+  }));
+}
+
+function restoreLocal(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return -1;
+  let data;
+  try{ data = JSON.parse(raw); } catch(e){ return -1; }
+  if(!data.snapshot) return -1;
+
+  b1.concat(b2).forEach(q=>{
+    const snap = data.snapshot[q.id];
+    if(!snap) return;
+    if(q.multi) state[q.id].sel = new Set(snap.sel || []);
+    else if(q.rank) state[q.id].order = snap.order || [];
+    else state[q.id].sel = snap.sel || null;
+    state[q.id].text = snap.text || '';
+    paintQuestion(q);
+    const block = document.querySelector('.q-block[data-qid="'+q.id+'"]');
+    const ta = block && block.querySelector('textarea');
+    if(ta) ta.value = state[q.id].text;
+  });
+  yucatanDisqualified = !!data.yucatanDisqualified;
+  rentaDisqualified = !!data.rentaDisqualified;
+  return typeof data.page === 'number' ? data.page : 0;
 }
 
 const stage = document.getElementById('stage');
@@ -493,6 +563,8 @@ makeIntroPage(2, intro2);
 b2.forEach((q,i)=>makeQuestionPage(q,i));
 
 let currentPage = 0;
+const restoredPage = restoreLocal();
+if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
 
 function showPage(){
   pageEls.forEach((el,i)=>{ el.style.display = (i===currentPage ? 'block' : 'none'); });
@@ -509,8 +581,28 @@ function jumpToQuestion(id){
   if(idx>=0){ currentPage = idx; showPage(); }
 }
 
-function finalizeProfile(){
-  alert('Gracias, estamos generando tu perfil de cliente. \nTu agente lo recibirá en breve.');
+async function finalizeProfile(){
+  const nextBtn = document.getElementById('next-btn');
+  const original = nextBtn.textContent;
+  nextBtn.disabled = true;
+  nextBtn.textContent = 'Generando...';
+  try{
+    const res = await fetch(API_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({respuestas: buildAnswers()})
+    });
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || 'error');
+    localStorage.removeItem(STORAGE_KEY);
+    alert('¡Listo! Generamos tu perfil de cliente. \nTu agente lo recibirá en breve y te va a contactar.');
+  }catch(e){
+    console.error('[Discovery] error generando perfil:', e);
+    alert('Gracias por completar el cuestionario. \nTuvimos un problema técnico enviándolo, pero no te preocupes: tu agente lo revisará contigo directamente.');
+  } finally {
+    nextBtn.disabled = false;
+    nextBtn.textContent = original;
+  }
 }
 
 function handleGenerate(){
@@ -570,6 +662,15 @@ document.getElementById('popup-bloque2-completar').addEventListener('click', ()=
 document.getElementById('popup-bloque2-continuar').addEventListener('click', ()=>{
   document.getElementById('popup-bloque2').style.display = 'none';
   finalizeProfile();
+});
+document.getElementById('save-later-btn').addEventListener('click', ()=>{
+  saveLocal();
+  alert('Guardado. \nPuedes regresar a este mismo link cuando quieras y seguirás justo donde te quedaste.');
+});
+document.getElementById('call-btn').addEventListener('click', ()=>{
+  saveLocal();
+  const mensaje = encodeURIComponent('Hola, prefiero platicar el cuestionario de discovery por llamada o WhatsApp.');
+  window.location.href = 'https://wa.me/5219992786153?text=' + mensaje;
 });
 
 updateProgress();
