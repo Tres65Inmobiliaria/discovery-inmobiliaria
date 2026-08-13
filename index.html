@@ -27,6 +27,14 @@
   }
   .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
   header{text-align:center;margin-bottom:32px;}
+  header .logo{
+    display:block;
+    max-width:180px;
+    margin:0 auto 20px;
+    background:var(--profundo);
+    padding:16px 20px;
+    border-radius:10px;
+  }
   header .tag{
     font-family:'Montserrat',sans-serif;
     font-size:12px;
@@ -209,9 +217,10 @@
 <div class="wrap">
 
   <header>
+    <img src="logoblancotres.png" alt="Tres65 Inmobiliaria" class="logo">
     <div class="tag">Tres65 Inmobiliaria</div>
     <h1>Conozcámonos un poco</h1>
-    <p>Esto nos ayuda a encontrar lo que de verdad buscas, sin dar vueltas.</p>
+    <p>Esto nos ayuda a entender qué buscas y acercarnos desde el inicio a la propiedad ideal para ti.</p>
   </header>
 
   <div class="bloque-label">Bloque 1</div>
@@ -249,7 +258,6 @@
 <script>
 const b1 = [
   {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true},
-  {id:'estado_peninsula', title:'¿En dónde buscas la propiedad?', options:['Yucatán','Campeche','Quintana Roo'], req:true},
   {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'], req:true},
   {id:'presupuesto', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], req:true},
   {id:'escrituras', title:'¿Tu monto de inversión contempla escrituras?', options:['Sí, estoy considerando escrituras','Cuento con monto adicional para las escrituras','No tengo el conocimiento, necesito asesoría'], span:true, req:true},
