@@ -464,10 +464,25 @@ function isAnswered(q){
   return !!s.sel || (q.text && s.text.trim());
 }
 
-function updateProgress(){
+function updateProgressText(){
   const reqQs = relevantQuestions(b1).filter(q=>q.req);
   const answered = reqQs.filter(isAnswered).length;
   document.getElementById('progress-text').textContent = answered + ' de ' + reqQs.length + ' preguntas obligatorias respondidas';
+}
+
+function hasAnyAnswer(){
+  return b1.concat(b2).some(isAnswered);
+}
+
+function refreshNavLinks(){
+  const show = hasAnyAnswer();
+  document.getElementById('save-later-btn').style.display = show ? 'inline-block' : 'none';
+  document.getElementById('restart-btn').style.display = show ? 'inline-block' : 'none';
+}
+
+function updateProgress(){
+  updateProgressText();
+  refreshNavLinks();
   saveLocal();
 }
 
@@ -575,6 +590,12 @@ function showPage(){
   document.getElementById('back-btn').style.display = isFirst ? 'none' : 'block';
   document.querySelector('.nav-buttons').classList.toggle('centered', isFirst);
   document.getElementById('next-btn').textContent = isFirst ? '¡Comencemos!' : (isLast ? 'Generar perfil del cliente' : 'Siguiente');
+  if(isFirst){
+    document.getElementById('progress-text').textContent = 'Aunque este formulario es muy rápido y toma solo 2 minutos, tómate tu tiempo: si hay alguna nota importante que creas que tu agente deba saber, agrégala en las notas de cada pregunta.';
+  } else {
+    updateProgressText();
+  }
+  refreshNavLinks();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
