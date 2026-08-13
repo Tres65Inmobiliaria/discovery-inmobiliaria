@@ -218,7 +218,6 @@
 
   <header>
     <img src="logoblancotres.png" alt="Tres65 Inmobiliaria" class="logo">
-    <div class="tag">Tres65 Inmobiliaria</div>
     <h1>Conozcámonos un poco</h1>
     <p>Esto nos ayuda a entender qué buscas y acercarnos desde el inicio a la propiedad ideal para ti.</p>
   </header>
@@ -255,9 +254,19 @@
   </div>
 </div>
 
+<div class="popup-overlay" id="popup-renta">
+  <div class="popup-card">
+    <h3>Estamos preparando este flujo para rentas</h3>
+    <p>Muy pronto estará disponible. Mientras tanto, tu agente te puede ayudar directamente.</p>
+    <button id="popup-renta-ok">Entendido</button>
+  </div>
+</div>
+
 <script>
 const b1 = [
   {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true},
+  {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], req:true},
+  {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true},
   {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'], req:true},
   {id:'presupuesto', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], req:true},
   {id:'escrituras', title:'¿Tu monto de inversión contempla escrituras?', options:['Sí, estoy considerando escrituras','Cuento con monto adicional para las escrituras','No tengo el conocimiento, necesito asesoría'], span:true, req:true},
@@ -283,12 +292,16 @@ const b2 = [
 
 const state = {};
 let yucatanDisqualified = false;
+let rentaDisqualified = false;
 
-function applyYucatanState(){
+function updateBlockState(){
+  let exempt = null;
+  if(yucatanDisqualified) exempt = ['yucatan'];
+  else if(rentaDisqualified) exempt = ['yucatan','operacion'];
+
   document.querySelectorAll('.q-block').forEach(block=>{
-    if(block.dataset.qid !== 'yucatan'){
-      block.classList.toggle('disabled', yucatanDisqualified);
-    }
+    const blocked = exempt !== null && !exempt.includes(block.dataset.qid);
+    block.classList.toggle('disabled', blocked);
   });
 }
 
@@ -345,9 +358,16 @@ function renderQuestion(q, index, container){
         updateProgress();
         if(q.id === 'yucatan'){
           yucatanDisqualified = (opt === 'No, no busco en la Península Yucateca');
-          applyYucatanState();
+          updateBlockState();
           if(yucatanDisqualified){
             document.getElementById('popup-yucatan').style.display = 'flex';
+          }
+        }
+        if(q.id === 'operacion'){
+          rentaDisqualified = (opt === 'Rentar');
+          updateBlockState();
+          if(rentaDisqualified){
+            document.getElementById('popup-renta').style.display = 'flex';
           }
         }
       });
@@ -447,6 +467,10 @@ document.getElementById('submit-btn').addEventListener('click', ()=>{
     document.getElementById('popup-yucatan').style.display = 'flex';
     return;
   }
+  if(rentaDisqualified){
+    document.getElementById('popup-renta').style.display = 'flex';
+    return;
+  }
   const reqQs = b1.filter(q=>q.req);
   const allDone = reqQs.every(isAnswered);
   if(!allDone){
@@ -460,6 +484,9 @@ document.getElementById('popup-ok').addEventListener('click', ()=>{
 });
 document.getElementById('popup-yucatan-ok').addEventListener('click', ()=>{
   document.getElementById('popup-yucatan').style.display = 'none';
+});
+document.getElementById('popup-renta-ok').addEventListener('click', ()=>{
+  document.getElementById('popup-renta').style.display = 'none';
 });
 
 updateProgress();
