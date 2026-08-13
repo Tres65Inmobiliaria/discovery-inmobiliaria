@@ -29,11 +29,8 @@
   header{text-align:center;margin-bottom:32px;}
   header .logo{
     display:block;
-    max-width:180px;
+    max-width:220px;
     margin:0 auto 20px;
-    background:var(--profundo);
-    padding:16px 20px;
-    border-radius:10px;
   }
   header .tag{
     font-family:'Montserrat',sans-serif;
@@ -51,7 +48,7 @@
     color:var(--profundo);
     margin:0 0 8px;
   }
-  header p{color:var(--texto-suave); font-size:14px; margin:0;}
+  header p{color:var(--texto-suave); font-size:14px; margin:0; white-space:pre-line;}
 
   .bloque-label{
     font-family:'Montserrat',sans-serif;
@@ -69,10 +66,11 @@
     padding:12px 16px;
     background:var(--menta);
     border-radius:8px;
+    white-space:pre-line;
   }
 
+  .page{display:none;}
   .q-block{margin-bottom:28px;}
-  .q-block.disabled{opacity:.35; filter:grayscale(1); pointer-events:none;}
   .q-num{
     font-family:'Montserrat',sans-serif;
     font-size:12px;
@@ -143,28 +141,29 @@
     margin-bottom:8px;
   }
 
-  .footer-bar{
-    position:sticky;
-    bottom:0;
-    background:var(--marfil);
-    padding:16px 0 4px;
-    margin-top:8px;
-    border-top:1px solid var(--borde);
+  .nav-bar{
+    padding:0 0 16px;
+    margin-bottom:24px;
+    border-bottom:1px solid var(--borde);
   }
   .progress{font-size:12px; color:var(--texto-suave); margin:0 0 10px; text-align:center;}
-  .submit-btn{
-    width:100%;
+  .nav-buttons{display:flex; gap:8px;}
+  .nav-buttons.centered{justify-content:center;}
+  .nav-buttons.centered .next-btn{flex:0 0 auto; min-width:220px;}
+  .nav-btn{
+    flex:1;
     font-family:'Montserrat',sans-serif;
     font-size:14px;
     font-weight:600;
     padding:14px;
     border-radius:8px;
     border:none;
-    background:var(--profundo);
-    color:#fff;
     cursor:pointer;
   }
-  .submit-btn:hover{background:var(--medio);}
+  .next-btn{background:var(--profundo); color:#fff;}
+  .next-btn:hover{background:var(--medio);}
+  .back-btn{background:transparent; color:var(--texto-suave); border:1px solid var(--borde); flex:0 0 100px;}
+  .back-btn:hover{border-color:var(--acento);}
 
   .popup-overlay{
     display:none;
@@ -186,7 +185,7 @@
     font-size:16px;
     margin:0 0 8px;
   }
-  .popup-card p{font-size:13px; color:var(--texto-suave); margin:0 0 18px;}
+  .popup-card p{font-size:13px; color:var(--texto-suave); margin:0 0 18px; white-space:pre-line;}
   .popup-card button{
     width:100%;
     font-family:'Montserrat',sans-serif;
@@ -199,8 +198,13 @@
     color:#fff;
     cursor:pointer;
   }
+  .popup-card button.secondary{
+    background:transparent;
+    color:var(--texto-suave);
+    border:1px solid var(--borde);
+    margin-top:8px;
+  }
 
-  .divider{border:none; border-top:1px solid var(--borde); margin:36px 0;}
   .note-tag{
     display:inline-block;
     font-size:11px;
@@ -217,25 +221,21 @@
 <div class="wrap">
 
   <header>
-    <img src="logoblancotres.png" alt="Tres65 Inmobiliaria" class="logo">
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
     <h1>Conozcámonos un poco</h1>
-    <p>Esto nos ayuda a entender qué buscas y acercarnos desde el inicio a la propiedad ideal para ti.</p>
+    <p>Esto nos ayuda a entender qué buscas y acercarnos
+desde el inicio a la propiedad ideal para ti.</p>
   </header>
 
-  <div class="bloque-label">Bloque 1</div>
-  <p class="bloque-intro">Esta parte es clave para afinar tu búsqueda desde el inicio. Entre más claros tengamos estos puntos, mejores opciones podremos presentarte. Y si algo no lo tienes definido todavía, no te preocupes: lo vemos juntos</p>
-  <div id="bloque1"></div>
-
-  <hr class="divider">
-
-  <div class="bloque-label">Bloque 2 <span class="note-tag">opcional</span></div>
-  <p class="bloque-intro">No buscamos cualquier propiedad para ti. Queremos encontrar la que encaje con tus planes, tu estilo de vida y tus objetivos. Cuéntanos un poco más de ti y déjanos empezar la búsqueda.</p>
-  <div id="bloque2"></div>
-
-  <div class="footer-bar">
+  <div class="nav-bar">
     <p class="progress" id="progress-text">0 de 11 preguntas obligatorias respondidas</p>
-    <button class="submit-btn" id="submit-btn">Enviar respuestas</button>
+    <div class="nav-buttons">
+      <button class="nav-btn back-btn" id="back-btn" type="button">Atrás</button>
+      <button class="nav-btn next-btn" id="next-btn" type="button">Siguiente</button>
+    </div>
   </div>
+
+  <div id="stage"></div>
 
 </div>
 
@@ -257,8 +257,19 @@
 <div class="popup-overlay" id="popup-renta">
   <div class="popup-card">
     <h3>Estamos preparando este flujo para rentas</h3>
-    <p>Muy pronto estará disponible. Mientras tanto, tu agente te puede ayudar directamente.</p>
+    <p>Muy pronto estará disponible.
+Mientras tanto, tu agente te puede ayudar directamente.</p>
     <button id="popup-renta-ok">Entendido</button>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-bloque2">
+  <div class="popup-card">
+    <h3>¿Seguro que quieres continuar?</h3>
+    <p>Completar el bloque 2 toma solo 2 minutos y nos ayuda a hacer la búsqueda de tu inversión de forma más eficiente.
+Para nosotros es muy importante escuchar a nuestros clientes.</p>
+    <button id="popup-bloque2-completar">Completar bloque 2</button>
+    <button id="popup-bloque2-continuar" class="secondary">Generar de todos modos</button>
   </div>
 </div>
 
@@ -290,20 +301,12 @@ const b2 = [
   {id:'decide2', title:'Cuando decides algo grande, ¿cómo eres normalmente?', options:['Me guío por los números (ROI)','Comparo todas mis posibilidades','Decido fríamente','Necesito el visto bueno de mi familia']}
 ];
 
+const intro1 = {label:'Bloque 1', tag:null, text:'Esta parte es clave para afinar tu búsqueda desde el inicio. Entre más claros tengamos estos puntos, mejores opciones podremos presentarte. \nY si algo no lo tienes definido todavía, no te preocupes: lo vemos juntos.'};
+const intro2 = {label:'Bloque 2', tag:'opcional', text:'No buscamos cualquier propiedad para ti. Queremos encontrar la que encaje con tus planes, tu estilo de vida y tus objetivos. \nCuéntanos un poco más de ti y déjanos empezar la búsqueda.'};
+
 const state = {};
 let yucatanDisqualified = false;
 let rentaDisqualified = false;
-
-function updateBlockState(){
-  let exempt = null;
-  if(yucatanDisqualified) exempt = ['yucatan'];
-  else if(rentaDisqualified) exempt = ['yucatan','operacion'];
-
-  document.querySelectorAll('.q-block').forEach(block=>{
-    const blocked = exempt !== null && !exempt.includes(block.dataset.qid);
-    block.classList.toggle('disabled', blocked);
-  });
-}
 
 function renderQuestion(q, index, container){
   state[q.id] = q.multi ? {sel:new Set(), text:''} : q.rank ? {order:[], text:''} : {sel:null, text:''};
@@ -358,17 +361,9 @@ function renderQuestion(q, index, container){
         updateProgress();
         if(q.id === 'yucatan'){
           yucatanDisqualified = (opt === 'No, no busco en la Península Yucateca');
-          updateBlockState();
-          if(yucatanDisqualified){
-            document.getElementById('popup-yucatan').style.display = 'flex';
-          }
         }
         if(q.id === 'operacion'){
           rentaDisqualified = (opt === 'Rentar');
-          updateBlockState();
-          if(rentaDisqualified){
-            document.getElementById('popup-renta').style.display = 'flex';
-          }
         }
       });
       grid.appendChild(btn);
@@ -444,11 +439,6 @@ function paintQuestion(q){
   });
 }
 
-const bloque1Container = document.getElementById('bloque1');
-const bloque2Container = document.getElementById('bloque2');
-b1.forEach((q,i)=>renderQuestion(q,i,bloque1Container));
-b2.forEach((q,i)=>renderQuestion(q,i,bloque2Container));
-
 function isAnswered(q){
   const s = state[q.id];
   if(q.multi) return s.sel.size > 0;
@@ -462,25 +452,110 @@ function updateProgress(){
   document.getElementById('progress-text').textContent = answered + ' de ' + reqQs.length + ' preguntas obligatorias respondidas';
 }
 
-document.getElementById('submit-btn').addEventListener('click', ()=>{
-  if(yucatanDisqualified){
-    document.getElementById('popup-yucatan').style.display = 'flex';
-    return;
+const stage = document.getElementById('stage');
+const pages = [];
+const pageEls = [];
+
+function makeIntroPage(bloqueNum, intro){
+  const div = document.createElement('div');
+  div.className = 'page';
+  const lab = document.createElement('div');
+  lab.className = 'bloque-label';
+  lab.textContent = intro.label + ' ';
+  if(intro.tag){
+    const tag = document.createElement('span');
+    tag.className = 'note-tag';
+    tag.textContent = intro.tag;
+    lab.appendChild(tag);
   }
-  if(rentaDisqualified){
-    document.getElementById('popup-renta').style.display = 'flex';
-    return;
-  }
+  const p = document.createElement('p');
+  p.className = 'bloque-intro';
+  p.textContent = intro.text;
+  div.appendChild(lab);
+  div.appendChild(p);
+  stage.appendChild(div);
+  pages.push({type:'intro', bloque:bloqueNum});
+  pageEls.push(div);
+}
+
+function makeQuestionPage(q, index){
+  const div = document.createElement('div');
+  div.className = 'page';
+  renderQuestion(q, index, div);
+  stage.appendChild(div);
+  pages.push({type:'q', q:q});
+  pageEls.push(div);
+}
+
+makeIntroPage(1, intro1);
+b1.forEach((q,i)=>makeQuestionPage(q,i));
+makeIntroPage(2, intro2);
+b2.forEach((q,i)=>makeQuestionPage(q,i));
+
+let currentPage = 0;
+
+function showPage(){
+  pageEls.forEach((el,i)=>{ el.style.display = (i===currentPage ? 'block' : 'none'); });
+  const isFirst = currentPage === 0;
+  const isLast = currentPage === pages.length-1;
+  document.getElementById('back-btn').style.display = isFirst ? 'none' : 'block';
+  document.querySelector('.nav-buttons').classList.toggle('centered', isFirst);
+  document.getElementById('next-btn').textContent = isFirst ? '¡Comencemos!' : (isLast ? 'Generar perfil del cliente' : 'Siguiente');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function jumpToQuestion(id){
+  const idx = pages.findIndex(p=>p.type==='q' && p.q.id===id);
+  if(idx>=0){ currentPage = idx; showPage(); }
+}
+
+function finalizeProfile(){
+  alert('Gracias, estamos generando tu perfil de cliente. \nTu agente lo recibirá en breve.');
+}
+
+function handleGenerate(){
   const reqQs = b1.filter(q=>q.req);
   const allDone = reqQs.every(isAnswered);
   if(!allDone){
     document.getElementById('popup').style.display = 'flex';
-  } else {
-    alert('Gracias, tu agente recibirá tus respuestas.');
+    return;
   }
+  const b2Answered = b2.some(isAnswered);
+  if(!b2Answered){
+    document.getElementById('popup-bloque2').style.display = 'flex';
+    return;
+  }
+  finalizeProfile();
+}
+
+document.getElementById('back-btn').addEventListener('click', ()=>{
+  if(currentPage > 0){ currentPage--; showPage(); }
 });
+
+document.getElementById('next-btn').addEventListener('click', ()=>{
+  const page = pages[currentPage];
+  if(page.type === 'q'){
+    if(page.q.id === 'yucatan' && yucatanDisqualified){
+      document.getElementById('popup-yucatan').style.display = 'flex';
+      return;
+    }
+    if(page.q.id === 'operacion' && rentaDisqualified){
+      document.getElementById('popup-renta').style.display = 'flex';
+      return;
+    }
+  }
+  if(currentPage === pages.length-1){
+    handleGenerate();
+    return;
+  }
+  currentPage++;
+  showPage();
+});
+
 document.getElementById('popup-ok').addEventListener('click', ()=>{
   document.getElementById('popup').style.display = 'none';
+  const idx = pages.findIndex(p=>p.type==='q' && p.q.req && !isAnswered(p.q));
+  if(idx>=0){ currentPage = idx; showPage(); }
 });
 document.getElementById('popup-yucatan-ok').addEventListener('click', ()=>{
   document.getElementById('popup-yucatan').style.display = 'none';
@@ -488,8 +563,17 @@ document.getElementById('popup-yucatan-ok').addEventListener('click', ()=>{
 document.getElementById('popup-renta-ok').addEventListener('click', ()=>{
   document.getElementById('popup-renta').style.display = 'none';
 });
+document.getElementById('popup-bloque2-completar').addEventListener('click', ()=>{
+  document.getElementById('popup-bloque2').style.display = 'none';
+  jumpToQuestion(b2[0].id);
+});
+document.getElementById('popup-bloque2-continuar').addEventListener('click', ()=>{
+  document.getElementById('popup-bloque2').style.display = 'none';
+  finalizeProfile();
+});
 
 updateProgress();
+showPage();
 </script>
 </body>
 </html>
