@@ -247,6 +247,7 @@ desde el inicio a la propiedad ideal para ti.</p>
     <div class="nav-links">
       <button class="link-btn" id="save-later-btn" type="button">Guardar y continuar después</button>
       <button class="link-btn" id="call-btn" type="button">Prefiero contestarlo en una llamada</button>
+      <button class="link-btn" id="restart-btn" type="button">Volver a empezar</button>
     </div>
   </div>
 
@@ -269,15 +270,6 @@ desde el inicio a la propiedad ideal para ti.</p>
   </div>
 </div>
 
-<div class="popup-overlay" id="popup-renta">
-  <div class="popup-card">
-    <h3>Estamos preparando este flujo para rentas</h3>
-    <p>Muy pronto estará disponible.
-Mientras tanto, tu agente te puede ayudar directamente.</p>
-    <button id="popup-renta-ok">Entendido</button>
-  </div>
-</div>
-
 <div class="popup-overlay" id="popup-bloque2">
   <div class="popup-card">
     <h3>¿Seguro que quieres continuar?</h3>
@@ -292,15 +284,18 @@ Para nosotros es muy importante escuchar a nuestros clientes.</p>
 const b1 = [
   {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true},
   {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], req:true},
-  {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true},
+  {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true, flow:'comprar'},
+  {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], span:true, req:true, flow:'renta'},
   {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'], req:true},
-  {id:'presupuesto', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], req:true},
-  {id:'escrituras', title:'¿Tu monto de inversión contempla escrituras?', options:['Sí, estoy considerando escrituras','Cuento con monto adicional para las escrituras','No tengo el conocimiento, necesito asesoría'], span:true, req:true},
-  {id:'compra', title:'¿Cuál es tu forma de pago?', options:['Recurso propio','Crédito bancario','Infonavit','Recurso Propio / Crédito'], secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], req:true},
+  {id:'presupuesto_compra', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], req:true, flow:'comprar'},
+  {id:'presupuesto_renta', title:'¿Cuál es tu monto para rentar?', options:['$20,000 a $30,000 al mes','$40,000 a $50,000 al mes','$60,000 a $70,000 al mes'], req:true, flow:'renta'},
+  {id:'escrituras', title:'¿Tu monto de inversión contempla gastos relacionados con escrituración?', options:['Sí, estoy considerando los gastos de escrituración','Cuento con monto adicional para los gastos de escrituración','No tengo el conocimiento, necesito asesoría'], span:true, req:true, flow:'comprar'},
+  {id:'compra', title:'¿Cuál es tu forma de pago?', options:['Recurso propio','Crédito bancario','Infonavit','Recurso Propio / Crédito'], secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], req:true, flow:'comprar'},
   {id:'decide', title:'¿Quién más participa en esta decisión?', options:['Decido solo/a','Mi pareja','Mis hijos','Otro familiar'], req:true},
   {id:'ubi', title:'¿Prefieres vivir dentro del periférico o fuera del periférico?', options:['Dentro del periférico','Fuera del periférico','Cerca de la playa','Sin preferencia'], req:true},
   {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true, options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada'], req:true},
-  {id:'urgencia', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'], req:true},
+  {id:'urgencia_compra', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'], req:true, flow:'comprar'},
+  {id:'urgencia_renta', title:'¿Qué tan pronto quieres mudarte a tu nueva renta?', options:['Inmediato','El próximo mes','Dentro de 6 meses','Sin prisa, explorando'], req:true, flow:'renta'},
   {id:'tiempo', title:'¿Cuánto tiempo llevas buscando propiedad?', options:['Apenas empiezo','Unas semanas','Varios meses','Más de medio año'], req:true},
   {id:'otros', title:'¿Has visto propiedades con otro agente o directo por tu cuenta?', sub:'Cualquier respuesta está bien, nos ayuda a enfocarnos en lo que de verdad te sirve.', options:['Solo con ustedes','Visito portales / Redes Sociales','También con otro agente','Por mi cuenta directamente'], req:true}
 ];
@@ -321,7 +316,18 @@ const intro2 = {label:'Bloque 2', tag:'opcional', text:'No buscamos cualquier pr
 
 const state = {};
 let yucatanDisqualified = false;
-let rentaDisqualified = false;
+
+function activeFlow(){
+  const sel = state.operacion && state.operacion.sel;
+  if(sel === 'Comprar') return 'comprar';
+  if(sel === 'Rentar') return 'renta';
+  return null;
+}
+
+function relevantQuestions(list){
+  const flow = activeFlow();
+  return list.filter(q => !q.flow || q.flow === flow);
+}
 
 function renderQuestion(q, index, container){
   state[q.id] = q.multi ? {sel:new Set(), text:''} : q.rank ? {order:[], text:''} : {sel:null, text:''};
@@ -376,9 +382,6 @@ function renderQuestion(q, index, container){
         updateProgress();
         if(q.id === 'yucatan'){
           yucatanDisqualified = (opt === 'No, no busco en la Península Yucateca');
-        }
-        if(q.id === 'operacion'){
-          rentaDisqualified = (opt === 'Rentar');
         }
       });
       grid.appendChild(btn);
@@ -462,7 +465,7 @@ function isAnswered(q){
 }
 
 function updateProgress(){
-  const reqQs = b1.filter(q=>q.req);
+  const reqQs = relevantQuestions(b1).filter(q=>q.req);
   const answered = reqQs.filter(isAnswered).length;
   document.getElementById('progress-text').textContent = answered + ' de ' + reqQs.length + ' preguntas obligatorias respondidas';
   saveLocal();
@@ -473,7 +476,7 @@ const API_URL = 'https://agente-tres65-production.up.railway.app/discovery/gener
 
 function buildAnswers(){
   const out = {};
-  b1.concat(b2).forEach(q=>{
+  relevantQuestions(b1).concat(b2).forEach(q=>{
     const s = state[q.id];
     let answer;
     if(q.multi) answer = Array.from(s.sel);
@@ -494,7 +497,7 @@ function saveLocal(){
   });
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     page: typeof currentPage === 'number' ? currentPage : 0,
-    snapshot, yucatanDisqualified, rentaDisqualified
+    snapshot, yucatanDisqualified
   }));
 }
 
@@ -518,7 +521,6 @@ function restoreLocal(){
     if(ta) ta.value = state[q.id].text;
   });
   yucatanDisqualified = !!data.yucatanDisqualified;
-  rentaDisqualified = !!data.rentaDisqualified;
   return typeof data.page === 'number' ? data.page : 0;
 }
 
@@ -606,7 +608,7 @@ async function finalizeProfile(){
 }
 
 function handleGenerate(){
-  const reqQs = b1.filter(q=>q.req);
+  const reqQs = relevantQuestions(b1).filter(q=>q.req);
   const allDone = reqQs.every(isAnswered);
   if(!allDone){
     document.getElementById('popup').style.display = 'flex';
@@ -620,40 +622,39 @@ function handleGenerate(){
   finalizeProfile();
 }
 
+function isSkippable(page){
+  return page.type === 'q' && page.q.flow && page.q.flow !== activeFlow();
+}
+
 document.getElementById('back-btn').addEventListener('click', ()=>{
-  if(currentPage > 0){ currentPage--; showPage(); }
+  let prev = currentPage - 1;
+  while(prev >= 0 && isSkippable(pages[prev])) prev--;
+  if(prev >= 0){ currentPage = prev; showPage(); }
 });
 
 document.getElementById('next-btn').addEventListener('click', ()=>{
   const page = pages[currentPage];
-  if(page.type === 'q'){
-    if(page.q.id === 'yucatan' && yucatanDisqualified){
-      document.getElementById('popup-yucatan').style.display = 'flex';
-      return;
-    }
-    if(page.q.id === 'operacion' && rentaDisqualified){
-      document.getElementById('popup-renta').style.display = 'flex';
-      return;
-    }
+  if(page.type === 'q' && page.q.id === 'yucatan' && yucatanDisqualified){
+    document.getElementById('popup-yucatan').style.display = 'flex';
+    return;
   }
   if(currentPage === pages.length-1){
     handleGenerate();
     return;
   }
-  currentPage++;
+  let next = currentPage + 1;
+  while(next < pages.length && isSkippable(pages[next])) next++;
+  currentPage = Math.min(next, pages.length-1);
   showPage();
 });
 
 document.getElementById('popup-ok').addEventListener('click', ()=>{
   document.getElementById('popup').style.display = 'none';
-  const idx = pages.findIndex(p=>p.type==='q' && p.q.req && !isAnswered(p.q));
+  const idx = pages.findIndex(p=>p.type==='q' && p.q.req && !isSkippable(p) && !isAnswered(p.q));
   if(idx>=0){ currentPage = idx; showPage(); }
 });
 document.getElementById('popup-yucatan-ok').addEventListener('click', ()=>{
   document.getElementById('popup-yucatan').style.display = 'none';
-});
-document.getElementById('popup-renta-ok').addEventListener('click', ()=>{
-  document.getElementById('popup-renta').style.display = 'none';
 });
 document.getElementById('popup-bloque2-completar').addEventListener('click', ()=>{
   document.getElementById('popup-bloque2').style.display = 'none';
@@ -671,6 +672,12 @@ document.getElementById('call-btn').addEventListener('click', ()=>{
   saveLocal();
   const mensaje = encodeURIComponent('Hola, prefiero platicar el cuestionario de discovery por llamada o WhatsApp.');
   window.location.href = 'https://wa.me/5219992786153?text=' + mensaje;
+});
+document.getElementById('restart-btn').addEventListener('click', ()=>{
+  const ok = confirm('Vas a borrar todo tu avance en el cuestionario y vas a empezar desde cero. \n¿Quieres continuar?');
+  if(!ok) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
 });
 
 updateProgress();
