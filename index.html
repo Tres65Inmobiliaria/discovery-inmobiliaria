@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuestionario del domingo — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#F5F0E8;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.6;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
+  header{text-align:center;margin-bottom:32px;}
+  header .tag{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--acento);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  header h1{
+    font-family:'Montserrat',sans-serif;
+    font-size:24px;
+    font-weight:600;
+    color:var(--profundo);
+    margin:0 0 8px;
+  }
+  header p{color:var(--texto-suave); font-size:14px; margin:0;}
+
+  .bloque-label{
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--acento);
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin:40px 0 4px;
+  }
+  .bloque-intro{
+    font-size:13px;
+    color:var(--texto-suave);
+    margin:0 0 24px;
+    padding:12px 16px;
+    background:var(--menta);
+    border-radius:8px;
+  }
+
+  .q-block{margin-bottom:28px;}
+  .q-block.disabled{opacity:.35; filter:grayscale(1); pointer-events:none;}
+  .q-num{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    margin:0 0 6px;
+  }
+  .q-num.req{color:#C0453A;}
+  .q-num.opt{color:var(--texto-suave);}
+  .q-title{
+    font-size:16px;
+    font-weight:500;
+    color:var(--profundo);
+    margin:0 0 10px;
+  }
+  .q-sub{font-size:13px; color:var(--texto-suave); margin:0 0 10px;}
+
+  .opts{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .opts.span-last button:last-child{grid-column:1/-1;}
+
+  button.opt-btn{
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:11px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    cursor:pointer;
+    text-align:left;
+    transition:all .12s ease;
+  }
+  button.opt-btn:hover{border-color:var(--acento);}
+  button.opt-btn.active{
+    border-color:var(--acento);
+    background:var(--menta);
+    color:var(--medio);
+    font-weight:500;
+  }
+  .rk{font-weight:600; color:var(--acento); margin-right:2px;}
+
+  textarea{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    resize:vertical;
+    min-height:48px;
+  }
+  textarea:focus, button.opt-btn:focus{outline:2px solid var(--acento); outline-offset:1px;}
+  .reset-btn{
+    width:100%;
+    background:transparent;
+    border:1px dashed var(--borde);
+    color:var(--texto-suave);
+    font-size:12px;
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-bottom:8px;
+  }
+
+  .footer-bar{
+    position:sticky;
+    bottom:0;
+    background:var(--marfil);
+    padding:16px 0 4px;
+    margin-top:8px;
+    border-top:1px solid var(--borde);
+  }
+  .progress{font-size:12px; color:var(--texto-suave); margin:0 0 10px; text-align:center;}
+  .submit-btn{
+    width:100%;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:14px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .submit-btn:hover{background:var(--medio);}
+
+  .popup-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(26,79,92,0.55);
+    align-items:center; justify-content:center;
+    z-index:50; padding:20px;
+  }
+  .popup-card{
+    background:#fff;
+    border-radius:12px;
+    padding:24px;
+    max-width:320px;
+    text-align:center;
+  }
+  .popup-card h3{
+    font-family:'Montserrat',sans-serif;
+    color:var(--profundo);
+    font-size:16px;
+    margin:0 0 8px;
+  }
+  .popup-card p{font-size:13px; color:var(--texto-suave); margin:0 0 18px;}
+  .popup-card button{
+    width:100%;
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    background:var(--acento);
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .divider{border:none; border-top:1px solid var(--borde); margin:36px 0;}
+  .note-tag{
+    display:inline-block;
+    font-size:11px;
+    color:var(--acento);
+    background:var(--menta);
+    padding:2px 8px;
+    border-radius:20px;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="tag">Tres65 Inmobiliaria</div>
+    <h1>Conozcámonos un poco</h1>
+    <p>Esto nos ayuda a encontrar lo que de verdad buscas, sin dar vueltas.</p>
+  </header>
+
+  <div class="bloque-label">Bloque 1</div>
+  <p class="bloque-intro">Esta parte es clave para afinar tu búsqueda desde el inicio. Entre más claros tengamos estos puntos, mejores opciones podremos presentarte. Y si algo no lo tienes definido todavía, no te preocupes: lo vemos juntos</p>
+  <div id="bloque1"></div>
+
+  <hr class="divider">
+
+  <div class="bloque-label">Bloque 2 <span class="note-tag">opcional</span></div>
+  <p class="bloque-intro">No buscamos cualquier propiedad para ti. Queremos encontrar la que encaje con tus planes, tu estilo de vida y tus objetivos. Cuéntanos un poco más de ti y déjanos empezar la búsqueda.</p>
+  <div id="bloque2"></div>
+
+  <div class="footer-bar">
+    <p class="progress" id="progress-text">0 de 11 preguntas obligatorias respondidas</p>
+    <button class="submit-btn" id="submit-btn">Enviar respuestas</button>
+  </div>
+
+</div>
+
+<div class="popup-overlay" id="popup">
+  <div class="popup-card">
+    <h3>Falta información</h3>
+    <p>Sin problema, lo que falte lo puedes platicar directo con tu agente.</p>
+    <button id="popup-ok">Entendido</button>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-yucatan">
+  <div class="popup-card">
+    <h3>Somos una inmobiliaria que trabaja en la Península Yucateca</h3>
+    <button id="popup-yucatan-ok">Entendido</button>
+  </div>
+</div>
+
+<script>
+const b1 = [
+  {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true},
+  {id:'estado_peninsula', title:'¿En dónde buscas la propiedad?', options:['Yucatán','Campeche','Quintana Roo'], req:true},
+  {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'], req:true},
+  {id:'presupuesto', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], req:true},
+  {id:'escrituras', title:'¿Tu monto de inversión contempla escrituras?', options:['Sí, estoy considerando escrituras','Cuento con monto adicional para las escrituras','No tengo el conocimiento, necesito asesoría'], span:true, req:true},
+  {id:'compra', title:'¿Cuál es tu forma de pago?', options:['Recurso propio','Crédito bancario','Infonavit','Recurso Propio / Crédito'], secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], req:true},
+  {id:'decide', title:'¿Quién más participa en esta decisión?', options:['Decido solo/a','Mi pareja','Mis hijos','Otro familiar'], req:true},
+  {id:'ubi', title:'¿Prefieres vivir dentro del periférico o fuera del periférico?', options:['Dentro del periférico','Fuera del periférico','Cerca de la playa','Sin preferencia'], req:true},
+  {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true, options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada'], req:true},
+  {id:'urgencia', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'], req:true},
+  {id:'tiempo', title:'¿Cuánto tiempo llevas buscando propiedad?', options:['Apenas empiezo','Unas semanas','Varios meses','Más de medio año'], req:true},
+  {id:'otros', title:'¿Has visto propiedades con otro agente o directo por tu cuenta?', sub:'Cualquier respuesta está bien, nos ayuda a enfocarnos en lo que de verdad te sirve.', options:['Solo con ustedes','Visito portales / Redes Sociales','También con otro agente','Por mi cuenta directamente'], req:true}
+];
+
+const b2 = [
+  {id:'paraquien', title:'¿Para quién es esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia']},
+  {id:'domingo', title:'Imagina un domingo ideal en tu nueva propiedad. ¿Cómo se ve?', options:['Un día tranquilo, en silencio','Recibiendo a hijos y nietos','Al aire libre, jardín, alberca o terraza','Visitas de amigos, hosteando']},
+  {id:'alejarse', title:'¿De qué te gustaría alejarte?', options:['Del ruido y el tráfico','De las escaleras','Del mantenimiento','De vivir lejos de mis seres queridos']},
+  {id:'quienvive', title:'¿Quién más va a pasar tiempo ahí contigo?', options:['Solo yo','Mi pareja','Familia','Hijos o nietos que visitan seguido','Un cuidador o asistente']},
+  {id:'cuantagente', title:'¿Cuánta gente habitaría la propiedad?', text:true, placeholder:'Ej. 2 personas y a veces se quedan los nietos'},
+  {id:'mueble', title:'¿Hay algún artículo que definitivamente te llevarías contigo a cualquier propiedad?', text:true, placeholder:'Ej. la mesa del comedor familiar'},
+  {id:'comparacion', title:'De las propiedades que ya viste, ¿cuál se sintió más tuya, aunque no fuera la mejor en papel?', options:['No he visto más propiedades'], span:true, text:true, placeholder:'Cuéntanos cuál y por qué'},
+  {id:'decide2', title:'Cuando decides algo grande, ¿cómo eres normalmente?', options:['Me guío por los números (ROI)','Comparo todas mis posibilidades','Decido fríamente','Necesito el visto bueno de mi familia']}
+];
+
+const state = {};
+let yucatanDisqualified = false;
+
+function applyYucatanState(){
+  document.querySelectorAll('.q-block').forEach(block=>{
+    if(block.dataset.qid !== 'yucatan'){
+      block.classList.toggle('disabled', yucatanDisqualified);
+    }
+  });
+}
+
+function renderQuestion(q, index, container){
+  state[q.id] = q.multi ? {sel:new Set(), text:''} : q.rank ? {order:[], text:''} : {sel:null, text:''};
+  const block = document.createElement('div');
+  block.className = 'q-block';
+  block.dataset.qid = q.id;
+
+  const num = document.createElement('p');
+  num.className = 'q-num ' + (q.req ? 'req' : 'opt');
+  num.textContent = 'Pregunta ' + (index+1) + (q.req ? ' *' : '');
+  block.appendChild(num);
+
+  const title = document.createElement('p');
+  title.className = 'q-title';
+  title.textContent = q.title;
+  block.appendChild(title);
+
+  if(q.sub){
+    const sub = document.createElement('p');
+    sub.className = 'q-sub';
+    sub.textContent = q.sub;
+    block.appendChild(sub);
+  }
+
+  if(q.options){
+    const grid = document.createElement('div');
+    grid.className = 'opts' + (q.span ? ' span-last' : '');
+    q.options.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.type = 'button';
+      if(q.rank){
+        const rk = document.createElement('span');
+        rk.className = 'rk';
+        btn.appendChild(rk);
+        btn.appendChild(document.createTextNode(opt));
+      } else {
+        btn.textContent = opt;
+      }
+      btn.dataset.q = q.id;
+      btn.dataset.v = opt;
+      btn.addEventListener('click', ()=>{
+        if(q.multi){
+          if(state[q.id].sel.has(opt)) state[q.id].sel.delete(opt); else state[q.id].sel.add(opt);
+        } else if(q.rank){
+          const idx = state[q.id].order.indexOf(opt);
+          if(idx>=0) state[q.id].order.splice(idx,1); else state[q.id].order.push(opt);
+        } else {
+          state[q.id].sel = opt;
+        }
+        paintQuestion(q);
+        updateProgress();
+        if(q.id === 'yucatan'){
+          yucatanDisqualified = (opt === 'No, no busco en la Península Yucateca');
+          applyYucatanState();
+          if(yucatanDisqualified){
+            document.getElementById('popup-yucatan').style.display = 'flex';
+          }
+        }
+      });
+      grid.appendChild(btn);
+    });
+    block.appendChild(grid);
+
+    if(q.rank){
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'reset-btn';
+      resetBtn.type = 'button';
+      resetBtn.textContent = 'Reiniciar orden';
+      resetBtn.addEventListener('click', ()=>{
+        state[q.id].order = [];
+        paintQuestion(q);
+        updateProgress();
+      });
+      block.appendChild(resetBtn);
+    }
+
+    if(q.secondary){
+      const sgrid = document.createElement('div');
+      sgrid.className = 'opts';
+      sgrid.style.marginTop = '4px';
+      q.secondary.forEach(opt=>{
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.type = 'button';
+        btn.textContent = opt;
+        btn.dataset.q = q.id;
+        btn.dataset.v = opt;
+        btn.addEventListener('click', ()=>{
+          state[q.id].sel = opt;
+          paintQuestion(q);
+          updateProgress();
+        });
+        sgrid.appendChild(btn);
+      });
+      block.appendChild(sgrid);
+    }
+
+    if(!q.text){
+      const notas = document.createElement('textarea');
+      notas.placeholder = 'Notas (opcional)';
+      notas.style.marginTop = '8px';
+      notas.addEventListener('input', e=>{ state[q.id].text = e.target.value; });
+      block.appendChild(notas);
+    }
+  }
+
+  if(q.text){
+    const t = document.createElement('textarea');
+    t.placeholder = q.placeholder || '';
+    t.style.minHeight = '64px';
+    t.addEventListener('input', e=>{ state[q.id].text = e.target.value; });
+    block.appendChild(t);
+  }
+
+  container.appendChild(block);
+}
+
+function paintQuestion(q){
+  document.querySelectorAll('button[data-q="'+q.id+'"]').forEach(btn=>{
+    let active;
+    if(q.multi) active = state[q.id].sel.has(btn.dataset.v);
+    else if(q.rank) active = state[q.id].order.includes(btn.dataset.v);
+    else active = state[q.id].sel === btn.dataset.v;
+    btn.classList.toggle('active', active);
+    if(q.rank){
+      const rk = btn.querySelector('.rk');
+      const idx = state[q.id].order.indexOf(btn.dataset.v);
+      rk.textContent = idx>=0 ? (idx+1)+'. ' : '';
+    }
+  });
+}
+
+const bloque1Container = document.getElementById('bloque1');
+const bloque2Container = document.getElementById('bloque2');
+b1.forEach((q,i)=>renderQuestion(q,i,bloque1Container));
+b2.forEach((q,i)=>renderQuestion(q,i,bloque2Container));
+
+function isAnswered(q){
+  const s = state[q.id];
+  if(q.multi) return s.sel.size > 0;
+  if(q.rank) return s.order.length > 0;
+  return !!s.sel || (q.text && s.text.trim());
+}
+
+function updateProgress(){
+  const reqQs = b1.filter(q=>q.req);
+  const answered = reqQs.filter(isAnswered).length;
+  document.getElementById('progress-text').textContent = answered + ' de ' + reqQs.length + ' preguntas obligatorias respondidas';
+}
+
+document.getElementById('submit-btn').addEventListener('click', ()=>{
+  if(yucatanDisqualified){
+    document.getElementById('popup-yucatan').style.display = 'flex';
+    return;
+  }
+  const reqQs = b1.filter(q=>q.req);
+  const allDone = reqQs.every(isAnswered);
+  if(!allDone){
+    document.getElementById('popup').style.display = 'flex';
+  } else {
+    alert('Gracias, tu agente recibirá tus respuestas.');
+  }
+});
+document.getElementById('popup-ok').addEventListener('click', ()=>{
+  document.getElementById('popup').style.display = 'none';
+});
+document.getElementById('popup-yucatan-ok').addEventListener('click', ()=>{
+  document.getElementById('popup-yucatan').style.display = 'none';
+});
+
+updateProgress();
+</script>
+</body>
+</html>
