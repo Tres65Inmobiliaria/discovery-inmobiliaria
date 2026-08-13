@@ -86,6 +86,7 @@
     margin:0 0 10px;
   }
   .q-sub{font-size:13px; color:var(--texto-suave); margin:0 0 10px;}
+  .q-warning{color:#C0453A; font-size:12px; margin:8px 0 0; display:none;}
 
   .opts{
     display:grid;
@@ -282,7 +283,7 @@ Para nosotros es muy importante escuchar a nuestros clientes.</p>
 
 <script>
 const b1 = [
-  {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true},
+  {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true, hardReq:true},
   {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], req:true},
   {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true, flow:'comprar'},
   {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], span:true, req:true, flow:'renta'},
@@ -383,10 +384,19 @@ function renderQuestion(q, index, container){
         if(q.id === 'yucatan'){
           yucatanDisqualified = (opt === 'No, no busco en la Península Yucateca');
         }
+        const warn = block.querySelector('.q-warning');
+        if(warn) warn.style.display = 'none';
       });
       grid.appendChild(btn);
     });
     block.appendChild(grid);
+
+    if(q.hardReq){
+      const warn = document.createElement('p');
+      warn.className = 'q-warning';
+      warn.textContent = 'Por favor selecciona una opción para continuar.';
+      block.appendChild(warn);
+    }
 
     if(q.rank){
       const resetBtn = document.createElement('button');
@@ -656,6 +666,12 @@ document.getElementById('back-btn').addEventListener('click', ()=>{
 
 document.getElementById('next-btn').addEventListener('click', ()=>{
   const page = pages[currentPage];
+  if(page.type === 'q' && page.q.hardReq && !isAnswered(page.q)){
+    const block = document.querySelector('.q-block[data-qid="'+page.q.id+'"]');
+    const warn = block && block.querySelector('.q-warning');
+    if(warn) warn.style.display = 'block';
+    return;
+  }
   if(page.type === 'q' && page.q.id === 'yucatan' && yucatanDisqualified){
     document.getElementById('popup-yucatan').style.display = 'flex';
     return;
