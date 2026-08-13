@@ -478,6 +478,7 @@ function refreshNavLinks(){
   const show = hasAnyAnswer();
   document.getElementById('save-later-btn').style.display = show ? 'inline-block' : 'none';
   document.getElementById('restart-btn').style.display = show ? 'inline-block' : 'none';
+  document.getElementById('call-btn').style.display = (currentPage === 0) ? 'inline-block' : 'none';
 }
 
 function updateProgress(){
