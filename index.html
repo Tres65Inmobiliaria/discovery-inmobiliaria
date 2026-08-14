@@ -99,7 +99,6 @@
   button.opt-btn{
     display:flex;
     align-items:center;
-    justify-content:space-between;
     gap:8px;
     font-family:'Raleway',sans-serif;
     font-size:14px;
@@ -112,7 +111,7 @@
     text-align:left;
     transition:all .12s ease;
   }
-  .check-icon{display:none; flex-shrink:0; color:var(--acento);}
+  .check-icon{display:none; flex-shrink:0; color:var(--acento); margin-left:auto;}
   .check-icon svg{display:block;}
   button.opt-btn.active .check-icon{display:inline-flex;}
   button.opt-btn:hover{border-color:var(--acento);}
@@ -137,6 +136,19 @@
     min-height:48px;
   }
   textarea:focus, button.opt-btn:focus{outline:2px solid var(--acento); outline-offset:1px;}
+  .followup{margin-top:10px; display:none;}
+  .followup label{display:block; font-size:12px; color:var(--texto-suave); margin-bottom:6px;}
+  .followup select{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+  }
+  .followup select:focus{outline:2px solid var(--acento); outline-offset:1px;}
   .reset-btn{
     width:100%;
     background:transparent;
@@ -291,6 +303,9 @@ Para nosotros es muy importante escuchar a nuestros clientes.</p>
 <script>
 const b1 = [
   {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true, hardReq:true},
+  {id:'enMerida', title:'¿Ya estás en Mérida?', options:['Sí','No'], req:true,
+    followUpTrigger:'No', followUpLabel:'¿De dónde nos visitas?',
+    followUpOptions:['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas','Otro país']},
   {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], req:true},
   {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true, flow:'comprar'},
   {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], span:true, req:true, flow:'renta'},
@@ -345,7 +360,7 @@ function makeCheckIcon(){
 }
 
 function renderQuestion(q, index, container){
-  state[q.id] = q.multi ? {sel:new Set(), text:''} : q.rank ? {order:[], text:''} : {sel:null, text:''};
+  state[q.id] = q.multi ? {sel:new Set(), text:'', followUp:''} : q.rank ? {order:[], text:'', followUp:''} : {sel:null, text:'', followUp:''};
   const block = document.createElement('div');
   block.className = 'q-block';
   block.dataset.qid = q.id;
@@ -378,7 +393,9 @@ function renderQuestion(q, index, container){
         const rk = document.createElement('span');
         rk.className = 'rk';
         btn.appendChild(rk);
-        btn.appendChild(document.createTextNode(opt));
+        const label = document.createElement('span');
+        label.textContent = opt;
+        btn.appendChild(label);
       } else {
         const label = document.createElement('span');
         label.textContent = opt;
@@ -403,10 +420,50 @@ function renderQuestion(q, index, container){
         }
         const warn = block.querySelector('.q-warning');
         if(warn) warn.style.display = 'none';
+        if(q.followUpTrigger){
+          const fu = block.querySelector('.followup');
+          if(fu){
+            const sel = fu.querySelector('select');
+            if(opt === q.followUpTrigger){
+              fu.style.display = 'block';
+            } else {
+              fu.style.display = 'none';
+              state[q.id].followUp = '';
+              if(sel) sel.value = '';
+            }
+          }
+        }
       });
       grid.appendChild(btn);
     });
     block.appendChild(grid);
+
+    if(q.followUpOptions){
+      const fu = document.createElement('div');
+      fu.className = 'followup';
+      const fuLabel = document.createElement('label');
+      fuLabel.textContent = q.followUpLabel || '';
+      fu.appendChild(fuLabel);
+      const select = document.createElement('select');
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Selecciona una opción';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      select.appendChild(placeholder);
+      q.followUpOptions.forEach(opt=>{
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        select.appendChild(o);
+      });
+      select.addEventListener('change', ()=>{
+        state[q.id].followUp = select.value;
+        saveLocal();
+      });
+      fu.appendChild(select);
+      block.appendChild(fu);
+    }
 
     if(q.hardReq){
       const warn = document.createElement('p');
@@ -528,7 +585,9 @@ function buildAnswers(){
     if(q.multi) answer = Array.from(s.sel);
     else if(q.rank) answer = s.order;
     else answer = s.sel;
-    out[q.id] = {title:q.title, answer:answer, notas:s.text || ''};
+    let notas = s.text || '';
+    if(q.followUpOptions && s.followUp) notas += (notas ? ' | ' : '') + (q.followUpLabel || 'Detalle') + ': ' + s.followUp;
+    out[q.id] = {title:q.title, answer:answer, notas:notas};
   });
   return out;
 }
@@ -537,9 +596,9 @@ function saveLocal(){
   const snapshot = {};
   b1.concat(b2).forEach(q=>{
     const s = state[q.id];
-    snapshot[q.id] = q.multi ? {sel:Array.from(s.sel), text:s.text}
-      : q.rank ? {order:s.order, text:s.text}
-      : {sel:s.sel, text:s.text};
+    snapshot[q.id] = q.multi ? {sel:Array.from(s.sel), text:s.text, followUp:s.followUp}
+      : q.rank ? {order:s.order, text:s.text, followUp:s.followUp}
+      : {sel:s.sel, text:s.text, followUp:s.followUp};
   });
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     page: typeof currentPage === 'number' ? currentPage : 0,
@@ -561,10 +620,17 @@ function restoreLocal(){
     else if(q.rank) state[q.id].order = snap.order || [];
     else state[q.id].sel = snap.sel || null;
     state[q.id].text = snap.text || '';
+    state[q.id].followUp = snap.followUp || '';
     paintQuestion(q);
     const block = document.querySelector('.q-block[data-qid="'+q.id+'"]');
     const ta = block && block.querySelector('textarea');
     if(ta) ta.value = state[q.id].text;
+    if(q.followUpOptions){
+      const fu = block && block.querySelector('.followup');
+      const sel = fu && fu.querySelector('select');
+      if(sel) sel.value = state[q.id].followUp;
+      if(fu) fu.style.display = (state[q.id].sel === q.followUpTrigger) ? 'block' : 'none';
+    }
   });
   yucatanDisqualified = !!data.yucatanDisqualified;
   return typeof data.page === 'number' ? data.page : 0;
