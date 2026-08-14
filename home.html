@@ -158,7 +158,7 @@ function stepsForProperty(propertyId){
   const hasReport = !!localStorage.getItem('tres65_property_' + propertyId + '_report');
   return [
     {title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true, href:'agente.html', whatsapp:true},
-    {title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:metAgent, href:'index.html?property=' + propertyId, tooltip:'Se desbloquea cuando conozcas a tu agente'},
+    {title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:metAgent, href:(hasReport ? 'resumen.html?property=' : 'index.html?property=') + propertyId, tooltip:'Se desbloquea cuando conozcas a tu agente'},
     {title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:hasReport, href:'resumen.html?property=' + propertyId, tooltip:'Se desbloquea cuando completes el cuestionario de discovery'},
     {title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:false, tooltip:'Se desbloquea cuando tu agente empiece a trabajar en tu búsqueda'},
     {title:'Ficha pre-tour', sub:'Opciones de propiedades a visitar', icon:'clipboard-list', done:false, tooltip:'Se desbloquea cuando tu agente tenga propiedades listas para comparar'},

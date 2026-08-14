@@ -67,6 +67,21 @@
     color:var(--texto-suave);
     text-decoration:underline;
   }
+  .new-property-btn{
+    display:block;
+    width:100%;
+    margin-top:8px;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:14px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .new-property-btn:hover{background:var(--medio);}
 </style>
 </head>
 <body>
@@ -78,6 +93,8 @@
   </header>
 
   <div id="content"></div>
+
+  <button class="new-property-btn" id="new-property-btn" type="button" style="display:none;">Llenar cuestionario para otra propiedad</button>
 
   <a class="back-link" href="home.html">Regresar a tu progreso</a>
 </div>
@@ -102,9 +119,18 @@ if(saved){
   div.className = 'report-text';
   div.innerHTML = renderReportHtml(saved);
   content.appendChild(div);
+  document.getElementById('new-property-btn').style.display = 'block';
 } else {
   content.innerHTML = '<p class="empty-note">Todavía no tienes un resumen generado. Completa el cuestionario de discovery para verlo aquí.</p>';
 }
+
+document.getElementById('new-property-btn').addEventListener('click', ()=>{
+  const count = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
+  const newId = count + 1;
+  localStorage.setItem('tres65_property_count', String(newId));
+  localStorage.setItem('tres65_active_property', String(newId));
+  window.location.href = 'index.html?property=' + newId;
+});
 </script>
 </body>
 </html>
