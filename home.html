@@ -6,6 +6,7 @@
 <title>Tu progreso — Tres65 Inmobiliaria</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <style>
   :root{
     --profundo:#1A4F5C;
@@ -25,7 +26,7 @@
     color:var(--texto);
     line-height:1.6;
   }
-  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
+  .wrap{max-width:520px;margin:0 auto;padding:32px 20px 80px;}
   header{text-align:center;margin-bottom:32px;}
   header .logo{display:block; max-width:220px; margin:0 auto 20px;}
   header h1{
@@ -36,15 +37,38 @@
     margin:0 0 8px;
   }
   header p{color:var(--texto-suave); font-size:14px; margin:0;}
-  .pending-note{
-    font-size:13px;
-    color:var(--texto-suave);
-    margin:0 0 24px;
-    padding:12px 16px;
-    background:var(--menta);
-    border-radius:8px;
-    text-align:center;
+
+  .stepper{display:flex; flex-direction:column; align-items:center;}
+  .step-arrow{color:var(--borde); margin:2px 0;}
+  .step-arrow svg{display:block; width:20px; height:20px;}
+
+  .step-card{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:20px;
+    border-radius:14px;
   }
+  .step-card.done{color:#fff;}
+  .step-card.done .step-sub{color:rgba(255,255,255,.75);}
+  .step-card.done .step-divider{background:#fff; opacity:.3;}
+
+  .step-card.pending{
+    background:#fff;
+    border:1px solid var(--borde);
+    color:var(--texto-suave);
+  }
+  .step-card.pending .step-title{color:var(--texto-suave);}
+  .step-card.pending .step-icon{color:#B9C6C4;}
+  .step-card.pending .step-divider{background:var(--borde);}
+
+  .step-icon{width:34px; height:34px; flex-shrink:0;}
+  .step-divider{width:1px; align-self:stretch;}
+  .step-num{font-family:'Montserrat',sans-serif; font-size:24px; font-weight:300; flex-shrink:0;}
+  .step-text{flex:1;}
+  .step-title{font-family:'Montserrat',sans-serif; font-size:16px; font-weight:600; line-height:1.25;}
+  .step-sub{font-size:12px; margin-top:2px;}
 </style>
 </head>
 <body>
@@ -52,9 +76,71 @@
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
     <h1>Tu progreso</h1>
-    <p>Aquí vas a poder ver en qué paso vas de tu proceso con nosotros.</p>
+    <p>Aquí puedes ver en qué paso vas de tu proceso con nosotros.</p>
   </header>
-  <p class="pending-note">Estamos armando esta página. Muy pronto vas a poder ver aquí todos los pasos de tu proceso.</p>
+
+  <div class="stepper" id="stepper"></div>
 </div>
+
+<script>
+const steps = [
+  {title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true},
+  {title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:true},
+  {title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:false},
+  {title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:false},
+  {title:'Ficha pre-tour', sub:'Comparativa inicial', icon:'clipboard-list', done:false},
+  {title:'Opción de propiedades a visitar', sub:'Las que más se acercan a lo que buscas', icon:'list-checks', done:false},
+  {title:'Tour de casas', sub:'Visita a propiedades', icon:'home', done:false},
+  {title:'Análisis post-tour', sub:'Ajuste de opciones', icon:'bar-chart-3', done:false},
+  {title:'Guía de compra', sub:'Siguientes pasos', icon:'key-round', done:false},
+  {title:'Guía del comprador', sub:'Todo lo que necesitas saber', icon:'book-open', done:false}
+];
+
+const colors = ['#1A4F5C', '#2AA898'];
+const stepper = document.getElementById('stepper');
+
+steps.forEach((s, i)=>{
+  const card = document.createElement('div');
+  card.className = 'step-card ' + (s.done ? 'done' : 'pending');
+  if(s.done) card.style.background = colors[i % 2];
+
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide', s.icon);
+  icon.className = 'step-icon';
+  card.appendChild(icon);
+
+  const divider = document.createElement('span');
+  divider.className = 'step-divider';
+  card.appendChild(divider);
+
+  const num = document.createElement('span');
+  num.className = 'step-num';
+  num.textContent = (i+1) + '.';
+  card.appendChild(num);
+
+  const text = document.createElement('div');
+  text.className = 'step-text';
+  const title = document.createElement('div');
+  title.className = 'step-title';
+  title.textContent = s.title;
+  const sub = document.createElement('div');
+  sub.className = 'step-sub';
+  sub.textContent = s.sub;
+  text.appendChild(title);
+  text.appendChild(sub);
+  card.appendChild(text);
+
+  stepper.appendChild(card);
+
+  if(i < steps.length - 1){
+    const arrow = document.createElement('div');
+    arrow.className = 'step-arrow';
+    arrow.innerHTML = '<i data-lucide="chevron-down"></i>';
+    stepper.appendChild(arrow);
+  }
+});
+
+if(window.lucide) lucide.createIcons();
+</script>
 </body>
 </html>
