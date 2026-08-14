@@ -82,6 +82,19 @@
     border-radius:8px;
     white-space:pre-line;
   }
+  .property-banner{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:#fff;
+    background:var(--acento);
+    padding:8px 14px;
+    border-radius:20px;
+    text-align:center;
+    margin:0 auto 20px;
+    display:block;
+    width:fit-content;
+  }
   #reportView{display:none;}
   .report-text{
     font-size:14px;
@@ -745,6 +758,14 @@ const pageEls = [];
 function makeIntroPage(bloqueNum, intro){
   const div = document.createElement('div');
   div.className = 'page';
+
+  if(bloqueNum === 1 && getActiveProperty() > 1){
+    const banner = document.createElement('p');
+    banner.className = 'property-banner';
+    banner.textContent = 'Estás llenando este discovery para tu propiedad ' + getActiveProperty() + '.';
+    div.appendChild(banner);
+  }
+
   const lab = document.createElement('div');
   lab.className = 'bloque-label';
   lab.textContent = intro.label + ' ';

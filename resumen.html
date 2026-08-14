@@ -127,6 +127,9 @@ if(saved){
 document.getElementById('new-property-btn').addEventListener('click', ()=>{
   const count = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
   const newId = count + 1;
+  // Por si quedó algo de pruebas anteriores con este mismo número, empieza limpio.
+  localStorage.removeItem('tres65_property_' + newId + '_state');
+  localStorage.removeItem('tres65_property_' + newId + '_report');
   localStorage.setItem('tres65_property_count', String(newId));
   localStorage.setItem('tres65_active_property', String(newId));
   window.location.href = 'index.html?property=' + newId;
