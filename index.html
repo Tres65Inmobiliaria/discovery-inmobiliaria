@@ -292,10 +292,10 @@ desde el inicio a la propiedad ideal para ti.</p>
 
   <div id="reportView">
     <div class="bloque-label">Tu perfil</div>
-    <p class="bloque-intro">Esto es lo que le compartiremos a tu agente. Si quieres agregar algo, escríbelo abajo antes de confirmar.</p>
+    <p class="bloque-intro">Este resumen le llega a tu agente certificado, quien se va a contactar contigo con las mejores oportunidades basadas en tus respuestas.</p>
     <div id="reportText" class="report-text"></div>
-    <textarea id="reportComments" placeholder="¿Algo más que quieras agregar? (opcional)"></textarea>
-    <button class="nav-btn next-btn" id="report-agree-btn" type="button" style="width:100%; margin-top:12px;">Estoy de acuerdo</button>
+    <textarea id="reportComments" placeholder="Notas para ti (opcional)"></textarea>
+    <button class="nav-btn next-btn" id="report-agree-btn" type="button" style="width:100%; margin-top:12px;">Guardar</button>
   </div>
 
 </div>
@@ -767,6 +767,7 @@ function renderReportHtml(text){
 }
 
 function showReport(perfilText){
+  document.querySelector('header').style.display = 'none';
   document.querySelector('.nav-bar').style.display = 'none';
   document.getElementById('stage').style.display = 'none';
   document.getElementById('reportText').innerHTML = renderReportHtml(perfilText);
@@ -879,7 +880,7 @@ document.getElementById('report-agree-btn').addEventListener('click', ()=>{
   // Nota: aún no manda nada a los agentes — por ahora solo confirma en pantalla,
   // mientras se termina de definir el diseño de esta vista.
   localStorage.removeItem(STORAGE_KEY);
-  document.getElementById('reportView').innerHTML = '<div class="bloque-label">¡Gracias!</div><p class="bloque-intro">Tu perfil quedó confirmado.</p>';
+  document.getElementById('reportView').innerHTML = '<div class="bloque-label">Guardado</div><p class="bloque-intro">Tu perfil y tus notas quedaron guardados. Tu agente se va a contactar contigo pronto.</p>';
 });
 
 updateProgress();
