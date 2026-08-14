@@ -200,6 +200,8 @@
   .next-btn{background:var(--profundo); color:#fff;}
   .next-btn:hover{background:var(--medio);}
   .back-btn{background:transparent; color:var(--texto-suave); border:1px solid var(--borde); flex:0 0 100px;}
+  .outline-btn{background:transparent; color:var(--texto-suave); border:1px solid var(--borde); flex:1;}
+  .outline-btn:hover{border-color:var(--acento);}
   .back-btn:hover{border-color:var(--acento);}
   .nav-links{display:flex; justify-content:center; gap:16px; margin-top:12px; flex-wrap:wrap;}
   .link-btn{
@@ -295,7 +297,10 @@ desde el inicio a la propiedad ideal para ti.</p>
     <p class="bloque-intro">Este resumen le llega a tu agente certificado, quien se va a contactar contigo con las mejores oportunidades basadas en tus respuestas.</p>
     <div id="reportText" class="report-text"></div>
     <textarea id="reportComments" placeholder="Notas para ti (opcional)"></textarea>
-    <button class="nav-btn next-btn" id="report-agree-btn" type="button" style="width:100%; margin-top:12px;">Guardar</button>
+    <div class="nav-buttons" style="margin-top:12px;">
+      <button class="nav-btn next-btn" id="report-agree-btn" type="button">Guardar</button>
+      <a class="nav-btn outline-btn" href="home.html" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">Regresar al home</a>
+    </div>
   </div>
 
 </div>
