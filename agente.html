@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu agente — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#FFFFFF;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.6;
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:32px 20px 80px;}
+  header{text-align:center;margin-bottom:24px;}
+  header .logo{display:block; max-width:180px; margin:0 auto 36px;}
+
+  .photo{
+    width:140px;
+    height:140px;
+    border-radius:50%;
+    background:var(--menta);
+    border:2px dashed var(--borde);
+    margin:0 auto 20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--acento);
+  }
+  .photo i{width:48px; height:48px;}
+
+  .card{text-align:center; margin-bottom:28px;}
+  .name{
+    font-family:'Montserrat',sans-serif;
+    font-size:22px;
+    font-weight:600;
+    color:var(--profundo);
+    margin:0 0 4px;
+  }
+  .role{color:var(--acento); font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin:0 0 16px;}
+  .bio{font-size:14px; color:var(--texto-suave); text-align:left;}
+  .bio p{margin:0 0 12px;}
+
+  .stat-row{display:flex; gap:12px; margin:20px 0;}
+  .stat{
+    flex:1;
+    text-align:center;
+    background:var(--menta);
+    border-radius:10px;
+    padding:14px 8px;
+  }
+  .stat .num{font-family:'Montserrat',sans-serif; font-size:18px; font-weight:700; color:var(--profundo);}
+  .stat .label{font-size:11px; color:var(--texto-suave); margin-top:2px;}
+
+  .whatsapp-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:14px;
+    border-radius:8px;
+    border:none;
+    background:#25D366;
+    color:#fff;
+    text-decoration:none;
+    margin-top:8px;
+  }
+  .whatsapp-btn:hover{background:#1EBE59;}
+  .whatsapp-btn svg{width:20px; height:20px; flex-shrink:0;}
+
+  .back-link{
+    display:block;
+    text-align:center;
+    margin-top:24px;
+    font-size:13px;
+    color:var(--texto-suave);
+    text-decoration:underline;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
+  </header>
+
+  <div class="card">
+    <div class="photo"><i data-lucide="user"></i></div>
+    <div class="name">Damara Traconis</div>
+    <p class="role">Asesora certificada</p>
+
+    <div class="bio">
+      <p>Con más de 8 años ayudando a familias e inversionistas a encontrar su propiedad ideal en la Península Yucateca, me especializo en acompañar a cada cliente desde el primer contacto hasta la entrega de llaves.</p>
+      <p>Conozco a fondo el mercado de Mérida y sus alrededores, y mi prioridad es escucharte para encontrar justo lo que buscas — sin prisas, sin presión.</p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="num">8+</div><div class="label">Años de experiencia</div></div>
+      <div class="stat"><div class="num">150+</div><div class="label">Clientes atendidos</div></div>
+      <div class="stat"><div class="num">4.9</div><div class="label">Calificación</div></div>
+    </div>
+
+    <a class="whatsapp-btn" href="https://wa.me/5219992786153?text=Hola%2C%20me%20gustar%C3%ADa%20platicar%20sobre%20mi%20b%C3%BAsqueda%20de%20propiedad" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.47 3.53 1.36 5.07L2 22l5.19-1.44a9.87 9.87 0 0 0 4.85 1.28h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.42 5.83c0 4.55-3.71 8.26-8.27 8.26a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.08.86.82-3.01-.19-.3a8.18 8.18 0 0 1-1.26-4.38c0-4.56 3.71-8.35 8.21-8.35zm-4.5 4.51c-.15 0-.4.06-.61.29-.21.24-.8.78-.8 1.9s.82 2.21.93 2.36c.11.15 1.6 2.51 3.93 3.42 1.94.76 2.34.61 2.76.57.42-.04 1.35-.55 1.54-1.08.19-.53.19-.98.13-1.08-.06-.1-.21-.16-.44-.27-.23-.12-1.35-.67-1.56-.74-.21-.08-.36-.12-.51.12-.15.24-.59.74-.72.89-.13.15-.27.17-.5.06-.23-.12-.98-.36-1.87-1.15-.69-.62-1.16-1.38-1.29-1.62-.13-.24-.01-.36.1-.48.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.51-1.24-.71-1.7-.19-.45-.38-.39-.51-.4-.13-.01-.28-.01-.43-.01z"/></svg>
+      Escríbele por WhatsApp
+    </a>
+  </div>
+
+  <a class="back-link" href="home.html">Regresar a tu progreso</a>
+</div>
+
+<script>
+if(window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu resumen discovery — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#FFFFFF;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.6;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:32px 20px 80px;}
+  header{text-align:center;margin-bottom:32px;}
+  header .logo{display:block; max-width:200px; margin:0 auto 36px;}
+  header h1{
+    font-family:'Montserrat',sans-serif;
+    font-size:22px;
+    font-weight:600;
+    color:var(--profundo);
+    margin:0 0 8px;
+  }
+  header p{color:var(--texto-suave); font-size:14px; margin:0;}
+
+  .report-text{
+    font-size:14px;
+    line-height:1.7;
+    color:var(--texto);
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:8px;
+    padding:16px;
+    margin-bottom:16px;
+    white-space:pre-line;
+  }
+  .report-text strong{color:var(--profundo);}
+
+  .empty-note{
+    font-size:13px;
+    color:var(--texto-suave);
+    padding:12px 16px;
+    background:var(--menta);
+    border-radius:8px;
+    text-align:center;
+  }
+
+  .back-link{
+    display:block;
+    text-align:center;
+    margin-top:24px;
+    font-size:13px;
+    color:var(--texto-suave);
+    text-decoration:underline;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
+    <h1>Tu resumen discovery</h1>
+    <p>Esto es lo que compartimos con tu agente después de tu cuestionario.</p>
+  </header>
+
+  <div id="content"></div>
+
+  <a class="back-link" href="home.html">Regresar a tu progreso</a>
+</div>
+
+<script>
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderReportHtml(text){
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
+const saved = localStorage.getItem('tres65_last_report');
+const content = document.getElementById('content');
+if(saved){
+  const div = document.createElement('div');
+  div.className = 'report-text';
+  div.innerHTML = renderReportHtml(saved);
+  content.appendChild(div);
+} else {
+  content.innerHTML = '<p class="empty-note">Todavía no tienes un resumen generado. Completa el cuestionario de discovery para verlo aquí.</p>';
+}
+</script>
+</body>
+</html>

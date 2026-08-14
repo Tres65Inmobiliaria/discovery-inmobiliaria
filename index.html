@@ -31,7 +31,7 @@
   header .logo{
     display:block;
     max-width:220px;
-    margin:0 auto 20px;
+    margin:0 auto 36px;
   }
   header .tag{
     font-family:'Montserrat',sans-serif;
@@ -772,6 +772,7 @@ function renderReportHtml(text){
 }
 
 function showReport(perfilText){
+  localStorage.setItem('tres65_last_report', perfilText);
   document.querySelector('header').style.display = 'none';
   document.querySelector('.nav-bar').style.display = 'none';
   document.getElementById('stage').style.display = 'none';

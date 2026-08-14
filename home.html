@@ -28,7 +28,7 @@
   }
   .wrap{max-width:520px;margin:0 auto;padding:32px 20px 80px;}
   header{text-align:center;margin-bottom:32px;}
-  header .logo{display:block; max-width:220px; margin:0 auto 20px;}
+  header .logo{display:block; max-width:220px; margin:0 auto 36px;}
   header h1{
     font-family:'Montserrat',sans-serif;
     font-size:24px;
@@ -49,7 +49,9 @@
     gap:16px;
     padding:20px;
     border-radius:14px;
+    position:relative;
   }
+  a.step-card{text-decoration:none; cursor:pointer;}
   .step-card.done{color:#fff;}
   .step-card.done .step-sub{color:rgba(255,255,255,.75);}
   .step-card.done .step-divider{background:#fff; opacity:.3;}
@@ -58,6 +60,27 @@
     background:#fff;
     border:1px solid var(--borde);
     color:var(--texto-suave);
+    cursor:not-allowed;
+    transition:background .15s ease;
+  }
+  .step-card.pending:hover{background:var(--menta);}
+  .step-card.pending:hover::after{
+    content: attr(data-tooltip);
+    position:absolute;
+    top:100%;
+    left:50%;
+    transform:translateX(-50%);
+    margin-top:6px;
+    background:var(--profundo);
+    color:#fff;
+    font-size:11px;
+    line-height:1.4;
+    padding:8px 12px;
+    border-radius:6px;
+    width:220px;
+    text-align:center;
+    z-index:5;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);
   }
   .step-card.pending .step-title{color:var(--texto-suave);}
   .step-card.pending .step-icon{color:#B9C6C4;}
@@ -66,9 +89,36 @@
   .step-icon{width:34px; height:34px; flex-shrink:0;}
   .step-divider{width:1px; align-self:stretch;}
   .step-num{font-family:'Montserrat',sans-serif; font-size:24px; font-weight:300; flex-shrink:0;}
-  .step-text{flex:1;}
+  .step-text{flex:1; min-width:0;}
   .step-title{font-family:'Montserrat',sans-serif; font-size:16px; font-weight:600; line-height:1.25;}
   .step-sub{font-size:12px; margin-top:2px;}
+
+  .step-wa{
+    flex-shrink:0;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:#25D366;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .logout-btn{
+    display:block;
+    width:100%;
+    margin-top:32px;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:transparent;
+    color:var(--texto-suave);
+    cursor:pointer;
+  }
+  .logout-btn:hover{border-color:var(--acento); color:var(--acento);}
 </style>
 </head>
 <body>
@@ -80,29 +130,37 @@
   </header>
 
   <div class="stepper" id="stepper"></div>
+
+  <button class="logout-btn" id="logout-btn" type="button">Cerrar sesión</button>
 </div>
 
 <script>
+const WHATSAPP_ICON = '<svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.47 3.53 1.36 5.07L2 22l5.19-1.44a9.87 9.87 0 0 0 4.85 1.28h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.42 5.83c0 4.55-3.71 8.26-8.27 8.26a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.08.86.82-3.01-.19-.3a8.18 8.18 0 0 1-1.26-4.38c0-4.56 3.71-8.35 8.21-8.35zm-4.5 4.51c-.15 0-.4.06-.61.29-.21.24-.8.78-.8 1.9s.82 2.21.93 2.36c.11.15 1.6 2.51 3.93 3.42 1.94.76 2.34.61 2.76.57.42-.04 1.35-.55 1.54-1.08.19-.53.19-.98.13-1.08-.06-.1-.21-.16-.44-.27-.23-.12-1.35-.67-1.56-.74-.21-.08-.36-.12-.51.12-.15.24-.59.74-.72.89-.13.15-.27.17-.5.06-.23-.12-.98-.36-1.87-1.15-.69-.62-1.16-1.38-1.29-1.62-.13-.24-.01-.36.1-.48.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.51-1.24-.71-1.7-.19-.45-.38-.39-.51-.4-.13-.01-.28-.01-.43-.01z"/></svg>';
+
 const steps = [
-  {title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true},
-  {title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:true},
-  {title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:false},
-  {title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:false},
-  {title:'Ficha pre-tour', sub:'Comparativa inicial', icon:'clipboard-list', done:false},
-  {title:'Opción de propiedades a visitar', sub:'Las que más se acercan a lo que buscas', icon:'list-checks', done:false},
-  {title:'Tour de casas', sub:'Visita a propiedades', icon:'home', done:false},
-  {title:'Análisis post-tour', sub:'Ajuste de opciones', icon:'bar-chart-3', done:false},
-  {title:'Guía de compra', sub:'Siguientes pasos', icon:'key-round', done:false},
-  {title:'Guía del comprador', sub:'Todo lo que necesitas saber', icon:'book-open', done:false}
+  {title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true, href:'agente.html', whatsapp:true},
+  {title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:true, href:'index.html'},
+  {title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:true, href:'resumen.html'},
+  {title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:false, tooltip:'Se desbloquea cuando tu agente empiece a trabajar en tu búsqueda'},
+  {title:'Ficha pre-tour', sub:'Opciones de propiedades a visitar', icon:'clipboard-list', done:false, tooltip:'Se desbloquea cuando tu agente tenga propiedades listas para comparar'},
+  {title:'Tour de casas', sub:'Visita a propiedades', icon:'home', done:false, tooltip:'Se desbloquea cuando agendes tu primer tour'},
+  {title:'Análisis post-tour', sub:'Ajuste de opciones', icon:'bar-chart-3', done:false, tooltip:'Se desbloquea después de tu tour de propiedades'},
+  {title:'Guía de compra', sub:'Siguientes pasos', icon:'key-round', done:false, tooltip:'Se desbloquea cuando elijas tu propiedad'},
+  {title:'Guía del comprador', sub:'Todo lo que necesitas saber', icon:'book-open', done:false, tooltip:'Se desbloquea en la etapa final de tu compra'}
 ];
 
 const colors = ['#1A4F5C', '#2AA898'];
 const stepper = document.getElementById('stepper');
 
 steps.forEach((s, i)=>{
-  const card = document.createElement('div');
+  const card = document.createElement(s.done ? 'a' : 'div');
   card.className = 'step-card ' + (s.done ? 'done' : 'pending');
-  if(s.done) card.style.background = colors[i % 2];
+  if(s.done){
+    card.href = s.href;
+    card.style.background = colors[i % 2];
+  } else {
+    card.setAttribute('data-tooltip', s.tooltip || 'Se desbloqueará cuando llegues a este paso');
+  }
 
   const icon = document.createElement('i');
   icon.setAttribute('data-lucide', s.icon);
@@ -130,6 +188,17 @@ steps.forEach((s, i)=>{
   text.appendChild(sub);
   card.appendChild(text);
 
+  if(s.whatsapp){
+    const wa = document.createElement('a');
+    wa.className = 'step-wa';
+    wa.href = 'https://wa.me/5219992786153?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
+    wa.target = '_blank';
+    wa.rel = 'noopener';
+    wa.innerHTML = WHATSAPP_ICON;
+    wa.addEventListener('click', e=>{ e.stopPropagation(); });
+    card.appendChild(wa);
+  }
+
   stepper.appendChild(card);
 
   if(i < steps.length - 1){
@@ -138,6 +207,10 @@ steps.forEach((s, i)=>{
     arrow.innerHTML = '<i data-lucide="chevron-down"></i>';
     stepper.appendChild(arrow);
   }
+});
+
+document.getElementById('logout-btn').addEventListener('click', ()=>{
+  window.location.href = 'login.html';
 });
 
 if(window.lucide) lucide.createIcons();
