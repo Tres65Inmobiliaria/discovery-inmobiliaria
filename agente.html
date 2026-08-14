@@ -112,8 +112,8 @@
 
   <div class="card">
     <div class="photo"><i data-lucide="user"></i></div>
-    <div class="name">Damara Traconis</div>
-    <p class="role">Asesora certificada</p>
+    <div class="name" id="agent-name">Damara Traconis</div>
+    <p class="role" id="agent-role">Asesora certificada</p>
 
     <div class="bio">
       <p>Con más de 8 años ayudando a familias e inversionistas a encontrar su propiedad ideal en la Península Yucateca, me especializo en acompañar a cada cliente desde el primer contacto hasta la entrega de llaves.</p>
@@ -126,7 +126,7 @@
       <div class="stat"><div class="num">4.9</div><div class="label">Calificación</div></div>
     </div>
 
-    <a class="whatsapp-btn" href="https://wa.me/5219992786153?text=Hola%2C%20me%20gustar%C3%ADa%20platicar%20sobre%20mi%20b%C3%BAsqueda%20de%20propiedad" target="_blank" rel="noopener">
+    <a class="whatsapp-btn" id="agent-wa-btn" href="https://wa.me/5219992786153?text=Hola%2C%20me%20gustar%C3%ADa%20platicar%20sobre%20mi%20b%C3%BAsqueda%20de%20propiedad" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" fill="#fff"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.47 3.53 1.36 5.07L2 22l5.19-1.44a9.87 9.87 0 0 0 4.85 1.28h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.42 5.83c0 4.55-3.71 8.26-8.27 8.26a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.08.86.82-3.01-.19-.3a8.18 8.18 0 0 1-1.26-4.38c0-4.56 3.71-8.35 8.21-8.35zm-4.5 4.51c-.15 0-.4.06-.61.29-.21.24-.8.78-.8 1.9s.82 2.21.93 2.36c.11.15 1.6 2.51 3.93 3.42 1.94.76 2.34.61 2.76.57.42-.04 1.35-.55 1.54-1.08.19-.53.19-.98.13-1.08-.06-.1-.21-.16-.44-.27-.23-.12-1.35-.67-1.56-.74-.21-.08-.36-.12-.51.12-.15.24-.59.74-.72.89-.13.15-.27.17-.5.06-.23-.12-.98-.36-1.87-1.15-.69-.62-1.16-1.38-1.29-1.62-.13-.24-.01-.36.1-.48.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.51-1.24-.71-1.7-.19-.45-.38-.39-.51-.4-.13-.01-.28-.01-.43-.01z"/></svg>
       Escríbele por WhatsApp
     </a>
@@ -137,9 +137,39 @@
 
 <script>
 if(window.lucide) lucide.createIcons();
+
+const API_BASE = 'https://agente-tres65-production.up.railway.app';
+const ROLE_BY_PHONE = {
+  '5219992786153': 'Asesora certificada',
+  '5219992399890': 'Asesor certificado',
+  '5219992413657': 'Asesor certificado'
+};
+
+const clientToken = new URLSearchParams(window.location.search).get('client');
+if(clientToken){
+  localStorage.setItem('tres65_client_token', clientToken);
+}
+const activeToken = clientToken || localStorage.getItem('tres65_client_token');
+
+if(activeToken){
+  fetch(API_BASE + '/portal/ficha/' + activeToken)
+    .then(r => r.json())
+    .then(data => {
+      if(!data.ok) return;
+      const f = data.ficha;
+      const digits = (f.agent_phone || '').replace(/\D/g, '');
+      document.getElementById('agent-name').textContent = f.agent_name || 'Tu agente';
+      document.getElementById('agent-role').textContent = ROLE_BY_PHONE[digits] || 'Asesor certificado';
+      const waBtn = document.getElementById('agent-wa-btn');
+      waBtn.href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
+    })
+    .catch(e => console.error('[Agente] error consultando ficha:', e));
+}
+
 document.getElementById('met-agent-btn').addEventListener('click', ()=>{
   localStorage.setItem('tres65_met_agent', 'true');
-  window.location.href = 'home.html';
+  const suffix = activeToken ? ('?client=' + activeToken) : '';
+  window.location.href = 'home.html' + suffix;
 });
 </script>
 </body>
