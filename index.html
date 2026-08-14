@@ -69,6 +69,20 @@
     border-radius:8px;
     white-space:pre-line;
   }
+  #reportView{display:none;}
+  .report-text{
+    font-size:14px;
+    line-height:1.7;
+    color:var(--texto);
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:8px;
+    padding:16px;
+    margin-bottom:16px;
+    white-space:pre-line;
+  }
+  .report-text strong{color:var(--profundo);}
+  #reportComments{width:100%; min-height:64px;}
 
   .page{display:none;}
   .q-block{margin-bottom:28px;}
@@ -275,6 +289,14 @@ desde el inicio a la propiedad ideal para ti.</p>
   </div>
 
   <div id="stage"></div>
+
+  <div id="reportView">
+    <div class="bloque-label">Tu perfil</div>
+    <p class="bloque-intro">Esto es lo que le compartiremos a tu agente. Si quieres agregar algo, escríbelo abajo antes de confirmar.</p>
+    <div id="reportText" class="report-text"></div>
+    <textarea id="reportComments" placeholder="¿Algo más que quieras agregar? (opcional)"></textarea>
+    <button class="nav-btn next-btn" id="report-agree-btn" type="button" style="width:100%; margin-top:12px;">Estoy de acuerdo</button>
+  </div>
 
 </div>
 
@@ -736,6 +758,22 @@ function jumpToQuestion(id){
   if(idx>=0){ currentPage = idx; showPage(); }
 }
 
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderReportHtml(text){
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
+function showReport(perfilText){
+  document.querySelector('.nav-bar').style.display = 'none';
+  document.getElementById('stage').style.display = 'none';
+  document.getElementById('reportText').innerHTML = renderReportHtml(perfilText);
+  document.getElementById('reportView').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
 async function finalizeProfile(){
   const nextBtn = document.getElementById('next-btn');
   const original = nextBtn.textContent;
@@ -749,11 +787,10 @@ async function finalizeProfile(){
     });
     const data = await res.json();
     if(!data.ok) throw new Error(data.error || 'error');
-    localStorage.removeItem(STORAGE_KEY);
-    alert('¡Listo! Generamos tu perfil de cliente. \nTu agente lo recibirá en breve y te va a contactar.');
+    showReport(data.perfil);
   }catch(e){
     console.error('[Discovery] error generando perfil:', e);
-    alert('Gracias por completar el cuestionario. \nTuvimos un problema técnico enviándolo, pero no te preocupes: tu agente lo revisará contigo directamente.');
+    alert('Tuvimos un problema técnico generando tu perfil. \nPor favor intenta de nuevo en un momento.');
   } finally {
     nextBtn.disabled = false;
     nextBtn.textContent = original;
@@ -837,6 +874,12 @@ document.getElementById('restart-btn').addEventListener('click', ()=>{
   if(!ok) return;
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
+});
+document.getElementById('report-agree-btn').addEventListener('click', ()=>{
+  // Nota: aún no manda nada a los agentes — por ahora solo confirma en pantalla,
+  // mientras se termina de definir el diseño de esta vista.
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('reportView').innerHTML = '<div class="bloque-label">¡Gracias!</div><p class="bloque-intro">Tu perfil quedó confirmado.</p>';
 });
 
 updateProgress();
