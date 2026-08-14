@@ -132,6 +132,25 @@
     cursor:pointer;
   }
   .logout-btn:hover{border-color:var(--acento); color:var(--acento);}
+
+  .property-widget{
+    background:var(--menta);
+    border:1px solid var(--acento);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:20px;
+  }
+  .property-widget-label{
+    display:flex; align-items:center; gap:6px;
+    font-family:'Montserrat',sans-serif;
+    font-size:12px; font-weight:600;
+    color:var(--profundo);
+    text-transform:uppercase; letter-spacing:.5px;
+    margin-bottom:8px;
+  }
+  .property-widget-label i{width:16px; height:16px;}
+  .property-widget-body{font-size:14px; color:var(--texto); word-break:break-word; margin:0;}
+  a.property-widget-body{color:var(--acento); text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -150,10 +169,31 @@
 <script>
 const WHATSAPP_ICON = '<svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.47 3.53 1.36 5.07L2 22l5.19-1.44a9.87 9.87 0 0 0 4.85 1.28h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.42 5.83c0 4.55-3.71 8.26-8.27 8.26a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.08.86.82-3.01-.19-.3a8.18 8.18 0 0 1-1.26-4.38c0-4.56 3.71-8.35 8.21-8.35zm-4.5 4.51c-.15 0-.4.06-.61.29-.21.24-.8.78-.8 1.9s.82 2.21.93 2.36c.11.15 1.6 2.51 3.93 3.42 1.94.76 2.34.61 2.76.57.42-.04 1.35-.55 1.54-1.08.19-.53.19-.98.13-1.08-.06-.1-.21-.16-.44-.27-.23-.12-1.35-.67-1.56-.74-.21-.08-.36-.12-.51.12-.15.24-.59.74-.72.89-.13.15-.27.17-.5.06-.23-.12-.98-.36-1.87-1.15-.69-.62-1.16-1.38-1.29-1.62-.13-.24-.01-.36.1-.48.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.51-1.24-.71-1.7-.19-.45-.38-.39-.51-.4-.13-.01-.28-.01-.43-.01z"/></svg>';
 
+const API_BASE = 'https://agente-tres65-production.up.railway.app';
+
 const clientToken = new URLSearchParams(window.location.search).get('client');
 if(clientToken) localStorage.setItem('tres65_client_token', clientToken);
 const activeToken = clientToken || localStorage.getItem('tres65_client_token');
 const agentHref = activeToken ? ('agente.html?client=' + activeToken) : 'agente.html';
+
+function buildPropertyWidget(raw){
+  const div = document.createElement('div');
+  div.className = 'property-widget';
+
+  const label = document.createElement('div');
+  label.className = 'property-widget-label';
+  label.innerHTML = '<i data-lucide="home"></i> Propiedad de tu interés';
+  div.appendChild(label);
+
+  const isUrl = /^https?:\/\//i.test(raw.trim());
+  const body = document.createElement(isUrl ? 'a' : 'p');
+  body.className = 'property-widget-body';
+  if(isUrl){ body.href = raw.trim(); body.target = '_blank'; body.rel = 'noopener'; }
+  body.textContent = raw;
+  div.appendChild(body);
+
+  return div;
+}
 
 const metAgent = localStorage.getItem('tres65_met_agent') === 'true';
 const propertyCount = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
@@ -233,33 +273,50 @@ function renderStepper(container, steps){
   });
 }
 
-const propertiesRow = document.getElementById('properties-row');
-if(propertyCount > 1) document.getElementById('wrap').classList.add('multi');
-
-for(let p = 1; p <= propertyCount; p++){
-  const col = document.createElement('div');
-  col.className = 'property-col';
-
-  if(propertyCount > 1){
-    const label = document.createElement('div');
-    label.className = 'property-label';
-    label.textContent = 'Propiedad ' + p;
-    col.appendChild(label);
+async function init(){
+  let ficha = null;
+  if(activeToken){
+    try{
+      const res = await fetch(API_BASE + '/portal/ficha/' + activeToken);
+      const data = await res.json();
+      if(data.ok) ficha = data.ficha;
+    }catch(e){ console.error('[Home] error consultando ficha:', e); }
   }
 
-  const stepperEl = document.createElement('div');
-  stepperEl.className = 'stepper';
-  col.appendChild(stepperEl);
+  const propertiesRow = document.getElementById('properties-row');
+  if(propertyCount > 1) document.getElementById('wrap').classList.add('multi');
 
-  renderStepper(stepperEl, stepsForProperty(p));
-  propertiesRow.appendChild(col);
+  for(let p = 1; p <= propertyCount; p++){
+    const col = document.createElement('div');
+    col.className = 'property-col';
+
+    if(propertyCount > 1){
+      const label = document.createElement('div');
+      label.className = 'property-label';
+      label.textContent = 'Propiedad ' + p;
+      col.appendChild(label);
+    }
+
+    if(p === 1 && ficha && ficha.property_raw){
+      col.appendChild(buildPropertyWidget(ficha.property_raw));
+    }
+
+    const stepperEl = document.createElement('div');
+    stepperEl.className = 'stepper';
+    col.appendChild(stepperEl);
+
+    renderStepper(stepperEl, stepsForProperty(p));
+    propertiesRow.appendChild(col);
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', ()=>{
+    window.location.href = 'login.html';
+  });
+
+  if(window.lucide) lucide.createIcons();
 }
 
-document.getElementById('logout-btn').addEventListener('click', ()=>{
-  window.location.href = 'login.html';
-});
-
-if(window.lucide) lucide.createIcons();
+init();
 </script>
 </body>
 </html>
