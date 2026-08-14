@@ -97,6 +97,10 @@
   .opts.span-last button:last-child{grid-column:1/-1;}
 
   button.opt-btn{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
     font-family:'Raleway',sans-serif;
     font-size:14px;
     padding:11px 12px;
@@ -108,6 +112,9 @@
     text-align:left;
     transition:all .12s ease;
   }
+  .check-icon{display:none; flex-shrink:0; color:var(--acento);}
+  .check-icon svg{display:block;}
+  button.opt-btn.active .check-icon{display:inline-flex;}
   button.opt-btn:hover{border-color:var(--acento);}
   button.opt-btn.active{
     border-color:var(--acento);
@@ -330,6 +337,13 @@ function relevantQuestions(list){
   return list.filter(q => !q.flow || q.flow === flow);
 }
 
+function makeCheckIcon(){
+  const span = document.createElement('span');
+  span.className = 'check-icon';
+  span.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  return span;
+}
+
 function renderQuestion(q, index, container){
   state[q.id] = q.multi ? {sel:new Set(), text:''} : q.rank ? {order:[], text:''} : {sel:null, text:''};
   const block = document.createElement('div');
@@ -366,7 +380,10 @@ function renderQuestion(q, index, container){
         btn.appendChild(rk);
         btn.appendChild(document.createTextNode(opt));
       } else {
-        btn.textContent = opt;
+        const label = document.createElement('span');
+        label.textContent = opt;
+        btn.appendChild(label);
+        btn.appendChild(makeCheckIcon());
       }
       btn.dataset.q = q.id;
       btn.dataset.v = opt;
@@ -419,7 +436,10 @@ function renderQuestion(q, index, container){
         const btn = document.createElement('button');
         btn.className = 'opt-btn';
         btn.type = 'button';
-        btn.textContent = opt;
+        const label = document.createElement('span');
+        label.textContent = opt;
+        btn.appendChild(label);
+        btn.appendChild(makeCheckIcon());
         btn.dataset.q = q.id;
         btn.dataset.v = opt;
         btn.addEventListener('click', ()=>{
