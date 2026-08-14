@@ -27,6 +27,19 @@
     line-height:1.6;
   }
   .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
+  .top-back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--texto-suave);
+    text-decoration:none;
+    margin-bottom:16px;
+  }
+  .top-back-link:hover{color:var(--acento);}
+  .top-back-link svg{width:16px; height:16px;}
   header{text-align:center;margin-bottom:48px;}
   header .logo{
     display:block;
@@ -270,6 +283,8 @@
 <body>
 <div class="wrap">
 
+  <a class="top-back-link" href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg> Volver</a>
+
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
     <h1>Conozcámonos un poco</h1>
@@ -327,6 +342,15 @@ desde el inicio a la propiedad ideal para ti.</p>
 Para nosotros es muy importante escuchar a nuestros clientes.</p>
     <button id="popup-bloque2-completar">Completar bloque 2</button>
     <button id="popup-bloque2-continuar" class="secondary">Generar de todos modos</button>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-segunda">
+  <div class="popup-card">
+    <h3>Ya completaste este cuestionario</h3>
+    <p>¿Lo estás llenando para una segunda propiedad?</p>
+    <button id="popup-segunda-si">Sí, es otra propiedad</button>
+    <button id="popup-segunda-no" class="secondary">No, ver mi resumen</button>
   </div>
 </div>
 
@@ -636,8 +660,24 @@ function updateProgress(){
   saveLocal();
 }
 
-const STORAGE_KEY = 'tres65_discovery_state';
 const API_URL = 'https://agente-tres65-production.up.railway.app/discovery/generar-perfil';
+
+function stateKey(n){ return 'tres65_property_' + n + '_state'; }
+function reportKey(n){ return 'tres65_property_' + n + '_report'; }
+function getActiveProperty(){ return parseInt(localStorage.getItem('tres65_active_property') || '1', 10); }
+function setActiveProperty(n){ localStorage.setItem('tres65_active_property', String(n)); }
+function getPropertyCount(){ return parseInt(localStorage.getItem('tres65_property_count') || '1', 10); }
+
+const urlProperty = new URLSearchParams(window.location.search).get('property');
+if(urlProperty) setActiveProperty(parseInt(urlProperty, 10));
+
+// Migra el guardado de la versión anterior (una sola propiedad) al nuevo esquema por propiedad.
+if(!localStorage.getItem(stateKey(1)) && localStorage.getItem('tres65_discovery_state')){
+  localStorage.setItem(stateKey(1), localStorage.getItem('tres65_discovery_state'));
+}
+if(!localStorage.getItem(reportKey(1)) && localStorage.getItem('tres65_last_report')){
+  localStorage.setItem(reportKey(1), localStorage.getItem('tres65_last_report'));
+}
 
 function buildAnswers(){
   const out = {};
@@ -662,14 +702,14 @@ function saveLocal(){
       : q.rank ? {order:s.order, text:s.text, followUp:s.followUp}
       : {sel:s.sel, text:s.text, followUp:s.followUp};
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+  localStorage.setItem(stateKey(getActiveProperty()), JSON.stringify({
     page: typeof currentPage === 'number' ? currentPage : 0,
     snapshot, yucatanDisqualified
   }));
 }
 
 function restoreLocal(){
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(stateKey(getActiveProperty()));
   if(!raw) return -1;
   let data;
   try{ data = JSON.parse(raw); } catch(e){ return -1; }
@@ -739,8 +779,13 @@ makeIntroPage(2, intro2);
 b2.forEach((q,i)=>makeQuestionPage(q,i));
 
 let currentPage = 0;
-const restoredPage = restoreLocal();
-if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
+const alreadyCompleted = !!localStorage.getItem(reportKey(getActiveProperty()));
+if(alreadyCompleted){
+  document.getElementById('popup-segunda').style.display = 'flex';
+} else {
+  const restoredPage = restoreLocal();
+  if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
+}
 
 function showPage(){
   pageEls.forEach((el,i)=>{ el.style.display = (i===currentPage ? 'block' : 'none'); });
@@ -772,6 +817,7 @@ function renderReportHtml(text){
 }
 
 function showReport(perfilText){
+  localStorage.setItem(reportKey(getActiveProperty()), perfilText);
   localStorage.setItem('tres65_last_report', perfilText);
   document.querySelector('header').style.display = 'none';
   document.querySelector('.nav-bar').style.display = 'none';
@@ -867,6 +913,15 @@ document.getElementById('popup-bloque2-continuar').addEventListener('click', ()=
   document.getElementById('popup-bloque2').style.display = 'none';
   finalizeProfile();
 });
+document.getElementById('popup-segunda-si').addEventListener('click', ()=>{
+  const newId = getPropertyCount() + 1;
+  localStorage.setItem('tres65_property_count', String(newId));
+  setActiveProperty(newId);
+  location.reload();
+});
+document.getElementById('popup-segunda-no').addEventListener('click', ()=>{
+  window.location.href = 'resumen.html?property=' + getActiveProperty();
+});
 document.getElementById('save-later-btn').addEventListener('click', ()=>{
   saveLocal();
   alert('Guardado. \nPuedes regresar a este mismo link cuando quieras y seguirás justo donde te quedaste.');
@@ -879,13 +934,13 @@ document.getElementById('call-btn').addEventListener('click', ()=>{
 document.getElementById('restart-btn').addEventListener('click', ()=>{
   const ok = confirm('Vas a borrar todo tu avance en el cuestionario y vas a empezar desde cero. \n¿Quieres continuar?');
   if(!ok) return;
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(stateKey(getActiveProperty()));
   location.reload();
 });
 document.getElementById('report-agree-btn').addEventListener('click', ()=>{
   // Nota: aún no manda nada a los agentes — por ahora solo confirma en pantalla,
   // mientras se termina de definir el diseño de esta vista.
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(stateKey(getActiveProperty()));
   document.getElementById('reportView').innerHTML = '<div class="bloque-label">Guardado</div><p class="bloque-intro">Tu perfil y tus notas quedaron guardados. Tu agente se va a contactar contigo pronto.</p>';
 });
 

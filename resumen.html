@@ -73,7 +73,7 @@
 <div class="wrap">
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
-    <h1>Tu resumen discovery</h1>
+    <h1 id="page-title">Tu resumen discovery</h1>
     <p>Esto es lo que compartimos con tu agente después de tu cuestionario.</p>
   </header>
 
@@ -90,8 +90,13 @@ function renderReportHtml(text){
   return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
-const saved = localStorage.getItem('tres65_last_report');
+const params = new URLSearchParams(window.location.search);
+const property = params.get('property') || localStorage.getItem('tres65_active_property') || '1';
+const saved = localStorage.getItem('tres65_property_' + property + '_report') || localStorage.getItem('tres65_last_report');
 const content = document.getElementById('content');
+if(property !== '1'){
+  document.getElementById('page-title').textContent = 'Tu resumen discovery — Propiedad ' + property;
+}
 if(saved){
   const div = document.createElement('div');
   div.className = 'report-text';

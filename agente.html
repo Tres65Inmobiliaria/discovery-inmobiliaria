@@ -87,14 +87,21 @@
   .whatsapp-btn:hover{background:#1EBE59;}
   .whatsapp-btn svg{width:20px; height:20px; flex-shrink:0;}
 
-  .back-link{
+  .met-agent-btn{
     display:block;
-    text-align:center;
+    width:100%;
     margin-top:24px;
-    font-size:13px;
-    color:var(--texto-suave);
-    text-decoration:underline;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:14px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
   }
+  .met-agent-btn:hover{background:var(--medio);}
 </style>
 </head>
 <body>
@@ -125,11 +132,15 @@
     </a>
   </div>
 
-  <a class="back-link" href="home.html">Regresar a tu progreso</a>
+  <button class="met-agent-btn" id="met-agent-btn" type="button">Ya conocí a mi agente</button>
 </div>
 
 <script>
 if(window.lucide) lucide.createIcons();
+document.getElementById('met-agent-btn').addEventListener('click', ()=>{
+  localStorage.setItem('tres65_met_agent', 'true');
+  window.location.href = 'home.html';
+});
 </script>
 </body>
 </html>
