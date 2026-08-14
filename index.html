@@ -6,6 +6,7 @@
 <title>Discovery V1 — Tres65 Inmobiliaria</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <style>
   :root{
     --profundo:#1A4F5C;
@@ -114,8 +115,7 @@
   .check-icon{display:inline-flex; flex-shrink:0; color:var(--borde); margin-left:auto;}
   .check-icon svg{display:block;}
   button.opt-btn.active .check-icon{color:var(--acento);}
-  .lead-icon{display:inline-flex; flex-shrink:0; color:var(--profundo);}
-  .lead-icon svg{display:block;}
+  .lead-icon{display:inline-flex; flex-shrink:0; width:18px; height:18px; color:var(--profundo);}
   button.opt-btn.active .lead-icon{color:var(--medio);}
   button.opt-btn:hover{border-color:var(--acento);}
   button.opt-btn.active{
@@ -305,36 +305,52 @@ Para nosotros es muy importante escuchar a nuestros clientes.</p>
 
 <script>
 const b1 = [
-  {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], req:true, hardReq:true},
-  {id:'enMerida', title:'¿Ya estás en Mérida?', options:['Sí','No'], req:true,
+  {id:'yucatan', title:'¿Buscas propiedades en la Península Yucateca?', options:['Sí, busco en la Península Yucateca','No, no busco en la Península Yucateca'], optionIcons:{'Sí, busco en la Península Yucateca':'check','No, no busco en la Península Yucateca':'x'}, req:true, hardReq:true},
+  {id:'enMerida', title:'¿Ya estás en Mérida?', options:['Sí','No'], optionIcons:{'Sí':'check','No':'x'}, req:true,
     followUpTrigger:'No', followUpLabel:'¿De dónde nos visitas?',
     followUpOptions:['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas','Otro país']},
   {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], optionIcons:{'Comprar':'home','Rentar':'key'}, req:true},
-  {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true, flow:'comprar'},
-  {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], span:true, req:true, flow:'renta'},
-  {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'], req:true},
-  {id:'presupuesto_compra', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], req:true, flow:'comprar'},
-  {id:'presupuesto_renta', title:'¿Cuál es tu monto para rentar?', options:['$15,000 a $20,000 al mes','$20,000 a $30,000 al mes','$40,000 a $50,000 al mes','$60,000 a $70,000 al mes'], req:true, flow:'renta'},
-  {id:'escrituras', title:'¿Tu monto de inversión contempla gastos relacionados con escrituración?', options:['Sí, estoy considerando los gastos de escrituración','Cuento con monto adicional para los gastos de escrituración','No tengo el conocimiento, necesito asesoría'], span:true, req:true, flow:'comprar'},
-  {id:'compra', title:'¿Cuál es tu forma de pago?', options:['Recurso propio','Crédito bancario','Infonavit','Recurso Propio / Crédito'], secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], req:true, flow:'comprar'},
-  {id:'decide', title:'¿Quién más participa en esta decisión?', options:['Decido solo/a','Mi pareja','Mis hijos','Otro familiar'], req:true},
-  {id:'ubi', title:'¿Qué zona buscas?', options:['Centro','Norte dentro de periférico','Norte después de periférico','Cercanía a la playa','Poniente','Oriente','No conozco Mérida'], span:true, req:true},
-  {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true, options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada','Casa a pie de calle','Luz natural'], req:true},
-  {id:'urgencia_compra', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'], req:true, flow:'comprar'},
-  {id:'urgencia_renta', title:'¿Qué tan pronto quieres mudarte a tu nueva renta?', options:['Inmediato','El próximo mes','Dentro de 6 meses','Sin prisa, explorando'], req:true, flow:'renta'},
-  {id:'tiempo', title:'¿Cuánto tiempo llevas buscando propiedad?', options:['Apenas empiezo','Unas semanas','Varios meses','Más de medio año'], req:true},
-  {id:'otros', title:'¿Has visto propiedades con otro agente o directo por tu cuenta?', sub:'Cualquier respuesta está bien, nos ayuda a enfocarnos en lo que de verdad te sirve.', options:['Solo con ustedes','Visito portales / Redes Sociales','También con otro agente','Por mi cuenta directamente'], req:true}
+  {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], optionIcons:{'Para habitarla':'home','Para inversión':'trending-up'}, req:true, flow:'comprar'},
+  {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], optionIcons:{'Sí, tengo una propiedad en Yucatán':'home','Voy a usar aval':'user-check','No tengo ninguna, necesito asesoría':'help-circle'}, span:true, req:true, flow:'renta'},
+  {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'],
+    optionIcons:{'Casa':'home','Departamento':'building-2','Townhouse':'building','Terreno':'trees','Oficina':'briefcase','Nave industrial':'warehouse','Casa en la playa':'palmtree','Tiempo compartido':'calendar-clock'}, req:true},
+  {id:'presupuesto_compra', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], optionIcons:{'Hasta $2M':'banknote','$2M a $4M':'banknote','$4M a $8M':'banknote','Más de $8M':'banknote'}, req:true, flow:'comprar'},
+  {id:'presupuesto_renta', title:'¿Cuál es tu monto para rentar?', options:['$15,000 a $20,000 al mes','$20,000 a $30,000 al mes','$40,000 a $50,000 al mes','$60,000 a $70,000 al mes'],
+    optionIcons:{'$15,000 a $20,000 al mes':'banknote','$20,000 a $30,000 al mes':'banknote','$40,000 a $50,000 al mes':'banknote','$60,000 a $70,000 al mes':'banknote'}, req:true, flow:'renta'},
+  {id:'escrituras', title:'¿Tu monto de inversión contempla gastos relacionados con escrituración?', options:['Sí, estoy considerando los gastos de escrituración','Cuento con monto adicional para los gastos de escrituración','No tengo el conocimiento, necesito asesoría'],
+    optionIcons:{'Sí, estoy considerando los gastos de escrituración':'file-check','Cuento con monto adicional para los gastos de escrituración':'wallet','No tengo el conocimiento, necesito asesoría':'help-circle'}, span:true, req:true, flow:'comprar'},
+  {id:'compra', title:'¿Cuál es tu forma de pago?', options:['Recurso propio','Crédito bancario','Infonavit','Recurso Propio / Crédito'],
+    optionIcons:{'Recurso propio':'wallet','Crédito bancario':'credit-card','Infonavit':'landmark','Recurso Propio / Crédito':'shuffle'},
+    secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], secondaryIcons:{'Fideicomiso':'file-text','Fovissste':'landmark','Banjercito':'landmark','Issfam':'landmark'}, req:true, flow:'comprar'},
+  {id:'decide', title:'¿Quién más participa en esta decisión?', options:['Decido solo/a','Mi pareja','Mis hijos','Otro familiar'], optionIcons:{'Decido solo/a':'user','Mi pareja':'heart','Mis hijos':'baby','Otro familiar':'users'}, req:true},
+  {id:'ubi', title:'¿Qué zona buscas?', options:['Centro','Norte dentro de periférico','Norte después de periférico','Cercanía a la playa','Poniente','Oriente','No conozco Mérida'],
+    optionIcons:{'Centro':'map-pin','Norte dentro de periférico':'map-pin','Norte después de periférico':'map-pin','Cercanía a la playa':'palmtree','Poniente':'map-pin','Oriente':'map-pin','No conozco Mérida':'help-circle'}, span:true, req:true},
+  {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true,
+    options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada','Casa a pie de calle','Luz natural'],
+    optionIcons:{'Amenidades':'sparkles','Alberca propia':'waves','Paneles solares':'zap','Garage / cochera':'car','Jardín':'leaf','Roof garden':'building','Seguridad':'shield','Recámara en planta baja':'bed','Una sola planta':'layers','Condominio / privada':'building-2','Casa a pie de calle':'door-open','Luz natural':'sun'}, req:true},
+  {id:'urgencia_compra', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'],
+    optionIcons:{'Inmediato':'zap','En preventa':'hammer','Dentro de los próximos 6 meses':'calendar','Sin prisa, explorando':'compass'}, req:true, flow:'comprar'},
+  {id:'urgencia_renta', title:'¿Qué tan pronto quieres mudarte a tu nueva renta?', options:['Inmediato','El próximo mes','Dentro de 6 meses','Sin prisa, explorando'],
+    optionIcons:{'Inmediato':'zap','El próximo mes':'calendar-days','Dentro de 6 meses':'calendar','Sin prisa, explorando':'compass'}, req:true, flow:'renta'},
+  {id:'tiempo', title:'¿Cuánto tiempo llevas buscando propiedad?', options:['Apenas empiezo','Unas semanas','Varios meses','Más de medio año'],
+    optionIcons:{'Apenas empiezo':'flag','Unas semanas':'calendar-days','Varios meses':'calendar','Más de medio año':'hourglass'}, req:true},
+  {id:'otros', title:'¿Has visto propiedades con otro agente o directo por tu cuenta?', sub:'Cualquier respuesta está bien, nos ayuda a enfocarnos en lo que de verdad te sirve.', options:['Solo con ustedes','Visito portales / Redes Sociales','También con otro agente','Por mi cuenta directamente'],
+    optionIcons:{'Solo con ustedes':'handshake','Visito portales / Redes Sociales':'globe','También con otro agente':'users','Por mi cuenta directamente':'user'}, req:true}
 ];
 
 const b2 = [
-  {id:'paraquien', title:'¿Para quién es esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia']},
-  {id:'domingo', title:'Imagina un domingo ideal en tu nueva propiedad. ¿Cómo se ve?', options:['Un día tranquilo, en silencio','Recibiendo a hijos y nietos','Al aire libre, jardín, alberca o terraza','Visitas de amigos, hosteando']},
-  {id:'alejarse', title:'¿De qué te gustaría alejarte?', options:['Del ruido y el tráfico','De las escaleras','Del mantenimiento','De vivir lejos de mis seres queridos']},
-  {id:'quienvive', title:'¿Quién más va a pasar tiempo ahí contigo?', options:['Solo yo','Mi pareja','Familia','Hijos o nietos que visitan seguido','Un cuidador o asistente']},
+  {id:'paraquien', title:'¿Para quién es esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia'], optionIcons:{'Para mí':'user','Un familiar':'users','Mis hijos':'baby','Regalo o herencia':'gift'}},
+  {id:'domingo', title:'Imagina un domingo ideal en tu nueva propiedad. ¿Cómo se ve?', options:['Un día tranquilo, en silencio','Recibiendo a hijos y nietos','Al aire libre, jardín, alberca o terraza','Visitas de amigos, hosteando'],
+    optionIcons:{'Un día tranquilo, en silencio':'coffee','Recibiendo a hijos y nietos':'users','Al aire libre, jardín, alberca o terraza':'trees','Visitas de amigos, hosteando':'party-popper'}},
+  {id:'alejarse', title:'¿De qué te gustaría alejarte?', options:['Del ruido y el tráfico','De las escaleras','Del mantenimiento','De vivir lejos de mis seres queridos'],
+    optionIcons:{'Del ruido y el tráfico':'volume-x','De las escaleras':'accessibility','Del mantenimiento':'wrench','De vivir lejos de mis seres queridos':'heart'}},
+  {id:'quienvive', title:'¿Quién más va a pasar tiempo ahí contigo?', options:['Solo yo','Mi pareja','Familia','Hijos o nietos que visitan seguido','Un cuidador o asistente'],
+    optionIcons:{'Solo yo':'user','Mi pareja':'heart','Familia':'users','Hijos o nietos que visitan seguido':'baby','Un cuidador o asistente':'user-check'}},
   {id:'cuantagente', title:'¿Cuánta gente habitaría la propiedad?', text:true, placeholder:'Ej. 2 personas y a veces se quedan los nietos'},
   {id:'mueble', title:'¿Hay algún artículo que definitivamente te llevarías contigo a cualquier propiedad?', text:true, placeholder:'Ej. la mesa del comedor familiar'},
-  {id:'comparacion', title:'De las propiedades que ya viste, ¿cuál se sintió más tuya, aunque no fuera la mejor en papel?', options:['No he visto más propiedades'], span:true, text:true, placeholder:'Cuéntanos cuál y por qué'},
-  {id:'decide2', title:'Cuando decides algo grande, ¿cómo eres normalmente?', options:['Me guío por los números (ROI)','Comparo todas mis posibilidades','Decido fríamente','Necesito el visto bueno de mi familia']}
+  {id:'comparacion', title:'De las propiedades que ya viste, ¿cuál se sintió más tuya, aunque no fuera la mejor en papel?', options:['No he visto más propiedades'], optionIcons:{'No he visto más propiedades':'eye-off'}, span:true, text:true, placeholder:'Cuéntanos cuál y por qué'},
+  {id:'decide2', title:'Cuando decides algo grande, ¿cómo eres normalmente?', options:['Me guío por los números (ROI)','Comparo todas mis posibilidades','Decido fríamente','Necesito el visto bueno de mi familia'],
+    optionIcons:{'Me guío por los números (ROI)':'trending-up','Comparo todas mis posibilidades':'list-checks','Decido fríamente':'snowflake','Necesito el visto bueno de mi familia':'users'}}
 ];
 
 const intro1 = {label:'Bloque 1', tag:null, text:'Esta parte es clave para afinar tu búsqueda desde el inicio. Entre más claros tengamos estos puntos, mejores opciones podremos presentarte. \nY si algo no lo tienes definido todavía, no te preocupes: lo vemos juntos.'};
@@ -365,16 +381,11 @@ function makeCheckIcon(){
   return span;
 }
 
-const LUCIDE = {
-  home: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
-  key: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>'
-};
-
 function makeLeadIcon(name){
-  const span = document.createElement('span');
-  span.className = 'lead-icon';
-  span.innerHTML = LUCIDE[name] || '';
-  return span;
+  const icon = document.createElement('i');
+  icon.className = 'lead-icon';
+  icon.setAttribute('data-lucide', name);
+  return icon;
 }
 
 function renderQuestion(q, index, container){
@@ -408,6 +419,7 @@ function renderQuestion(q, index, container){
       btn.className = 'opt-btn';
       btn.type = 'button';
       if(q.rank){
+        if(q.optionIcons && q.optionIcons[opt]) btn.appendChild(makeLeadIcon(q.optionIcons[opt]));
         const rk = document.createElement('span');
         rk.className = 'rk';
         btn.appendChild(rk);
@@ -512,6 +524,7 @@ function renderQuestion(q, index, container){
         const btn = document.createElement('button');
         btn.className = 'opt-btn';
         btn.type = 'button';
+        if(q.secondaryIcons && q.secondaryIcons[opt]) btn.appendChild(makeLeadIcon(q.secondaryIcons[opt]));
         const label = document.createElement('span');
         label.textContent = opt;
         btn.appendChild(label);
@@ -828,6 +841,7 @@ document.getElementById('restart-btn').addEventListener('click', ()=>{
 
 updateProgress();
 showPage();
+if(window.lucide) lucide.createIcons();
 </script>
 </body>
 </html>
