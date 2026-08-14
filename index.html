@@ -114,6 +114,9 @@
   .check-icon{display:inline-flex; flex-shrink:0; color:var(--borde); margin-left:auto;}
   .check-icon svg{display:block;}
   button.opt-btn.active .check-icon{color:var(--acento);}
+  .lead-icon{display:inline-flex; flex-shrink:0; color:var(--profundo);}
+  .lead-icon svg{display:block;}
+  button.opt-btn.active .lead-icon{color:var(--medio);}
   button.opt-btn:hover{border-color:var(--acento);}
   button.opt-btn.active{
     border-color:var(--acento);
@@ -306,7 +309,7 @@ const b1 = [
   {id:'enMerida', title:'¿Ya estás en Mérida?', options:['Sí','No'], req:true,
     followUpTrigger:'No', followUpLabel:'¿De dónde nos visitas?',
     followUpOptions:['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas','Otro país']},
-  {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], req:true},
+  {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], optionIcons:{'Comprar':'home','Rentar':'key'}, req:true},
   {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], req:true, flow:'comprar'},
   {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], span:true, req:true, flow:'renta'},
   {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'], req:true},
@@ -362,6 +365,18 @@ function makeCheckIcon(){
   return span;
 }
 
+const LUCIDE = {
+  home: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  key: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>'
+};
+
+function makeLeadIcon(name){
+  const span = document.createElement('span');
+  span.className = 'lead-icon';
+  span.innerHTML = LUCIDE[name] || '';
+  return span;
+}
+
 function renderQuestion(q, index, container){
   state[q.id] = q.multi ? {sel:new Set(), text:'', followUp:''} : q.rank ? {order:[], text:'', followUp:''} : {sel:null, text:'', followUp:''};
   const block = document.createElement('div');
@@ -400,6 +415,7 @@ function renderQuestion(q, index, container){
         label.textContent = opt;
         btn.appendChild(label);
       } else {
+        if(q.optionIcons && q.optionIcons[opt]) btn.appendChild(makeLeadIcon(q.optionIcons[opt]));
         const label = document.createElement('span');
         label.textContent = opt;
         btn.appendChild(label);
