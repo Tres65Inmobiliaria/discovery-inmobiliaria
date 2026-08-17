@@ -137,16 +137,48 @@
     flex-direction:column;
     align-items:stretch;
     gap:10px;
-    background:#B2543D;
+    background:var(--medio);
     color:#fff;
     cursor:default;
   }
   .property-step-label{display:flex; align-items:center; gap:8px; font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px;}
   .property-step-label i{width:18px; height:18px; flex-shrink:0;}
-  .property-carousel{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; margin:0 -4px;}
-  .property-carousel img{height:120px; width:auto; border-radius:8px; flex-shrink:0;}
+
+  .property-carousel{position:relative;}
+  .property-carousel-img{width:100%; height:180px; object-fit:cover; border-radius:8px; display:block;}
+  .property-carousel-arrow{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    border:none;
+    background:rgba(0,0,0,.45);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+  }
+  .property-carousel-arrow:hover{background:rgba(0,0,0,.65);}
+  .property-carousel-arrow.prev{left:8px;}
+  .property-carousel-arrow.next{right:8px;}
+  .property-carousel-arrow svg{width:18px; height:18px;}
+  .property-carousel-dots{position:absolute; bottom:8px; left:0; right:0; display:flex; justify-content:center; gap:5px;}
+  .property-carousel-dots span{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.5);}
+  .property-carousel-dots span.active{background:#fff;}
+
   .property-step-title{font-family:'Montserrat',sans-serif; font-size:16px; font-weight:600;}
   .property-step-details{font-size:13px; opacity:.9;}
+  .property-step-features{display:flex; flex-wrap:wrap; gap:6px;}
+  .property-step-features span{
+    font-size:11px;
+    font-weight:600;
+    background:rgba(255,255,255,.18);
+    padding:4px 10px;
+    border-radius:20px;
+  }
   .property-step-link{color:#fff; font-size:13px; text-decoration:underline; align-self:flex-start;}
 
   .property-step.discarded{
@@ -165,6 +197,8 @@
     padding:10px 12px;
     color:var(--texto);
   }
+  .property-step-reason-text{margin:0 0 8px;}
+  .property-step-reason-link{color:var(--acento); font-size:12px; font-weight:600; text-decoration:underline;}
   .property-step.discarded.open .property-step-reason{display:block;}
 </style>
 </head>
@@ -195,6 +229,51 @@ function fmtMoney(n){
   return '$' + Number(n).toLocaleString('es-MX', {maximumFractionDigits:0});
 }
 
+function buildImageCarousel(images, alt){
+  const wrap = document.createElement('div');
+  wrap.className = 'property-carousel';
+  let idx = 0;
+
+  const img = document.createElement('img');
+  img.className = 'property-carousel-img';
+  img.src = images[0];
+  img.alt = alt || 'Propiedad';
+  wrap.appendChild(img);
+
+  if(images.length > 1){
+    const prev = document.createElement('button');
+    prev.className = 'property-carousel-arrow prev';
+    prev.type = 'button';
+    prev.innerHTML = '<i data-lucide="chevron-left"></i>';
+
+    const next = document.createElement('button');
+    next.className = 'property-carousel-arrow next';
+    next.type = 'button';
+    next.innerHTML = '<i data-lucide="chevron-right"></i>';
+
+    const dots = document.createElement('div');
+    dots.className = 'property-carousel-dots';
+    images.forEach((_, i)=>{
+      const dot = document.createElement('span');
+      if(i === 0) dot.className = 'active';
+      dots.appendChild(dot);
+    });
+
+    function update(){
+      img.src = images[idx];
+      Array.from(dots.children).forEach((d,i)=> d.classList.toggle('active', i === idx));
+    }
+    prev.addEventListener('click', e=>{ e.stopPropagation(); idx = (idx - 1 + images.length) % images.length; update(); });
+    next.addEventListener('click', e=>{ e.stopPropagation(); idx = (idx + 1) % images.length; update(); });
+
+    wrap.appendChild(prev);
+    wrap.appendChild(next);
+    wrap.appendChild(dots);
+  }
+
+  return wrap;
+}
+
 function buildPropertyStepCard(ficha){
   const discarded = !!ficha.property_discarded;
   const p = ficha.property;
@@ -207,15 +286,7 @@ function buildPropertyStepCard(ficha){
   card.appendChild(label);
 
   if(p && p.images && p.images.length && !discarded){
-    const carousel = document.createElement('div');
-    carousel.className = 'property-carousel';
-    p.images.forEach(url=>{
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = p.title || 'Propiedad';
-      carousel.appendChild(img);
-    });
-    card.appendChild(carousel);
+    card.appendChild(buildImageCarousel(p.images, p.title));
   }
 
   const title = document.createElement('div');
@@ -234,6 +305,17 @@ function buildPropertyStepCard(ficha){
     if(p.construction_size) bits.push(p.construction_size + ' m²');
     details.textContent = bits.join(' · ');
     card.appendChild(details);
+
+    if(p.top_features && p.top_features.length){
+      const features = document.createElement('div');
+      features.className = 'property-step-features';
+      p.top_features.forEach(f=>{
+        const chip = document.createElement('span');
+        chip.textContent = f;
+        features.appendChild(chip);
+      });
+      card.appendChild(features);
+    }
   }
 
   if(!discarded){
@@ -245,10 +327,26 @@ function buildPropertyStepCard(ficha){
     link.textContent = 'Ver ficha completa';
     card.appendChild(link);
   } else {
-    const reason = document.createElement('div');
-    reason.className = 'property-step-reason';
-    reason.textContent = ficha.discard_reason || 'Tu agente no dio un motivo específico.';
-    card.appendChild(reason);
+    const reasonBox = document.createElement('div');
+    reasonBox.className = 'property-step-reason';
+
+    const reasonText = document.createElement('p');
+    reasonText.className = 'property-step-reason-text';
+    reasonText.textContent = ficha.discard_reason || 'Tu agente no dio un motivo específico.';
+    reasonBox.appendChild(reasonText);
+
+    const fichaLink = (p && p.public_url) || ficha.property_raw;
+    if(fichaLink){
+      const link = document.createElement('a');
+      link.className = 'property-step-reason-link';
+      link.href = fichaLink;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = 'Ver ficha de la propiedad';
+      reasonBox.appendChild(link);
+    }
+
+    card.appendChild(reasonBox);
     card.addEventListener('click', ()=>{ card.classList.toggle('open'); });
   }
 

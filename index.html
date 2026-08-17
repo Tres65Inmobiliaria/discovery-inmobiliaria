@@ -84,12 +84,9 @@
   }
   .property-banner{
     font-family:'Montserrat',sans-serif;
-    font-size:12px;
+    font-size:13px;
     font-weight:600;
-    color:#fff;
-    background:var(--acento);
-    padding:8px 14px;
-    border-radius:20px;
+    color:#C0453A;
     text-align:center;
     margin:0 auto 20px;
     display:block;
@@ -388,7 +385,15 @@ const b1 = [
     secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], secondaryIcons:{'Fideicomiso':'file-text','Fovissste':'landmark','Banjercito':'landmark','Issfam':'landmark'}, req:true, flow:'comprar'},
   {id:'decide', title:'¿Quién más participa en esta decisión?', options:['Decido solo/a','Mi pareja','Mis hijos','Otro familiar'], optionIcons:{'Decido solo/a':'user','Mi pareja':'heart','Mis hijos':'baby','Otro familiar':'users'}, req:true},
   {id:'ubi', title:'¿Qué zona buscas?', options:['Centro','Norte dentro de periférico','Norte después de periférico','Cercanía a la playa','Poniente','Oriente','No conozco Mérida'],
-    optionIcons:{'Centro':'map-pin','Norte dentro de periférico':'map-pin','Norte después de periférico':'map-pin','Cercanía a la playa':'palmtree','Poniente':'map-pin','Oriente':'map-pin','No conozco Mérida':'help-circle'}, span:true, req:true},
+    optionIcons:{'Centro':'map-pin','Norte dentro de periférico':'map-pin','Norte después de periférico':'map-pin','Cercanía a la playa':'palmtree','Poniente':'map-pin','Oriente':'map-pin','No conozco Mérida':'help-circle'}, span:true, req:true,
+    optionFollowUps:{
+      'Centro':['Santa Lucía','Santa Ana','Santiago','La Mejorada','San Cristóbal','San Juan','San Sebastián','García Ginerés','La Ermita','Paseo Montejo','Otra'],
+      'Norte dentro de periférico':['México','Altabrisa','Montebello','Yucatán Country Club','Francisco de Montejo','Vista Alegre Norte','Campestre','Otra'],
+      'Norte después de periférico':['Temozón Norte','Cholul','Conkal','Dzityá','Komchén','Real Montejo','Otra'],
+      'Poniente':['Caucel','Melchor Ocampo','Emiliano Zapata Poniente','Otra'],
+      'Oriente':['Miguel Alemán','Vergel','Mulsay','San Pedro Noh Pech','Otra'],
+      'Cercanía a la playa':['Progreso','Chicxulub Puerto','Chelem','Chuburná Puerto','Telchac Puerto','Otra']
+    }, followUpLabel:'¿Qué colonia?'},
   {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true,
     options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada','Casa a pie de calle','Luz natural'],
     optionIcons:{'Amenidades':'sparkles','Alberca propia':'waves','Paneles solares':'zap','Garage / cochera':'car','Jardín':'leaf','Roof garden':'building','Seguridad':'shield','Recámara en planta baja':'bed','Una sola planta':'layers','Condominio / privada':'building-2','Casa a pie de calle':'door-open','Luz natural':'sun'}, req:true},
@@ -528,12 +533,36 @@ function renderQuestion(q, index, container){
             }
           }
         }
+        if(q.optionFollowUps){
+          const fu = block.querySelector('.followup');
+          const sel = fu && fu.querySelector('select');
+          const colonias = q.optionFollowUps[opt];
+          state[q.id].followUp = '';
+          if(fu && sel && colonias){
+            sel.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Selecciona una opción';
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            sel.appendChild(placeholder);
+            colonias.forEach(c=>{
+              const o = document.createElement('option');
+              o.value = c;
+              o.textContent = c;
+              sel.appendChild(o);
+            });
+            fu.style.display = 'block';
+          } else if(fu){
+            fu.style.display = 'none';
+          }
+        }
       });
       grid.appendChild(btn);
     });
     block.appendChild(grid);
 
-    if(q.followUpOptions){
+    if(q.followUpOptions || q.optionFollowUps){
       const fu = document.createElement('div');
       fu.className = 'followup';
       const fuLabel = document.createElement('label');
@@ -546,12 +575,14 @@ function renderQuestion(q, index, container){
       placeholder.disabled = true;
       placeholder.selected = true;
       select.appendChild(placeholder);
-      q.followUpOptions.forEach(opt=>{
-        const o = document.createElement('option');
-        o.value = opt;
-        o.textContent = opt;
-        select.appendChild(o);
-      });
+      if(q.followUpOptions){
+        q.followUpOptions.forEach(opt=>{
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          select.appendChild(o);
+        });
+      }
       select.addEventListener('change', ()=>{
         state[q.id].followUp = select.value;
         saveLocal();
@@ -701,7 +732,7 @@ function buildAnswers(){
     else if(q.rank) answer = s.order;
     else answer = s.sel;
     let notas = s.text || '';
-    if(q.followUpOptions && s.followUp) notas += (notas ? ' | ' : '') + (q.followUpLabel || 'Detalle') + ': ' + s.followUp;
+    if((q.followUpOptions || q.optionFollowUps) && s.followUp) notas += (notas ? ' | ' : '') + (q.followUpLabel || 'Detalle') + ': ' + s.followUp;
     out[q.id] = {title:q.title, answer:answer, notas:notas};
   });
   return out;
@@ -745,6 +776,30 @@ function restoreLocal(){
       const sel = fu && fu.querySelector('select');
       if(sel) sel.value = state[q.id].followUp;
       if(fu) fu.style.display = (state[q.id].sel === q.followUpTrigger) ? 'block' : 'none';
+    }
+    if(q.optionFollowUps){
+      const fu = block && block.querySelector('.followup');
+      const sel = fu && fu.querySelector('select');
+      const colonias = q.optionFollowUps[state[q.id].sel];
+      if(fu && sel && colonias){
+        sel.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Selecciona una opción';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        sel.appendChild(placeholder);
+        colonias.forEach(c=>{
+          const o = document.createElement('option');
+          o.value = c;
+          o.textContent = c;
+          sel.appendChild(o);
+        });
+        sel.value = state[q.id].followUp;
+        fu.style.display = 'block';
+      } else if(fu){
+        fu.style.display = 'none';
+      }
     }
   });
   yucatanDisqualified = !!data.yucatanDisqualified;
