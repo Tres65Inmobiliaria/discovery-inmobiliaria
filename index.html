@@ -384,15 +384,15 @@ const b1 = [
     optionIcons:{'Recurso propio':'wallet','Crédito bancario':'credit-card','Infonavit':'landmark','Recurso Propio / Crédito':'shuffle'},
     secondary:['Fideicomiso','Fovissste','Banjercito','Issfam'], secondaryIcons:{'Fideicomiso':'file-text','Fovissste':'landmark','Banjercito':'landmark','Issfam':'landmark'}, req:true, flow:'comprar'},
   {id:'decide', title:'¿Quién más participa en esta decisión?', options:['Decido solo/a','Mi pareja','Mis hijos','Otro familiar'], optionIcons:{'Decido solo/a':'user','Mi pareja':'heart','Mis hijos':'baby','Otro familiar':'users'}, req:true},
-  {id:'ubi', title:'¿Qué zona buscas?', options:['Centro','Norte dentro de periférico','Norte después de periférico','Cercanía a la playa','Poniente','Oriente','No conozco Mérida'],
-    optionIcons:{'Centro':'map-pin','Norte dentro de periférico':'map-pin','Norte después de periférico':'map-pin','Cercanía a la playa':'palmtree','Poniente':'map-pin','Oriente':'map-pin','No conozco Mérida':'help-circle'}, span:true, req:true,
+  {id:'ubi', title:'¿Qué zona buscas?', options:['Centro','Norte dentro de periférico','Norte después de periférico','Poniente','Oriente','Cercanía a la playa','No conozco Mérida'],
+    optionIcons:{'Centro':'map-pin','Norte dentro de periférico':'map-pin','Norte después de periférico':'map-pin','Poniente':'map-pin','Oriente':'map-pin','Cercanía a la playa':'palmtree','No conozco Mérida':'help-circle'}, span:true, req:true,
     optionFollowUps:{
       'Centro':['Santa Lucía','Santa Ana','Santiago','La Mejorada','San Cristóbal','San Juan','San Sebastián','García Ginerés','La Ermita','Paseo Montejo','Otra'],
       'Norte dentro de periférico':['México','Altabrisa','Montebello','Yucatán Country Club','Francisco de Montejo','Vista Alegre Norte','Campestre','Otra'],
       'Norte después de periférico':['Temozón Norte','Cholul','Conkal','Dzityá','Komchén','Real Montejo','Otra'],
       'Poniente':['Caucel','Melchor Ocampo','Emiliano Zapata Poniente','Otra'],
       'Oriente':['Miguel Alemán','Vergel','Mulsay','San Pedro Noh Pech','Otra'],
-      'Cercanía a la playa':['Progreso','Chicxulub Puerto','Chelem','Chuburná Puerto','Telchac Puerto','Otra']
+      'Cercanía a la playa':['Chelem','Chuburná','Chicxulub','Progreso','San Benito','Uaymitún','Carretera Mérida-Progreso','Otra']
     }, followUpLabel:'¿Qué colonia?'},
   {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true,
     options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada','Casa a pie de calle','Luz natural'],
