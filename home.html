@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script type="module" src="firebase-sync.js"></script>
 <style>
   :root{
     --profundo:#1A4F5C;
@@ -225,6 +226,13 @@ if(clientToken) localStorage.setItem('tres65_client_token', clientToken);
 const activeToken = clientToken || localStorage.getItem('tres65_client_token');
 const agentHref = activeToken ? ('agente.html?client=' + activeToken) : 'agente.html';
 
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
 function fmtMoney(n){
   return '$' + Number(n).toLocaleString('es-MX', {maximumFractionDigits:0});
 }
@@ -353,8 +361,7 @@ function buildPropertyStepCard(ficha){
   return card;
 }
 
-const metAgent = localStorage.getItem('tres65_met_agent') === 'true';
-const propertyCount = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
+let metAgent, propertyCount;
 const colors = ['#1A4F5C', '#2AA898'];
 
 function stepsForProperty(propertyId, blocking){
@@ -438,6 +445,13 @@ function renderStepper(container, cards){
 }
 
 async function init(){
+  await waitForSync();
+  const uid = await window.tres65Sync.init(activeToken);
+  if(uid) await window.tres65Sync.pull(uid);
+
+  metAgent = localStorage.getItem('tres65_met_agent') === 'true';
+  propertyCount = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
+
   let ficha = null;
   if(activeToken){
     try{

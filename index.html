@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script type="module" src="firebase-sync.js"></script>
 <style>
   :root{
     --profundo:#1A4F5C;
@@ -715,6 +716,18 @@ function getPropertyCount(){ return parseInt(localStorage.getItem('tres65_proper
 const urlProperty = new URLSearchParams(window.location.search).get('property');
 if(urlProperty) setActiveProperty(parseInt(urlProperty, 10));
 
+const urlClientToken = new URLSearchParams(window.location.search).get('client');
+if(urlClientToken) localStorage.setItem('tres65_client_token', urlClientToken);
+const activeClientToken = urlClientToken || localStorage.getItem('tres65_client_token');
+let tres65Uid = null;
+
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
 // Migra el guardado de la versión anterior (una sola propiedad) al nuevo esquema por propiedad.
 if(!localStorage.getItem(stateKey(1)) && localStorage.getItem('tres65_discovery_state')){
   localStorage.setItem(stateKey(1), localStorage.getItem('tres65_discovery_state'));
@@ -750,6 +763,7 @@ function saveLocal(){
     page: typeof currentPage === 'number' ? currentPage : 0,
     snapshot, yucatanDisqualified
   }));
+  if(tres65Uid) window.tres65Sync.push(tres65Uid);
 }
 
 function restoreLocal(){
@@ -855,13 +869,6 @@ makeIntroPage(2, intro2);
 b2.forEach((q,i)=>makeQuestionPage(q,i));
 
 let currentPage = 0;
-const alreadyCompleted = !!localStorage.getItem(reportKey(getActiveProperty()));
-if(alreadyCompleted){
-  document.getElementById('popup-segunda').style.display = 'flex';
-} else {
-  const restoredPage = restoreLocal();
-  if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
-}
 
 function showPage(){
   pageEls.forEach((el,i)=>{ el.style.display = (i===currentPage ? 'block' : 'none'); });
@@ -895,6 +902,7 @@ function renderReportHtml(text){
 function showReport(perfilText){
   localStorage.setItem(reportKey(getActiveProperty()), perfilText);
   localStorage.setItem('tres65_last_report', perfilText);
+  if(tres65Uid) window.tres65Sync.push(tres65Uid);
   document.querySelector('header').style.display = 'none';
   document.querySelector('.nav-bar').style.display = 'none';
   document.getElementById('stage').style.display = 'none';
@@ -1020,9 +1028,23 @@ document.getElementById('report-agree-btn').addEventListener('click', ()=>{
   document.getElementById('reportView').innerHTML = '<div class="bloque-label">Guardado</div><p class="bloque-intro">Tu perfil y tus notas quedaron guardados. Tu agente se va a contactar contigo pronto.</p>';
 });
 
-updateProgress();
-showPage();
-if(window.lucide) lucide.createIcons();
+(async function boot(){
+  await waitForSync();
+  tres65Uid = await window.tres65Sync.init(activeClientToken);
+  if(tres65Uid) await window.tres65Sync.pull(tres65Uid);
+
+  const alreadyCompleted = !!localStorage.getItem(reportKey(getActiveProperty()));
+  if(alreadyCompleted){
+    document.getElementById('popup-segunda').style.display = 'flex';
+  } else {
+    const restoredPage = restoreLocal();
+    if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
+  }
+
+  updateProgress();
+  showPage();
+  if(window.lucide) lucide.createIcons();
+})();
 </script>
 </body>
 </html>

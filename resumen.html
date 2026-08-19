@@ -99,6 +99,7 @@
   <a class="back-link" href="home.html">Regresar a tu progreso</a>
 </div>
 
+<script type="module" src="firebase-sync.js"></script>
 <script>
 function escapeHtml(str){
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -107,22 +108,37 @@ function renderReportHtml(text){
   return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
-const params = new URLSearchParams(window.location.search);
-const property = params.get('property') || localStorage.getItem('tres65_active_property') || '1';
-const saved = localStorage.getItem('tres65_property_' + property + '_report') || localStorage.getItem('tres65_last_report');
-const content = document.getElementById('content');
-if(property !== '1'){
-  document.getElementById('page-title').textContent = 'Tu resumen discovery — Propiedad ' + property;
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
 }
-if(saved){
-  const div = document.createElement('div');
-  div.className = 'report-text';
-  div.innerHTML = renderReportHtml(saved);
-  content.appendChild(div);
-  document.getElementById('new-property-btn').style.display = 'block';
-} else {
-  content.innerHTML = '<p class="empty-note">Todavía no tienes un resumen generado. Completa el cuestionario de discovery para verlo aquí.</p>';
-}
+
+(async function boot(){
+  await waitForSync();
+  const clientToken = new URLSearchParams(window.location.search).get('client') || localStorage.getItem('tres65_client_token');
+  if(new URLSearchParams(window.location.search).get('client')) localStorage.setItem('tres65_client_token', clientToken);
+  const uid = await window.tres65Sync.init(clientToken);
+  if(uid) await window.tres65Sync.pull(uid);
+
+  const params = new URLSearchParams(window.location.search);
+  const property = params.get('property') || localStorage.getItem('tres65_active_property') || '1';
+  const saved = localStorage.getItem('tres65_property_' + property + '_report') || localStorage.getItem('tres65_last_report');
+  const content = document.getElementById('content');
+  if(property !== '1'){
+    document.getElementById('page-title').textContent = 'Tu resumen discovery — Propiedad ' + property;
+  }
+  if(saved){
+    const div = document.createElement('div');
+    div.className = 'report-text';
+    div.innerHTML = renderReportHtml(saved);
+    content.appendChild(div);
+    document.getElementById('new-property-btn').style.display = 'block';
+  } else {
+    content.innerHTML = '<p class="empty-note">Todavía no tienes un resumen generado. Completa el cuestionario de discovery para verlo aquí.</p>';
+  }
+})();
 
 document.getElementById('new-property-btn').addEventListener('click', ()=>{
   const count = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
