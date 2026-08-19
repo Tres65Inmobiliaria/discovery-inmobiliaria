@@ -56,12 +56,29 @@ async function init(fichaToken){
   });
 }
 
+function clearLocalProgress(){
+  const keys = [];
+  for(let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if(k && (k.startsWith("tres65_property_") || k === "tres65_met_agent" || k === "tres65_last_report")){
+      keys.push(k);
+    }
+  }
+  keys.forEach(k => localStorage.removeItem(k));
+  localStorage.setItem("tres65_property_count", "1");
+}
+
 async function pull(uid){
   if(!uid) return null;
   try{
     const snap = await getDoc(doc(db, "users", uid));
-    if(!snap.exists()) return null;
+    if(!snap.exists()){
+      // Identidad nueva sin nada guardado — no dejar restos de otra sesión/cliente.
+      clearLocalProgress();
+      return null;
+    }
     const data = snap.data();
+    clearLocalProgress();
 
     if(typeof data.metAgent === "boolean"){
       localStorage.setItem("tres65_met_agent", data.metAgent ? "true" : "false");
