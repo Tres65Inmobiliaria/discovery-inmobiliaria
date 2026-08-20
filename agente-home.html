@@ -584,14 +584,30 @@ async function boot(){
     }
   });
 
-  function wireResultClose(closeId, wrapId){
+  function wireResultClose(closeId, wrapId, inputId){
     document.getElementById(closeId).addEventListener('click', ()=>{
       document.getElementById(wrapId).classList.remove('open');
+      document.getElementById(inputId).value = '';
     });
   }
-  wireResultClose('tool-search-close', 'tool-search-result-wrap');
-  wireResultClose('tool-legal-close', 'tool-legal-result-wrap');
-  wireResultClose('tool-link-close', 'tool-link-result-wrap');
+  wireResultClose('tool-search-close', 'tool-search-result-wrap', 'tool-search-input');
+  wireResultClose('tool-legal-close', 'tool-legal-result-wrap', 'tool-legal-input');
+  wireResultClose('tool-link-close', 'tool-link-result-wrap', 'tool-link-input');
+
+  function submitOnEnter(inputId, btnId, {allowNewline} = {}){
+    document.getElementById(inputId).addEventListener('keydown', (e)=>{
+      if(e.key !== 'Enter') return;
+      if(allowNewline && e.shiftKey) return;
+      e.preventDefault();
+      document.getElementById(btnId).click();
+    });
+  }
+  submitOnEnter('tool-search-input', 'tool-search-btn', {allowNewline: true});
+  submitOnEnter('tool-legal-input', 'tool-legal-btn', {allowNewline: true});
+  submitOnEnter('tool-link-input', 'tool-link-btn');
+  submitOnEnter('client-name', 'modal-save');
+  submitOnEnter('client-phone', 'modal-save');
+  submitOnEnter('client-property', 'modal-save');
 
   function wireTool(btnId, inputId, resultId, run, busyLabel){
     const btn = document.getElementById(btnId);
