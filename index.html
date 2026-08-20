@@ -409,17 +409,34 @@ const b1 = [
 ];
 
 const b2 = [
-  {id:'paraquien', title:'¿Para quién es esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia'], optionIcons:{'Para mí':'user','Un familiar':'users','Mis hijos':'baby','Regalo o herencia':'gift'}},
-  {id:'domingo', title:'Imagina un domingo ideal en tu nueva propiedad. ¿Cómo se ve?', options:['Un día tranquilo, en silencio','Recibiendo a hijos y nietos','Al aire libre, jardín, alberca o terraza','Visitas de amigos, hosteando'],
+  {id:'paraquien', title:'¿Quién haría goce de esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia','Clientes (propiedad de inversión)'],
+    optionIcons:{'Para mí':'user','Un familiar':'users','Mis hijos':'baby','Regalo o herencia':'gift','Clientes (propiedad de inversión)':'briefcase'}},
+  {id:'domingo', title:'Imagina un domingo ideal en tu nueva propiedad. ¿Cómo se ve?',
+    titleAlt:'Imagina un domingo ideal del cliente en esta propiedad. ¿Cómo se ve?',
+    options:['Un día tranquilo, en silencio','Recibiendo a hijos y nietos','Al aire libre, jardín, alberca o terraza','Visitas de amigos, hosteando'],
     optionIcons:{'Un día tranquilo, en silencio':'coffee','Recibiendo a hijos y nietos':'users','Al aire libre, jardín, alberca o terraza':'trees','Visitas de amigos, hosteando':'party-popper'}},
-  {id:'alejarse', title:'¿De qué te gustaría alejarte?', options:['Del ruido y el tráfico','De las escaleras','Del mantenimiento','De vivir lejos de mis seres queridos'],
+  {id:'alejarse', title:'¿De qué te gustaría alejarte?',
+    titleAlt:'¿De qué le gustaría alejarse a tu cliente?',
+    options:['Del ruido y el tráfico','De las escaleras','Del mantenimiento','De vivir lejos de mis seres queridos'],
+    optionsAlt:['Del ruido y el tráfico','De las escaleras','Del mantenimiento','De vivir lejos de sus seres queridos'],
     optionIcons:{'Del ruido y el tráfico':'volume-x','De las escaleras':'accessibility','Del mantenimiento':'wrench','De vivir lejos de mis seres queridos':'heart'}},
-  {id:'quienvive', title:'¿Quién más va a pasar tiempo ahí contigo?', options:['Solo yo','Mi pareja','Familia','Hijos o nietos que visitan seguido','Un cuidador o asistente'],
+  {id:'quienvive', title:'¿Quién más va a pasar tiempo ahí contigo?',
+    titleAlt:'¿Qué tipo de inquilino o comprador visualizas para esta propiedad?',
+    options:['Solo yo','Mi pareja','Familia','Hijos o nietos que visitan seguido','Un cuidador o asistente'],
+    optionsAlt:['Un profesionista soltero','Una pareja','Una familia','Estudiantes','Uso como Airbnb / renta vacacional'],
     optionIcons:{'Solo yo':'user','Mi pareja':'heart','Familia':'users','Hijos o nietos que visitan seguido':'baby','Un cuidador o asistente':'user-check'}},
   {id:'cuantagente', title:'¿Cuánta gente habitaría la propiedad?', text:true, placeholder:'Ej. 2 personas y a veces se quedan los nietos'},
-  {id:'mueble', title:'¿Hay algún artículo que definitivamente te llevarías contigo a cualquier propiedad?', text:true, placeholder:'Ej. la mesa del comedor familiar'},
-  {id:'comparacion', title:'De las propiedades que ya viste, ¿cuál se sintió más tuya, aunque no fuera la mejor en papel?', options:['No he visto más propiedades'], optionIcons:{'No he visto más propiedades':'eye-off'}, span:true, text:true, placeholder:'Cuéntanos cuál y por qué'},
-  {id:'decide2', title:'Cuando decides algo grande, ¿cómo eres normalmente?', options:['Me guío por los números (ROI)','Comparo todas mis posibilidades','Decido fríamente','Necesito el visto bueno de mi familia'],
+  {id:'mueble', title:'¿Hay algún artículo que definitivamente te llevarías contigo a cualquier propiedad?',
+    titleAlt:'¿Hay algún acabado o característica que busque tu cliente en la propiedad?',
+    text:true, placeholder:'Ej. la mesa del comedor familiar', placeholderAlt:'Ej. acabados de lujo, seguridad, amenidades'},
+  {id:'comparacion', title:'De las propiedades que ya viste, ¿cuál se sintió más tuya, aunque no fuera la mejor en papel?',
+    titleAlt:'De las propiedades que ya vio tu cliente, ¿cuál encajó mejor con lo que busca, aunque no fuera la mejor en papel?',
+    options:['No he visto más propiedades'], optionsAlt:['Mi cliente no ha visto más propiedades'],
+    optionIcons:{'No he visto más propiedades':'eye-off'}, span:true, text:true, placeholder:'Cuéntanos cuál y por qué'},
+  {id:'decide2', title:'Cuando decides algo grande, ¿cómo eres normalmente?',
+    titleAlt:'Cuando tu cliente decide invertir, ¿cómo es normalmente?',
+    options:['Me guío por los números (ROI)','Comparo todas mis posibilidades','Decido fríamente','Necesito el visto bueno de mi familia'],
+    optionsAlt:['Se guía por los números (ROI)','Compara todas sus posibilidades','Decide fríamente','Necesita el visto bueno de sus socios o familia'],
     optionIcons:{'Me guío por los números (ROI)':'trending-up','Comparo todas mis posibilidades':'list-checks','Decido fríamente':'snowflake','Necesito el visto bueno de mi familia':'users'}}
 ];
 
@@ -439,6 +456,50 @@ function activeFlow(){
 function relevantQuestions(list){
   const flow = activeFlow();
   return list.filter(q => !q.flow || q.flow === flow);
+}
+
+function investmentMode(){
+  return !!(state.paraquien && state.paraquien.sel === 'Clientes (propiedad de inversión)');
+}
+
+function displayTitle(q){
+  return (investmentMode() && q.titleAlt) ? q.titleAlt : q.title;
+}
+
+function displaySub(q){
+  return (investmentMode() && q.subAlt) ? q.subAlt : (q.sub || '');
+}
+
+function displayPlaceholder(q){
+  return (investmentMode() && q.placeholderAlt) ? q.placeholderAlt : (q.placeholder || '');
+}
+
+function displayOption(q, opt){
+  if(!investmentMode() || !q.optionsAlt) return opt;
+  const idx = q.options.indexOf(opt);
+  return (idx >= 0 && q.optionsAlt[idx]) ? q.optionsAlt[idx] : opt;
+}
+
+function refreshInvestmentWording(){
+  b2.forEach(q=>{
+    if(q.id === 'paraquien') return;
+    const block = document.querySelector('.q-block[data-qid="' + q.id + '"]');
+    if(!block) return;
+    const titleEl = block.querySelector('.q-title');
+    if(titleEl) titleEl.textContent = displayTitle(q);
+    const subEl = block.querySelector('.q-sub');
+    if(subEl) subEl.textContent = displaySub(q);
+    if(q.options){
+      block.querySelectorAll('.opts .opt-btn').forEach(btn=>{
+        const label = btn.querySelector('.opt-label');
+        if(label) label.textContent = displayOption(q, btn.dataset.v);
+      });
+    }
+    if(q.text){
+      const t = block.querySelector('textarea:not(.followup textarea)');
+      if(t) t.placeholder = displayPlaceholder(q);
+    }
+  });
 }
 
 const ICON_CIRCLE = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>';
@@ -471,13 +532,13 @@ function renderQuestion(q, index, container){
 
   const title = document.createElement('p');
   title.className = 'q-title';
-  title.textContent = q.title;
+  title.textContent = displayTitle(q);
   block.appendChild(title);
 
   if(q.sub){
     const sub = document.createElement('p');
     sub.className = 'q-sub';
-    sub.textContent = q.sub;
+    sub.textContent = displaySub(q);
     block.appendChild(sub);
   }
 
@@ -494,12 +555,14 @@ function renderQuestion(q, index, container){
         rk.className = 'rk';
         btn.appendChild(rk);
         const label = document.createElement('span');
-        label.textContent = opt;
+        label.className = 'opt-label';
+        label.textContent = displayOption(q, opt);
         btn.appendChild(label);
       } else {
         if(q.optionIcons && q.optionIcons[opt]) btn.appendChild(makeLeadIcon(q.optionIcons[opt]));
         const label = document.createElement('span');
-        label.textContent = opt;
+        label.className = 'opt-label';
+        label.textContent = displayOption(q, opt);
         btn.appendChild(label);
         btn.appendChild(makeCheckIcon());
       }
@@ -518,6 +581,9 @@ function renderQuestion(q, index, container){
         updateProgress();
         if(q.id === 'yucatan'){
           yucatanDisqualified = (opt === 'No, no busco en la Península Yucateca');
+        }
+        if(q.id === 'paraquien'){
+          refreshInvestmentWording();
         }
         const warn = block.querySelector('.q-warning');
         if(warn) warn.style.display = 'none';
@@ -648,7 +714,7 @@ function renderQuestion(q, index, container){
 
   if(q.text){
     const t = document.createElement('textarea');
-    t.placeholder = q.placeholder || '';
+    t.placeholder = displayPlaceholder(q);
     t.style.minHeight = '64px';
     t.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
     block.appendChild(t);
@@ -741,12 +807,12 @@ function buildAnswers(){
   relevantQuestions(b1).concat(b2).forEach(q=>{
     const s = state[q.id];
     let answer;
-    if(q.multi) answer = Array.from(s.sel);
-    else if(q.rank) answer = s.order;
-    else answer = s.sel;
+    if(q.multi) answer = Array.from(s.sel).map(o => displayOption(q, o));
+    else if(q.rank) answer = s.order.map(o => displayOption(q, o));
+    else answer = s.sel ? displayOption(q, s.sel) : s.sel;
     let notas = s.text || '';
     if((q.followUpOptions || q.optionFollowUps) && s.followUp) notas += (notas ? ' | ' : '') + (q.followUpLabel || 'Detalle') + ': ' + s.followUp;
-    out[q.id] = {title:q.title, answer:answer, notas:notas};
+    out[q.id] = {title:displayTitle(q), answer:answer, notas:notas};
   });
   return out;
 }
