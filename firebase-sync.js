@@ -4,8 +4,8 @@
 // ya se verificó al escribirle a María por WhatsApp).
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const firebaseConfig = {
   projectId: "tres65-perfilcliente",
@@ -127,5 +127,52 @@ async function push(uid){
   }
 }
 
-window.tres65Sync = {init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid};
+async function signInAgent(email, password){
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  return cred.user.uid;
+}
+
+function signOutAgent(){
+  return signOut(auth);
+}
+
+async function agentInit(){
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      unsub();
+      if(!user){ resolve(null); return; }
+      const tokenResult = await user.getIdTokenResult();
+      resolve({uid: user.uid, isAdmin: tokenResult.claims.admin === true, email: user.email});
+    });
+  });
+}
+
+async function listClients(uid, isAdmin){
+  const clientsRef = collection(db, "clients");
+  const q = isAdmin ? clientsRef : query(clientsRef, where("agent_uid", "==", uid));
+  const snap = await getDocs(q);
+  const out = [];
+  snap.forEach(d => out.push(d.data()));
+  out.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  return out;
+}
+
+async function createClient({client_name, client_phone, property_raw, agent_uid}){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/crear-cliente", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "Authorization": "Bearer " + idToken},
+    body: JSON.stringify({client_name, client_phone, property_raw, agent_uid})
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error creando el cliente");
+  return data;
+}
+
+window.tres65Sync = {
+  init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
+  signInAgent, signOutAgent, agentInit, listClients, createClient
+};
 window.dispatchEvent(new Event("tres65-sync-ready"));

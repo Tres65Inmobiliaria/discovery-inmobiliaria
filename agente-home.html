@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis clientes — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script type="module" src="firebase-sync.js"></script>
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#FFFFFF;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.6;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;}
+  header .logo{display:block; max-width:160px;}
+  .who{text-align:right;}
+  .who .name{font-family:'Montserrat',sans-serif; font-weight:600; color:var(--profundo); font-size:14px;}
+  .who .role{font-size:12px; color:var(--acento); text-transform:uppercase; letter-spacing:.5px;}
+  .logout-link{font-size:12px; color:var(--texto-suave); text-decoration:underline; background:none; border:none; cursor:pointer; padding:0; margin-top:4px;}
+
+  h1{
+    font-family:'Montserrat',sans-serif;
+    font-size:22px;
+    font-weight:600;
+    color:var(--profundo);
+    margin:0 0 20px;
+  }
+
+  .new-client-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:14px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+    margin-bottom:28px;
+  }
+  .new-client-btn:hover{background:var(--medio);}
+  .new-client-btn svg{width:18px; height:18px;}
+
+  .client-card{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:12px;
+    text-decoration:none;
+    color:var(--texto);
+  }
+  .client-card:hover{border-color:var(--acento);}
+  .client-avatar{
+    width:42px; height:42px; border-radius:50%;
+    background:var(--menta); color:var(--acento);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-family:'Montserrat',sans-serif; font-weight:700;
+  }
+  .client-info{flex:1; min-width:0;}
+  .client-name{font-family:'Montserrat',sans-serif; font-weight:600; color:var(--profundo); font-size:15px;}
+  .client-meta{font-size:12px; color:var(--texto-suave); margin-top:2px;}
+  .client-agent{font-size:11px; color:var(--acento); margin-top:2px;}
+  .client-tag{
+    font-size:11px;
+    font-weight:600;
+    padding:3px 10px;
+    border-radius:20px;
+    background:var(--menta);
+    color:var(--medio);
+    flex-shrink:0;
+  }
+  .client-tag.discarded{background:#F5E4E1; color:#C0453A;}
+
+  .empty-note{
+    font-size:13px;
+    color:var(--texto-suave);
+    padding:16px;
+    background:var(--menta);
+    border-radius:8px;
+    text-align:center;
+  }
+
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(26,79,92,0.55);
+    align-items:center; justify-content:center;
+    z-index:50; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:#fff;
+    border-radius:12px;
+    padding:24px;
+    max-width:380px;
+    width:100%;
+  }
+  .modal-card h3{
+    font-family:'Montserrat',sans-serif;
+    color:var(--profundo);
+    font-size:17px;
+    margin:0 0 16px;
+  }
+  .modal-card label{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--texto-suave);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    margin-bottom:6px;
+    display:block;
+  }
+  .modal-card input, .modal-card select{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    margin-bottom:14px;
+  }
+  .modal-buttons{display:flex; gap:8px; margin-top:8px;}
+  .modal-buttons button{
+    flex:1;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+  }
+  .modal-save{background:var(--profundo); color:#fff;}
+  .modal-save:hover{background:var(--medio);}
+  .modal-save:disabled{opacity:.6;}
+  .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
+  .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
+  .modal-success{color:var(--acento); font-size:12px; margin:-6px 0 12px; display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
+    <div class="who">
+      <div class="name" id="who-name">—</div>
+      <div class="role" id="who-role">—</div>
+      <button class="logout-link" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <h1>Mis clientes</h1>
+
+  <button class="new-client-btn" id="new-client-btn" type="button">
+    <i data-lucide="user-plus"></i> Crear cliente
+  </button>
+
+  <div id="clients-list"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-card">
+    <h3>Crear cliente nuevo</h3>
+    <div id="agent-select-wrap" style="display:none;">
+      <label for="agent-select">Asignar a</label>
+      <select id="agent-select"></select>
+    </div>
+    <label for="client-name">Nombre completo</label>
+    <input type="text" id="client-name" placeholder="Nombre del cliente">
+    <label for="client-phone">Teléfono</label>
+    <input type="text" id="client-phone" placeholder="9991234567">
+    <label for="client-property">Link de la propiedad (opcional)</label>
+    <input type="text" id="client-property" placeholder="https://...">
+    <p class="modal-error" id="modal-error"></p>
+    <p class="modal-success" id="modal-success"></p>
+    <div class="modal-buttons">
+      <button class="modal-cancel" id="modal-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="modal-save" type="button">Crear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AGENTS = [
+  {uid:'5219992786153', name:'Damara Traconis Corres'},
+  {uid:'5219992399890', name:'Moises Traconis Corres'},
+  {uid:'5219992413657', name:'Guillermo Martínez Espinosa'}
+];
+
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
+function initials(name){
+  return (name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+function buildClientCard(c){
+  const a = document.createElement('a');
+  a.className = 'client-card';
+  a.href = 'home.html?client=' + encodeURIComponent(c.token);
+
+  const avatar = document.createElement('div');
+  avatar.className = 'client-avatar';
+  avatar.textContent = initials(c.client_name);
+  a.appendChild(avatar);
+
+  const info = document.createElement('div');
+  info.className = 'client-info';
+  const name = document.createElement('div');
+  name.className = 'client-name';
+  name.textContent = c.client_name || 'Sin nombre';
+  const meta = document.createElement('div');
+  meta.className = 'client-meta';
+  meta.textContent = c.client_phone || '';
+  info.appendChild(name);
+  info.appendChild(meta);
+  if(c.agent_name){
+    const agentLine = document.createElement('div');
+    agentLine.className = 'client-agent';
+    agentLine.textContent = c.agent_name;
+    info.appendChild(agentLine);
+  }
+  a.appendChild(info);
+
+  const tag = document.createElement('span');
+  if(c.property_discarded){
+    tag.className = 'client-tag discarded';
+    tag.textContent = 'Descartada';
+  } else if(c.property || c.property_raw){
+    tag.className = 'client-tag';
+    tag.textContent = 'Con propiedad';
+  } else {
+    tag.className = 'client-tag';
+    tag.textContent = 'Discovery';
+  }
+  a.appendChild(tag);
+
+  return a;
+}
+
+async function loadClients(uid, isAdmin){
+  const list = document.getElementById('clients-list');
+  list.innerHTML = '';
+  const clients = await window.tres65Sync.listClients(uid, isAdmin);
+  if(!clients.length){
+    list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
+    return;
+  }
+  clients.forEach(c => list.appendChild(buildClientCard(c)));
+}
+
+async function boot(){
+  await waitForSync();
+  const session = await window.tres65Sync.agentInit();
+  if(!session){
+    window.location.href = 'agente-login.html';
+    return;
+  }
+
+  document.getElementById('who-name').textContent = session.email;
+  document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
+
+  if(session.isAdmin){
+    const wrap = document.getElementById('agent-select-wrap');
+    wrap.style.display = 'block';
+    const select = document.getElementById('agent-select');
+    AGENTS.forEach(a=>{
+      const opt = document.createElement('option');
+      opt.value = a.uid;
+      opt.textContent = a.name;
+      select.appendChild(opt);
+    });
+  }
+
+  await loadClients(session.uid, session.isAdmin);
+  if(window.lucide) lucide.createIcons();
+
+  document.getElementById('logout-btn').addEventListener('click', async ()=>{
+    await window.tres65Sync.signOutAgent();
+    window.location.href = 'agente-login.html';
+  });
+
+  document.getElementById('new-client-btn').addEventListener('click', ()=>{
+    document.getElementById('client-name').value = '';
+    document.getElementById('client-phone').value = '';
+    document.getElementById('client-property').value = '';
+    document.getElementById('modal-error').style.display = 'none';
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal').classList.add('open');
+  });
+  document.getElementById('modal-cancel').addEventListener('click', ()=>{
+    document.getElementById('modal').classList.remove('open');
+  });
+  document.getElementById('modal-save').addEventListener('click', async ()=>{
+    const btn = document.getElementById('modal-save');
+    const errorNote = document.getElementById('modal-error');
+    const successNote = document.getElementById('modal-success');
+    errorNote.style.display = 'none';
+    successNote.style.display = 'none';
+
+    const client_name = document.getElementById('client-name').value.trim();
+    const client_phone = document.getElementById('client-phone').value.trim();
+    const property_raw = document.getElementById('client-property').value.trim();
+    const agent_uid = session.isAdmin ? document.getElementById('agent-select').value : undefined;
+
+    if(!client_name || !client_phone){
+      errorNote.textContent = 'Falta el nombre o el teléfono.';
+      errorNote.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creando...';
+    try{
+      const result = await window.tres65Sync.createClient({client_name, client_phone, property_raw, agent_uid});
+      successNote.textContent = 'Cliente creado. Link: ' + result.link;
+      successNote.style.display = 'block';
+      await loadClients(session.uid, session.isAdmin);
+      if(window.lucide) lucide.createIcons();
+    }catch(err){
+      console.error('[Dashboard] error creando cliente:', err);
+      errorNote.textContent = err.message || 'Error creando el cliente.';
+      errorNote.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Crear';
+    }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

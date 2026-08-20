@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso de agentes — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="module" src="firebase-sync.js"></script>
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#FFFFFF;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.6;
+  }
+  .wrap{max-width:380px;margin:0 auto;padding:32px 20px 80px; width:100%;}
+  header{text-align:center;margin-bottom:32px;}
+  header .logo{display:block; max-width:200px; margin:0 auto 36px;}
+  header h1{
+    font-family:'Montserrat',sans-serif;
+    font-size:22px;
+    font-weight:600;
+    color:var(--profundo);
+    margin:0 0 8px;
+  }
+  header p{color:var(--texto-suave); font-size:14px; margin:0;}
+
+  form{display:flex; flex-direction:column; gap:14px;}
+  label{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--texto-suave);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    margin-bottom:6px;
+    display:block;
+  }
+  input{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:11px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+  }
+  input:focus{outline:2px solid var(--acento); outline-offset:1px;}
+
+  .submit-btn{
+    width:100%;
+    font-family:'Montserrat',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:14px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  .submit-btn:hover{background:var(--medio);}
+  .submit-btn:disabled{opacity:.6; cursor:default;}
+
+  .error-note{
+    font-size:13px;
+    color:#C0453A;
+    text-align:center;
+    display:none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
+    <h1>Acceso de agentes</h1>
+    <p>Entra con tu cuenta para ver tus clientes.</p>
+  </header>
+
+  <form id="login-form">
+    <div>
+      <label for="email">Correo</label>
+      <input type="email" id="email" name="email" placeholder="tucorreo@tres65inmobiliaria.com" autocomplete="username" required>
+    </div>
+    <div>
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <p class="error-note" id="error-note">Correo o contraseña incorrectos.</p>
+    <button class="submit-btn" id="submit-btn" type="submit">Entrar</button>
+  </form>
+</div>
+
+<script>
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
+document.getElementById('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const errorNote = document.getElementById('error-note');
+  errorNote.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+
+  await waitForSync();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  try{
+    await window.tres65Sync.signInAgent(email, password);
+    window.location.href = 'agente-home.html';
+  }catch(err){
+    console.error('[Login] error:', err);
+    errorNote.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+</script>
+</body>
+</html>
