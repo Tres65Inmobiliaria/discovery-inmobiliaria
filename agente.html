@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script type="module" src="firebase-sync.js"></script>
 <style>
   :root{
     --profundo:#1A4F5C;
@@ -166,8 +167,22 @@ if(activeToken){
     .catch(e => console.error('[Agente] error consultando ficha:', e));
 }
 
-document.getElementById('met-agent-btn').addEventListener('click', ()=>{
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
+document.getElementById('met-agent-btn').addEventListener('click', async ()=>{
   localStorage.setItem('tres65_met_agent', 'true');
+  try{
+    await waitForSync();
+    const uid = await window.tres65Sync.init(activeToken);
+    if(uid) await window.tres65Sync.push(uid);
+  }catch(e){
+    console.error('[Agente] error guardando en Firebase:', e);
+  }
   const suffix = activeToken ? ('?client=' + activeToken) : '';
   window.location.href = 'home.html' + suffix;
 });
