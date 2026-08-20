@@ -87,19 +87,19 @@
   .client-meta{font-size:12px; color:var(--texto-suave); margin-top:2px;}
   .client-agent{font-size:11px; color:var(--acento); margin-top:2px;}
   .client-inactive-warn{font-size:11px; font-weight:600; color:#C0453A; margin-top:2px;}
-  .client-delete{
-    display:block;
+  .client-actions{display:flex; gap:14px; margin-top:6px;}
+  .client-copy-link, .client-delete{
     font-family:'Montserrat',sans-serif;
     font-size:11px;
     font-weight:600;
-    color:#C0453A;
     background:none;
     border:none;
     cursor:pointer;
     padding:0;
-    margin-top:6px;
     text-decoration:underline;
   }
+  .client-copy-link{color:var(--acento);}
+  .client-delete{color:#C0453A;}
   .client-tag{
     font-size:11px;
     font-weight:600;
@@ -460,6 +460,8 @@ const AGENTS = [
   {uid:'5219992413657', name:'Guillermo Martínez Espinosa'}
 ];
 
+const PORTAL_BASE_URL = 'https://tres65inmobiliaria.github.io/discovery-inmobiliaria/';
+
 function waitForSync(){
   return new Promise(resolve=>{
     if(window.tres65Sync){ resolve(); return; }
@@ -512,6 +514,27 @@ function buildClientCard(c, onDelete){
     info.appendChild(warn);
   }
 
+  const actionsRow = document.createElement('div');
+  actionsRow.className = 'client-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'client-copy-link';
+  copyBtn.textContent = 'Copiar link';
+  copyBtn.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const link = PORTAL_BASE_URL + 'home.html?client=' + encodeURIComponent(c.token);
+    try{
+      await navigator.clipboard.writeText(link);
+      const original = copyBtn.textContent;
+      copyBtn.textContent = '¡Copiado!';
+      setTimeout(()=>{ copyBtn.textContent = original; }, 1500);
+    }catch(err){
+      prompt('Copia el link:', link);
+    }
+  });
+  actionsRow.appendChild(copyBtn);
+
   const delBtn = document.createElement('button');
   delBtn.type = 'button';
   delBtn.className = 'client-delete';
@@ -522,7 +545,8 @@ function buildClientCard(c, onDelete){
     if(!ok) return;
     onDelete(c.token);
   });
-  info.appendChild(delBtn);
+  actionsRow.appendChild(delBtn);
+  info.appendChild(actionsRow);
   card.appendChild(info);
 
   const tag = document.createElement('span');

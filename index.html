@@ -971,6 +971,7 @@ document.getElementById('next-btn').addEventListener('click', ()=>{
     document.getElementById('popup-yucatan').style.display = 'flex';
     return;
   }
+  saveLocal();
   if(currentPage === pages.length-1){
     handleGenerate();
     return;

@@ -118,22 +118,6 @@
     justify-content:center;
   }
 
-  .logout-btn{
-    display:block;
-    width:100%;
-    margin-top:32px;
-    font-family:'Montserrat',sans-serif;
-    font-size:13px;
-    font-weight:600;
-    padding:12px;
-    border-radius:8px;
-    border:1px solid var(--borde);
-    background:transparent;
-    color:var(--texto-suave);
-    cursor:pointer;
-  }
-  .logout-btn:hover{border-color:var(--acento); color:var(--acento);}
-
   .property-step{
     flex-direction:column;
     align-items:stretch;
@@ -212,8 +196,6 @@
   </header>
 
   <div class="properties-row" id="properties-row"></div>
-
-  <button class="logout-btn" id="logout-btn" type="button">Cerrar sesión</button>
 </div>
 
 <script>
@@ -487,10 +469,6 @@ async function init(){
     renderStepper(stepperEl, cards);
     propertiesRow.appendChild(col);
   }
-
-  document.getElementById('logout-btn').addEventListener('click', ()=>{
-    window.location.href = 'login.html';
-  });
 
   if(window.lucide) lucide.createIcons();
 }
