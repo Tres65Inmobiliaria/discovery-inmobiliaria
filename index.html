@@ -356,6 +356,14 @@ Para nosotros es muy importante escuchar a nuestros clientes.</p>
   </div>
 </div>
 
+<div class="popup-overlay" id="popup-welcome-call">
+  <div class="popup-card">
+    <h3>Si eres una persona mayor o no te sientes cómoda contestando el formulario en línea, con gusto lo hacemos por llamada</h3>
+    <button id="popup-welcome-call-si">Llenar por llamada</button>
+    <button id="popup-welcome-call-no" class="secondary">Continuar con el discovery</button>
+  </div>
+</div>
+
 <div class="popup-overlay" id="popup-segunda">
   <div class="popup-card">
     <h3>Ya completaste este cuestionario</h3>
@@ -1082,6 +1090,12 @@ document.getElementById('call-btn').addEventListener('click', ()=>{
   const mensaje = encodeURIComponent('Hola, prefiero platicar el cuestionario de discovery por llamada o WhatsApp.');
   window.location.href = 'https://wa.me/5219992786153?text=' + mensaje;
 });
+document.getElementById('popup-welcome-call-si').addEventListener('click', ()=>{
+  document.getElementById('call-btn').click();
+});
+document.getElementById('popup-welcome-call-no').addEventListener('click', ()=>{
+  document.getElementById('popup-welcome-call').style.display = 'none';
+});
 document.getElementById('restart-btn').addEventListener('click', ()=>{
   const ok = confirm('Vas a borrar todo tu avance en el cuestionario y vas a empezar desde cero. \n¿Quieres continuar?');
   if(!ok) return;
@@ -1106,6 +1120,7 @@ document.getElementById('report-agree-btn').addEventListener('click', ()=>{
   } else {
     const restoredPage = restoreLocal();
     if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
+    document.getElementById('popup-welcome-call').style.display = 'flex';
   }
 
   updateProgress();
