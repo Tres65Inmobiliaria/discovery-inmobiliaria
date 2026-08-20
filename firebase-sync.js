@@ -5,7 +5,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const firebaseConfig = {
   projectId: "tres65-perfilcliente",
@@ -118,7 +118,8 @@ async function push(uid){
   const data = {
     metAgent: localStorage.getItem("tres65_met_agent") === "true",
     propertyCount,
-    properties
+    properties,
+    updated_at: new Date().toISOString()
   };
   try{
     await setDoc(doc(db, "users", uid), data, {merge: true});
@@ -147,14 +148,20 @@ async function agentInit(){
   });
 }
 
-async function listClients(uid, isAdmin){
-  const clientsRef = collection(db, "clients");
-  const q = isAdmin ? clientsRef : query(clientsRef, where("agent_uid", "==", uid));
-  const snap = await getDocs(q);
-  const out = [];
-  snap.forEach(d => out.push(d.data()));
-  out.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-  return out;
+async function listClients(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/mis-clientes", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error cargando clientes");
+  return data.clients;
+}
+
+async function deleteClient(token){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/eliminar", {});
 }
 
 async function createClient({client_name, client_phone, property_raw, agent_uid}){
@@ -224,6 +231,6 @@ window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, assignProperty,
-  getClientDetail, addClientNote
+  getClientDetail, addClientNote, deleteClient
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));

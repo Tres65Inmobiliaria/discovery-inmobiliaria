@@ -72,8 +72,8 @@
     border-radius:12px;
     padding:16px;
     margin-bottom:12px;
-    text-decoration:none;
     color:var(--texto);
+    cursor:pointer;
   }
   .client-card:hover{border-color:var(--acento);}
   .client-avatar{
@@ -86,6 +86,20 @@
   .client-name{font-family:'Montserrat',sans-serif; font-weight:600; color:var(--profundo); font-size:15px;}
   .client-meta{font-size:12px; color:var(--texto-suave); margin-top:2px;}
   .client-agent{font-size:11px; color:var(--acento); margin-top:2px;}
+  .client-inactive-warn{font-size:11px; font-weight:600; color:#C0453A; margin-top:2px;}
+  .client-delete{
+    display:block;
+    font-family:'Montserrat',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    color:#C0453A;
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:0;
+    margin-top:6px;
+    text-decoration:underline;
+  }
   .client-tag{
     font-size:11px;
     font-weight:600;
@@ -94,8 +108,26 @@
     background:var(--menta);
     color:var(--medio);
     flex-shrink:0;
+    align-self:flex-start;
   }
   .client-tag.discarded{background:#F5E4E1; color:#C0453A;}
+
+  .summary-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px;}
+  .summary-pill{
+    font-size:12px;
+    font-weight:600;
+    padding:5px 12px;
+    border-radius:20px;
+    background:var(--menta);
+    color:var(--medio);
+  }
+  .summary-pill.warn{background:#F5E4E1; color:#C0453A;}
+  .summary-alert{
+    font-size:12px;
+    font-weight:600;
+    color:#C0453A;
+    margin:10px 0 0;
+  }
 
   .empty-note{
     font-size:13px;
@@ -291,6 +323,8 @@
     </div>
   </header>
 
+  <div id="admin-summary" style="display:none;"></div>
+
   <h1>Mis clientes</h1>
 
   <button class="new-client-btn" id="new-client-btn" type="button">
@@ -375,15 +409,17 @@ function initials(name){
   return (name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 }
 
-function buildClientCard(c){
-  const a = document.createElement('a');
-  a.className = 'client-card';
-  a.href = 'cliente-detalle.html?token=' + encodeURIComponent(c.token);
+function buildClientCard(c, onDelete){
+  const card = document.createElement('div');
+  card.className = 'client-card';
+  card.addEventListener('click', ()=>{
+    window.location.href = 'cliente-detalle.html?token=' + encodeURIComponent(c.token);
+  });
 
   const avatar = document.createElement('div');
   avatar.className = 'client-avatar';
   avatar.textContent = initials(c.client_name);
-  a.appendChild(avatar);
+  card.appendChild(avatar);
 
   const info = document.createElement('div');
   info.className = 'client-info';
@@ -401,36 +437,88 @@ function buildClientCard(c){
     agentLine.textContent = 'Agente: ' + c.agent_name;
     info.appendChild(agentLine);
   }
-  a.appendChild(info);
+  if(c.inactive){
+    const warn = document.createElement('div');
+    warn.className = 'client-inactive-warn';
+    warn.textContent = 'Sin actividad hace más de 24h';
+    info.appendChild(warn);
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'client-delete';
+  delBtn.textContent = 'Eliminar cliente';
+  delBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const ok = confirm('¿Eliminar a ' + (c.client_name || 'este cliente') + '? Es permanente: desaparece de esta lista y no se puede deshacer desde aquí (el registro se conserva en la base de datos).');
+    if(!ok) return;
+    onDelete(c.token);
+  });
+  info.appendChild(delBtn);
+  card.appendChild(info);
 
   const tag = document.createElement('span');
-  if(c.property_discarded){
-    tag.className = 'client-tag discarded';
-    tag.textContent = 'Descartada';
-  } else if(c.property || c.property_raw){
-    tag.className = 'client-tag';
-    tag.textContent = 'Con propiedad';
-  } else {
-    tag.className = 'client-tag';
-    tag.textContent = 'Discovery';
-  }
-  a.appendChild(tag);
+  tag.className = 'client-tag' + (c.status === 'Propiedad descartada' ? ' discarded' : '');
+  tag.textContent = c.status || 'Discovery';
+  card.appendChild(tag);
 
-  return a;
+  return card;
 }
 
 let clientsCache = [];
 
-async function loadClients(uid, isAdmin){
+function renderAdminSummary(session, allClients){
+  const el = document.getElementById('admin-summary');
+  if(!session.isAdmin){
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  const active = allClients.filter(c => !c.deleted);
+  const counts = {};
+  active.forEach(c=>{
+    const s = c.status || 'Sin estado';
+    counts[s] = (counts[s] || 0) + 1;
+  });
+  const inactiveCount = active.filter(c => c.inactive).length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const deletedToday = allClients.filter(c => c.deleted && (c.deleted_at || '').slice(0, 10) === todayStr).length;
+
+  let html = '<div class="tool-card"><div class="tool-title"><i data-lucide="bar-chart-3"></i> Resumen de clientes</div><div class="summary-pills">';
+  Object.keys(counts).forEach(k=>{
+    html += '<span class="summary-pill">' + k + ': ' + counts[k] + '</span>';
+  });
+  if(inactiveCount){
+    html += '<span class="summary-pill warn">Sin actividad +24h: ' + inactiveCount + '</span>';
+  }
+  html += '</div>';
+  if(deletedToday){
+    html += '<p class="summary-alert">' + deletedToday + ' cliente' + (deletedToday > 1 ? 's' : '') + ' eliminado' + (deletedToday > 1 ? 's' : '') + ' hoy</p>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+async function loadClients(session){
   const list = document.getElementById('clients-list');
   list.innerHTML = '';
-  const clients = await window.tres65Sync.listClients(uid, isAdmin);
-  clientsCache = clients;
-  if(!clients.length){
+  const allClients = await window.tres65Sync.listClients();
+  clientsCache = allClients.filter(c => !c.deleted);
+  renderAdminSummary(session, allClients);
+  if(window.lucide) lucide.createIcons();
+  if(!clientsCache.length){
     list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
     return;
   }
-  clients.forEach(c => list.appendChild(buildClientCard(c)));
+  clientsCache.forEach(c => list.appendChild(buildClientCard(c, async (token)=>{
+    try{
+      await window.tres65Sync.deleteClient(token);
+      await loadClients(session);
+    }catch(err){
+      alert(err.message || 'Error eliminando el cliente.');
+    }
+  })));
 }
 
 function buildPropertyResultCard(p){
@@ -528,8 +616,7 @@ async function boot(){
     });
   }
 
-  await loadClients(session.uid, session.isAdmin);
-  if(window.lucide) lucide.createIcons();
+  await loadClients(session);
 
   document.getElementById('logout-btn').addEventListener('click', async ()=>{
     await window.tres65Sync.signOutAgent();
@@ -571,8 +658,7 @@ async function boot(){
       const result = await window.tres65Sync.createClient({client_name, client_phone, property_raw, agent_uid});
       successNote.textContent = 'Cliente creado. Link: ' + result.link;
       successNote.style.display = 'block';
-      await loadClients(session.uid, session.isAdmin);
-      if(window.lucide) lucide.createIcons();
+      await loadClients(session);
     }catch(err){
       console.error('[Dashboard] error creando cliente:', err);
       errorNote.textContent = err.message || 'Error creando el cliente.';
