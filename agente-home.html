@@ -162,6 +162,45 @@
     margin:12px 0 0;
   }
   .tool-result.error{background:#F5E4E1; color:#C0453A;}
+  .tool-result.cards{background:transparent; padding:0;}
+
+  .prop-card{
+    background:var(--menta);
+    border-radius:8px;
+    padding:14px;
+    margin-bottom:10px;
+  }
+  .prop-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px; color:var(--profundo);}
+  .prop-meta{font-size:12px; color:var(--texto-suave); margin:2px 0 6px;}
+  .prop-link{font-size:12px; color:var(--acento); word-break:break-all;}
+  .prop-assign-row{display:flex; gap:6px; margin-top:10px;}
+  .prop-assign-row select{
+    flex:1;
+    font-family:'Raleway',sans-serif;
+    font-size:12px;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+  }
+  .prop-assign-row button{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .prop-assign-row button:hover{background:var(--medio);}
+  .prop-assign-row button:disabled{opacity:.6;}
+  .prop-assign-status{font-size:11px; margin-top:6px;}
+  .prop-assign-status.ok{color:var(--medio);}
+  .prop-assign-status.err{color:#C0453A;}
 
   .modal-overlay{
     display:none;
@@ -250,7 +289,7 @@
     <p class="tool-hint">Ej: "busca 3 casas en venta centro de Mérida, 2 recámaras, hasta 6.5 millones"</p>
     <textarea id="tool-search-input" placeholder="¿Qué estás buscando?"></textarea>
     <button class="tool-btn" id="tool-search-btn" type="button">Buscar</button>
-    <pre class="tool-result" id="tool-search-result"></pre>
+    <div class="tool-result" id="tool-search-result"></div>
   </div>
 
   <div class="tool-card">
@@ -333,7 +372,7 @@ function buildClientCard(c){
   if(c.agent_name){
     const agentLine = document.createElement('div');
     agentLine.className = 'client-agent';
-    agentLine.textContent = c.agent_name;
+    agentLine.textContent = 'Agente: ' + c.agent_name;
     info.appendChild(agentLine);
   }
   a.appendChild(info);
@@ -354,15 +393,90 @@ function buildClientCard(c){
   return a;
 }
 
+let clientsCache = [];
+
 async function loadClients(uid, isAdmin){
   const list = document.getElementById('clients-list');
   list.innerHTML = '';
   const clients = await window.tres65Sync.listClients(uid, isAdmin);
+  clientsCache = clients;
   if(!clients.length){
     list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
     return;
   }
   clients.forEach(c => list.appendChild(buildClientCard(c)));
+}
+
+function buildPropertyResultCard(p){
+  const card = document.createElement('div');
+  card.className = 'prop-card';
+
+  const title = document.createElement('div');
+  title.className = 'prop-title';
+  title.textContent = p.title;
+  card.appendChild(title);
+
+  const meta = document.createElement('div');
+  meta.className = 'prop-meta';
+  meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
+  card.appendChild(meta);
+
+  if(p.url){
+    const link = document.createElement('a');
+    link.className = 'prop-link';
+    link.href = p.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = p.url;
+    card.appendChild(link);
+  }
+
+  if(clientsCache.length){
+    const row = document.createElement('div');
+    row.className = 'prop-assign-row';
+
+    const select = document.createElement('select');
+    clientsCache.forEach(c=>{
+      const opt = document.createElement('option');
+      opt.value = c.token;
+      opt.textContent = (c.client_name || 'Sin nombre') + (c.client_phone ? ' — ' + c.client_phone : '');
+      select.appendChild(opt);
+    });
+    row.appendChild(select);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Asignar a cliente';
+    row.appendChild(btn);
+    card.appendChild(row);
+
+    const status = document.createElement('div');
+    status.className = 'prop-assign-status';
+    status.style.display = 'none';
+    card.appendChild(status);
+
+    btn.addEventListener('click', async ()=>{
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Asignando...';
+      status.style.display = 'none';
+      try{
+        await window.tres65Sync.assignProperty(select.value, p.url);
+        status.className = 'prop-assign-status ok';
+        status.textContent = 'Asignada.';
+        status.style.display = 'block';
+      }catch(err){
+        status.className = 'prop-assign-status err';
+        status.textContent = err.message || 'Error asignando.';
+        status.style.display = 'block';
+      }finally{
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  }
+
+  return card;
 }
 
 async function boot(){
@@ -471,7 +585,45 @@ async function boot(){
     });
   }
 
-  wireTool('tool-search-btn', 'tool-search-input', 'tool-search-result', window.tres65Sync.searchProperties, 'Buscando...');
+  document.getElementById('tool-search-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('tool-search-btn');
+    const input = document.getElementById('tool-search-input');
+    const result = document.getElementById('tool-search-result');
+    const value = input.value.trim();
+    if(!value) return;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+    result.className = 'tool-result cards';
+    result.innerHTML = '';
+    result.style.display = 'none';
+    try{
+      const {results, exact} = await window.tres65Sync.searchProperties(value);
+      if(!results || !results.length){
+        result.textContent = 'No encontré ninguna propiedad publicada con esos filtros.';
+        result.style.display = 'block';
+      } else {
+        if(!exact){
+          const note = document.createElement('p');
+          note.className = 'tool-hint';
+          note.style.margin = '0 0 10px';
+          note.textContent = 'Nada exacto con esos filtros — estas son las más cercanas.';
+          result.appendChild(note);
+        }
+        results.forEach(p => result.appendChild(buildPropertyResultCard(p)));
+        result.style.display = 'block';
+      }
+    }catch(err){
+      console.error('[Dashboard] error en herramienta:', err);
+      result.className = 'tool-result error';
+      result.textContent = err.message || 'Ocurrió un error.';
+      result.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
   wireTool('tool-legal-btn', 'tool-legal-input', 'tool-legal-result', window.tres65Sync.askLegal, 'Buscando...');
   wireTool('tool-link-btn', 'tool-link-input', 'tool-link-result', window.tres65Sync.summarizeLink, 'Leyendo...');
 }

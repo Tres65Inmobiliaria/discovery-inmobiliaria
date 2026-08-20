@@ -187,7 +187,11 @@ async function _authedPost(path, payload){
 
 async function searchProperties(query){
   const data = await _authedPost("/portal/buscar-propiedades", {query});
-  return data.text;
+  return {results: data.results, exact: data.exact};
+}
+
+async function assignProperty(client_token, property_url){
+  return _authedPost("/portal/asignar-propiedad", {client_token, property_url});
 }
 
 async function askLegal(question){
@@ -203,6 +207,6 @@ async function summarizeLink(url){
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
-  searchProperties, askLegal, summarizeLink
+  searchProperties, askLegal, summarizeLink, assignProperty
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
