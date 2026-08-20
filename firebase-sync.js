@@ -24,6 +24,7 @@ const db = getFirestore(app);
 
 function syncKey(n){ return "tres65_property_" + n + "_state"; }
 function reportKey(n){ return "tres65_property_" + n + "_report"; }
+function reportKeywordsKey(n){ return "tres65_property_" + n + "_report_keywords"; }
 
 async function init(fichaToken){
   return new Promise((resolve) => {
@@ -91,6 +92,7 @@ async function pull(uid){
         const p = data.properties[n];
         if(p.state) localStorage.setItem(syncKey(n), JSON.stringify(p.state));
         if(p.report) localStorage.setItem(reportKey(n), p.report);
+        if(p.report_keywords) localStorage.setItem(reportKeywordsKey(n), JSON.stringify(p.report_keywords));
       });
     }
     return data;
@@ -107,12 +109,16 @@ async function push(uid){
   for(let n = 1; n <= propertyCount; n++){
     const stateRaw = localStorage.getItem(syncKey(n));
     const report = localStorage.getItem(reportKey(n));
+    const reportKeywordsRaw = localStorage.getItem(reportKeywordsKey(n));
     if(stateRaw || report){
       properties[n] = {};
       if(stateRaw){
         try{ properties[n].state = JSON.parse(stateRaw); }catch(e){}
       }
       if(report) properties[n].report = report;
+      if(reportKeywordsRaw){
+        try{ properties[n].report_keywords = JSON.parse(reportKeywordsRaw); }catch(e){}
+      }
     }
   }
   const data = {

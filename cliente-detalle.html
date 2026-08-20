@@ -119,9 +119,21 @@
     margin-top:6px;
     display:none;
   }
+  .report-text .report-title{color:#000; font-weight:700;}
   .report-toggle{
     font-size:12px; color:var(--acento); background:none; border:none;
     cursor:pointer; padding:0; text-decoration:underline;
+  }
+  .keyword-bubbles{
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin-top:12px; padding-top:12px;
+    border-top:1px solid var(--borde);
+  }
+  .keyword-bubble{
+    font-size:11px; font-weight:600;
+    padding:4px 11px; border-radius:20px;
+    background:#fff; color:var(--profundo);
+    border:1px solid var(--borde);
   }
 
   .empty-note{font-size:13px; color:var(--texto-suave);}
@@ -275,6 +287,35 @@ function waitForSync(){
 
 function qs(name){
   return new URLSearchParams(window.location.search).get(name);
+}
+
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderReportHtml(text){
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong class="report-title">$1</strong>');
+}
+
+function buildKeywordBubbles(keywords){
+  if(!keywords) return null;
+  const chips = [];
+  if(keywords.presupuesto) chips.push('Presupuesto: ' + keywords.presupuesto);
+  if(keywords.zona) chips.push('Zona: ' + keywords.zona);
+  if(keywords.recamaras) chips.push('Recámaras: ' + keywords.recamaras);
+  if(Array.isArray(keywords.caracteristicas)){
+    keywords.caracteristicas.forEach(c => { if(c) chips.push(c); });
+  }
+  if(!chips.length) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'keyword-bubbles';
+  chips.forEach(c=>{
+    const bubble = document.createElement('span');
+    bubble.className = 'keyword-bubble';
+    bubble.textContent = c;
+    wrap.appendChild(bubble);
+  });
+  return wrap;
 }
 
 function fmtDate(iso){
@@ -458,7 +499,9 @@ function buildProgressCard(progress){
       toggle.textContent = 'Ver reporte';
       const reportBox = document.createElement('div');
       reportBox.className = 'report-text';
-      reportBox.textContent = has.report;
+      reportBox.innerHTML = renderReportHtml(has.report);
+      const bubbles = buildKeywordBubbles(has.report_keywords);
+      if(bubbles) reportBox.appendChild(bubbles);
       toggle.addEventListener('click', ()=>{
         const open = reportBox.style.display === 'block';
         reportBox.style.display = open ? 'none' : 'block';
