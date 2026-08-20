@@ -75,7 +75,7 @@
 
   .prop-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:14px; color:var(--profundo);}
   .prop-meta{font-size:12px; color:var(--texto-suave); margin:2px 0 6px;}
-  .prop-link{font-size:12px; color:var(--acento); word-break:break-all;}
+  .prop-link{display:block; font-size:12px; color:var(--acento); word-break:break-all;}
   .discarded-note{font-size:12px; color:#C0453A; margin-top:8px;}
 
   .property-list-item{
@@ -203,6 +203,7 @@
   .search-results{margin-top:14px; display:none;}
   .search-results.open{display:block;}
   .prop-add-btn{
+    display:block;
     margin-top:8px;
     font-family:'Montserrat',sans-serif;
     font-size:12px;
@@ -227,8 +228,8 @@
   .shortlist-remove{border:none; background:none; color:#C0453A; font-size:15px; line-height:1; cursor:pointer; padding:0 2px; flex-shrink:0;}
   .shortlist-actions{display:flex; gap:8px; margin-top:10px;}
   .shortlist-actions button{flex:1;}
-  .shortlist-actions .secondary{background:#fff; color:var(--profundo); border:1px solid var(--borde);}
-  .shortlist-actions .secondary:hover{background:var(--menta);}
+  .search-btn.secondary{background:#fff; color:var(--profundo); border:1px solid var(--borde);}
+  .search-btn.secondary:hover{background:var(--menta);}
 
   .link-add-row{display:flex; gap:8px; margin-top:4px;}
   .link-add-row input{
@@ -244,6 +245,34 @@
   .link-add-status{font-size:12px; margin-top:8px;}
   .link-add-status.ok{color:var(--medio);}
   .link-add-status.err{color:#C0453A;}
+
+  .analysis-correct-row{display:flex; gap:8px; margin-top:10px;}
+  .analysis-correct-row input{
+    flex:1;
+    font-family:'Raleway',sans-serif;
+    font-size:13px;
+    padding:9px 11px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+  }
+  .analysis-share-btn{
+    display:block;
+    width:100%;
+    margin-top:10px;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .analysis-share-btn:hover{background:var(--medio);}
+  .analysis-share-btn:disabled{opacity:.6;}
 </style>
 </head>
 <body>
@@ -341,6 +370,74 @@ function buildKeywordBubbles(keywords){
     wrap.appendChild(bubble);
   });
   return wrap;
+}
+
+function renderAnalysisResult(container, token, url){
+  container.innerHTML = '';
+  container.className = 'analysis-status ok';
+  container.style.display = 'block';
+  let currentUrl = url;
+
+  const linkLine = document.createElement('div');
+  linkLine.innerHTML = 'Análisis listo: <a href="' + currentUrl + '" target="_blank" rel="noopener">' + currentUrl + '</a>';
+  container.appendChild(linkLine);
+
+  const correctRow = document.createElement('div');
+  correctRow.className = 'analysis-correct-row';
+  const correctInput = document.createElement('input');
+  correctInput.type = 'text';
+  correctInput.placeholder = 'Ej: quita la casa de Cholul, sube el presupuesto a 9 millones...';
+  const correctBtn = document.createElement('button');
+  correctBtn.className = 'search-btn secondary';
+  correctBtn.type = 'button';
+  correctBtn.textContent = 'Corregir';
+  correctRow.appendChild(correctInput);
+  correctRow.appendChild(correctBtn);
+  container.appendChild(correctRow);
+
+  const shareBtn = document.createElement('button');
+  shareBtn.className = 'analysis-share-btn';
+  shareBtn.type = 'button';
+  shareBtn.textContent = 'Guardar y compartir';
+  container.appendChild(shareBtn);
+
+  correctInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); correctBtn.click(); }
+  });
+
+  correctBtn.addEventListener('click', async ()=>{
+    const instruction = correctInput.value.trim();
+    if(!instruction) return;
+    const original = correctBtn.textContent;
+    correctBtn.disabled = true;
+    correctBtn.textContent = 'Corrigiendo...';
+    try{
+      const result = await window.tres65Sync.correctAnalysis(token, instruction);
+      currentUrl = result.url;
+      linkLine.innerHTML = 'Análisis listo: <a href="' + currentUrl + '" target="_blank" rel="noopener">' + currentUrl + '</a>';
+      correctInput.value = '';
+    }catch(err){
+      alert(err.message || 'Error aplicando la corrección.');
+    }finally{
+      correctBtn.disabled = false;
+      correctBtn.textContent = original;
+    }
+  });
+
+  shareBtn.addEventListener('click', async ()=>{
+    const original = shareBtn.textContent;
+    shareBtn.disabled = true;
+    shareBtn.textContent = 'Guardando...';
+    try{
+      await window.tres65Sync.shareAnalysis(token, currentUrl);
+      shareBtn.textContent = '¡Compartido con el cliente!';
+      setTimeout(()=>{ shareBtn.textContent = original; shareBtn.disabled = false; }, 2000);
+    }catch(err){
+      alert(err.message || 'Error compartiendo el análisis.');
+      shareBtn.disabled = false;
+      shareBtn.textContent = original;
+    }
+  });
 }
 
 function fmtDate(iso){
@@ -460,9 +557,7 @@ function buildPropertiesListCard(ficha, token){
     status.style.display = 'none';
     try{
       const result = await window.tres65Sync.runAnalysis(token);
-      status.className = 'analysis-status ok';
-      status.innerHTML = 'Análisis listo: <a href="' + result.url + '" target="_blank" rel="noopener">' + result.url + '</a>';
-      status.style.display = 'block';
+      renderAnalysisResult(status, token, result.url);
     }catch(err){
       status.className = 'analysis-status err';
       status.textContent = err.message || 'Error generando el análisis.';
@@ -820,9 +915,7 @@ async function boot(){
       renderSearchResultCards();
       renderShortlist();
       await refreshClientContent(token);
-      status.className = 'analysis-status ok';
-      status.innerHTML = 'Análisis listo: <a href="' + result.url + '" target="_blank" rel="noopener">' + result.url + '</a>';
-      status.style.display = 'block';
+      renderAnalysisResult(status, token, result.url);
     }catch(err){
       status.className = 'analysis-status err';
       status.textContent = err.message || 'Error generando el análisis.';
