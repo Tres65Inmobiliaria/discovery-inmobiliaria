@@ -106,6 +106,63 @@
     text-align:center;
   }
 
+  .tool-card{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .tool-title{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    color:var(--profundo);
+    font-size:15px;
+    margin-bottom:6px;
+  }
+  .tool-title i{width:18px; height:18px; color:var(--acento);}
+  .tool-hint{font-size:12px; color:var(--texto-suave); margin:0 0 12px;}
+  .tool-card textarea, .tool-card input{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    margin-bottom:10px;
+    resize:vertical;
+    min-height:44px;
+  }
+  .tool-btn{
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:10px 18px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .tool-btn:hover{background:var(--medio);}
+  .tool-btn:disabled{opacity:.6;}
+  .tool-result{
+    display:none;
+    white-space:pre-wrap;
+    font-family:'Raleway',sans-serif;
+    font-size:13px;
+    line-height:1.6;
+    color:var(--texto);
+    background:var(--menta);
+    border-radius:8px;
+    padding:12px 14px;
+    margin:12px 0 0;
+  }
+  .tool-result.error{background:#F5E4E1; color:#C0453A;}
+
   .modal-overlay{
     display:none;
     position:fixed; inset:0;
@@ -185,6 +242,32 @@
   </button>
 
   <div id="clients-list"></div>
+
+  <h1 style="margin-top:36px;">Herramientas rápidas</h1>
+
+  <div class="tool-card">
+    <div class="tool-title"><i data-lucide="search"></i> Buscar propiedades</div>
+    <p class="tool-hint">Ej: "busca 3 casas en venta centro de Mérida, 2 recámaras, hasta 6.5 millones"</p>
+    <textarea id="tool-search-input" placeholder="¿Qué estás buscando?"></textarea>
+    <button class="tool-btn" id="tool-search-btn" type="button">Buscar</button>
+    <pre class="tool-result" id="tool-search-result"></pre>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-title"><i data-lucide="scale"></i> Ley</div>
+    <p class="tool-hint">Código Civil de Yucatán, Ley Antilavado, actividades vulnerables del SAT.</p>
+    <textarea id="tool-legal-input" placeholder="¿Cuánto tiempo tiene el arrendador para devolver el depósito?"></textarea>
+    <button class="tool-btn" id="tool-legal-btn" type="button">Preguntar</button>
+    <pre class="tool-result" id="tool-legal-result"></pre>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-title"><i data-lucide="link"></i> Resumen de links o fichas</div>
+    <p class="tool-hint">Pega cualquier link y te leo el contenido.</p>
+    <input type="text" id="tool-link-input" placeholder="https://...">
+    <button class="tool-btn" id="tool-link-btn" type="button">Resumir</button>
+    <pre class="tool-result" id="tool-link-result"></pre>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modal">
@@ -359,6 +442,38 @@ async function boot(){
       btn.textContent = 'Crear';
     }
   });
+
+  function wireTool(btnId, inputId, resultId, run, busyLabel){
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    const result = document.getElementById(resultId);
+    btn.addEventListener('click', async ()=>{
+      const value = input.value.trim();
+      if(!value) return;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = busyLabel;
+      result.className = 'tool-result';
+      result.style.display = 'none';
+      try{
+        const text = await run(value);
+        result.textContent = text;
+        result.style.display = 'block';
+      }catch(err){
+        console.error('[Dashboard] error en herramienta:', err);
+        result.textContent = err.message || 'Ocurrió un error.';
+        result.className = 'tool-result error';
+        result.style.display = 'block';
+      }finally{
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  }
+
+  wireTool('tool-search-btn', 'tool-search-input', 'tool-search-result', window.tres65Sync.searchProperties, 'Buscando...');
+  wireTool('tool-legal-btn', 'tool-legal-input', 'tool-legal-result', window.tres65Sync.askLegal, 'Buscando...');
+  wireTool('tool-link-btn', 'tool-link-input', 'tool-link-result', window.tres65Sync.summarizeLink, 'Leyendo...');
 }
 
 boot();

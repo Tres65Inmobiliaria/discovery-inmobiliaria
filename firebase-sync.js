@@ -171,8 +171,38 @@ async function createClient({client_name, client_phone, property_raw, agent_uid}
   return data;
 }
 
+async function _authedPost(path, payload){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + path, {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "Authorization": "Bearer " + idToken},
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error");
+  return data;
+}
+
+async function searchProperties(query){
+  const data = await _authedPost("/portal/buscar-propiedades", {query});
+  return data.text;
+}
+
+async function askLegal(question){
+  const data = await _authedPost("/portal/pregunta-legal", {question});
+  return data.answer;
+}
+
+async function summarizeLink(url){
+  const data = await _authedPost("/portal/resumir-link", {url});
+  return data.summary;
+}
+
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
-  signInAgent, signOutAgent, agentInit, listClients, createClient
+  signInAgent, signOutAgent, agentInit, listClients, createClient,
+  searchProperties, askLegal, summarizeLink
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
