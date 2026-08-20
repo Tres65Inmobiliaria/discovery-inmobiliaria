@@ -161,6 +161,62 @@
   }
   .note-form button:hover{background:var(--medio);}
   .note-form button:disabled{opacity:.6;}
+
+  .search-card textarea{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    margin-bottom:10px;
+    resize:vertical;
+    min-height:44px;
+  }
+  .search-btn{
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:10px 18px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .search-btn:hover{background:var(--medio);}
+  .search-btn:disabled{opacity:.6;}
+  .search-results{margin-top:14px; display:none;}
+  .search-results.open{display:block;}
+  .prop-add-btn{
+    margin-top:8px;
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:7px 12px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .prop-add-btn:hover{background:var(--medio);}
+  .prop-add-btn:disabled{opacity:.6; cursor:default;}
+  .search-result-item{background:var(--menta); border-radius:8px; padding:12px; margin-bottom:8px;}
+
+  .shortlist-section{margin-top:16px; padding-top:16px; border-top:1px solid var(--borde);}
+  .shortlist-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px; color:var(--profundo); margin-bottom:8px;}
+  .shortlist-item{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:var(--menta); border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:12px;
+  }
+  .shortlist-remove{border:none; background:none; color:#C0453A; font-size:15px; line-height:1; cursor:pointer; padding:0 2px; flex-shrink:0;}
+  .shortlist-actions{display:flex; gap:8px; margin-top:10px;}
+  .shortlist-actions button{flex:1;}
+  .shortlist-actions .secondary{background:#fff; color:var(--profundo); border:1px solid var(--borde);}
+  .shortlist-actions .secondary:hover{background:var(--menta);}
 </style>
 </head>
 <body>
@@ -177,6 +233,26 @@
   <p class="subtitle" id="page-subtitle"></p>
 
   <div id="content"></div>
+
+  <div class="card search-card">
+    <div class="card-title"><i data-lucide="search"></i> Buscar propiedades para este cliente</div>
+    <p class="subtitle" style="margin-bottom:10px;">Ej: "busca 3 casas en venta centro de Mérida, 2 recámaras, hasta 6.5 millones"</p>
+    <textarea id="search-input" placeholder="¿Qué estás buscando?"></textarea>
+    <button class="search-btn" id="search-btn" type="button">Buscar</button>
+    <div class="search-results" id="search-results">
+      <p class="subtitle" id="search-exact-note" style="display:none;"></p>
+      <div id="search-results-list"></div>
+      <div class="shortlist-section" id="shortlist-section" style="display:none;">
+        <div class="shortlist-title">Propiedades por agregar (<span id="shortlist-count">0</span>)</div>
+        <div id="shortlist-list"></div>
+        <div class="shortlist-actions">
+          <button class="search-btn secondary" id="shortlist-analysis-btn" type="button">Hacer análisis</button>
+          <button class="search-btn" id="shortlist-save-btn" type="button">Agregar a cliente</button>
+        </div>
+        <div class="analysis-status" id="shortlist-status" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title"><i data-lucide="notebook-pen"></i> Notas internas</div>
@@ -419,6 +495,110 @@ function renderNotes(notes){
   });
 }
 
+async function refreshClientContent(token){
+  const data = await window.tres65Sync.getClientDetail(token);
+  const {ficha, progress, notes} = data;
+  document.getElementById('page-title').textContent = 'Progreso de cliente: ' + (ficha.client_name || 'Sin nombre');
+  document.getElementById('page-subtitle').textContent = ficha.client_phone || '';
+
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  content.appendChild(buildInfoCard(ficha));
+  const propCard = buildPropertyCard(ficha);
+  if(propCard) content.appendChild(propCard);
+  const propsListCard = buildPropertiesListCard(ficha, token);
+  if(propsListCard) content.appendChild(propsListCard);
+  content.appendChild(buildProgressCard(progress));
+
+  renderNotes(notes);
+  if(window.lucide) lucide.createIcons();
+}
+
+let lastSearchResults = [];
+let searchShortlist = [];
+
+function isInShortlist(url){
+  return searchShortlist.some(p => p.url === url);
+}
+
+function buildPropertyResultCard(p){
+  const card = document.createElement('div');
+  card.className = 'search-result-item';
+
+  const pt = document.createElement('div');
+  pt.className = 'prop-title';
+  pt.textContent = p.title;
+  card.appendChild(pt);
+
+  const meta = document.createElement('div');
+  meta.className = 'prop-meta';
+  meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
+  card.appendChild(meta);
+
+  if(p.url){
+    const link = document.createElement('a');
+    link.className = 'prop-link';
+    link.href = p.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = p.url;
+    card.appendChild(link);
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'prop-add-btn';
+  const already = isInShortlist(p.url);
+  addBtn.textContent = already ? 'Agregada' : 'Agregar';
+  addBtn.disabled = already;
+  addBtn.addEventListener('click', ()=>{
+    if(isInShortlist(p.url)) return;
+    searchShortlist.push(p);
+    renderSearchResultCards();
+    renderShortlist();
+  });
+  card.appendChild(addBtn);
+
+  return card;
+}
+
+function renderSearchResultCards(){
+  const list = document.getElementById('search-results-list');
+  list.innerHTML = '';
+  lastSearchResults.forEach(p => list.appendChild(buildPropertyResultCard(p)));
+}
+
+function renderShortlist(){
+  const section = document.getElementById('shortlist-section');
+  const listEl = document.getElementById('shortlist-list');
+  document.getElementById('shortlist-count').textContent = searchShortlist.length;
+  listEl.innerHTML = '';
+  if(!searchShortlist.length){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  searchShortlist.forEach((p, i)=>{
+    const row = document.createElement('div');
+    row.className = 'shortlist-item';
+    const label = document.createElement('span');
+    label.textContent = p.title + (p.price ? ' — ' + p.price : '');
+    row.appendChild(label);
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'shortlist-remove';
+    rm.textContent = '×';
+    rm.setAttribute('aria-label', 'Quitar');
+    rm.addEventListener('click', ()=>{
+      searchShortlist.splice(i, 1);
+      renderSearchResultCards();
+      renderShortlist();
+    });
+    row.appendChild(rm);
+    listEl.appendChild(row);
+  });
+}
+
 async function boot(){
   await waitForSync();
   const session = await window.tres65Sync.agentInit();
@@ -433,29 +613,13 @@ async function boot(){
     return;
   }
 
-  let data;
   try{
-    data = await window.tres65Sync.getClientDetail(token);
+    await refreshClientContent(token);
   }catch(err){
     document.getElementById('content').innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando el cliente.') + '</p>';
     if(window.lucide) lucide.createIcons();
     return;
   }
-
-  const {ficha, progress, notes} = data;
-  document.getElementById('page-title').textContent = 'Progreso de cliente: ' + (ficha.client_name || 'Sin nombre');
-  document.getElementById('page-subtitle').textContent = ficha.client_phone || '';
-
-  const content = document.getElementById('content');
-  content.appendChild(buildInfoCard(ficha));
-  const propCard = buildPropertyCard(ficha);
-  if(propCard) content.appendChild(propCard);
-  const propsListCard = buildPropertiesListCard(ficha, token);
-  if(propsListCard) content.appendChild(propsListCard);
-  content.appendChild(buildProgressCard(progress));
-
-  renderNotes(notes);
-  if(window.lucide) lucide.createIcons();
 
   document.getElementById('note-btn').addEventListener('click', async ()=>{
     const btn = document.getElementById('note-btn');
@@ -473,6 +637,97 @@ async function boot(){
     }finally{
       btn.disabled = false;
       btn.textContent = 'Agregar nota';
+    }
+  });
+
+  document.getElementById('search-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('search-btn');
+    const input = document.getElementById('search-input');
+    const results = document.getElementById('search-results');
+    const exactNote = document.getElementById('search-exact-note');
+    const resultsList = document.getElementById('search-results-list');
+    const value = input.value.trim();
+    if(!value) return;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+    exactNote.style.display = 'none';
+    resultsList.innerHTML = '';
+    results.classList.remove('open');
+    try{
+      const {results: found, exact} = await window.tres65Sync.searchProperties(value);
+      lastSearchResults = found || [];
+      if(!lastSearchResults.length){
+        resultsList.innerHTML = '<p class="empty-note">No encontré ninguna propiedad publicada con esos filtros.</p>';
+      } else {
+        if(!exact){
+          exactNote.textContent = 'Nada exacto con esos filtros — estas son las más cercanas.';
+          exactNote.style.display = 'block';
+        }
+        renderSearchResultCards();
+      }
+      results.classList.add('open');
+    }catch(err){
+      resultsList.innerHTML = '<p class="empty-note" style="color:#C0453A;">' + (err.message || 'Ocurrió un error.') + '</p>';
+      results.classList.add('open');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  document.getElementById('shortlist-save-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('shortlist-save-btn');
+    const status = document.getElementById('shortlist-status');
+    if(!searchShortlist.length) return;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    status.style.display = 'none';
+    try{
+      await window.tres65Sync.addProperties(token, searchShortlist.map(p => p.url));
+      searchShortlist = [];
+      renderSearchResultCards();
+      renderShortlist();
+      await refreshClientContent(token);
+      status.className = 'analysis-status ok';
+      status.textContent = 'Propiedades agregadas al cliente.';
+      status.style.display = 'block';
+    }catch(err){
+      status.className = 'analysis-status err';
+      status.textContent = err.message || 'Error guardando.';
+      status.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  document.getElementById('shortlist-analysis-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('shortlist-analysis-btn');
+    const status = document.getElementById('shortlist-status');
+    if(!searchShortlist.length){ alert('Agrega al menos una propiedad primero.'); return; }
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generando...';
+    status.style.display = 'none';
+    try{
+      await window.tres65Sync.addProperties(token, searchShortlist.map(p => p.url));
+      const result = await window.tres65Sync.runAnalysis(token);
+      searchShortlist = [];
+      renderSearchResultCards();
+      renderShortlist();
+      await refreshClientContent(token);
+      status.className = 'analysis-status ok';
+      status.innerHTML = 'Análisis listo: <a href="' + result.url + '" target="_blank" rel="noopener">' + result.url + '</a>';
+      status.style.display = 'block';
+    }catch(err){
+      status.className = 'analysis-status err';
+      status.textContent = err.message || 'Error generando el análisis.';
+      status.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
     }
   });
 }
