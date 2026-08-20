@@ -163,6 +163,24 @@
   }
   .tool-result.error{background:#F5E4E1; color:#C0453A;}
   .tool-result.cards{background:transparent; padding:0;}
+  .tool-result-wrap{display:none; position:relative;}
+  .tool-result-wrap.open{display:block;}
+  .tool-result-close{
+    position:absolute;
+    top:6px; right:6px;
+    width:22px; height:22px;
+    line-height:20px;
+    text-align:center;
+    border-radius:50%;
+    border:none;
+    background:rgba(26,79,92,0.12);
+    color:var(--profundo);
+    font-size:15px;
+    cursor:pointer;
+    padding:0;
+    z-index:1;
+  }
+  .tool-result-close:hover{background:rgba(26,79,92,0.22);}
 
   .prop-card{
     background:var(--menta);
@@ -289,7 +307,10 @@
     <p class="tool-hint">Ej: "busca 3 casas en venta centro de Mérida, 2 recámaras, hasta 6.5 millones"</p>
     <textarea id="tool-search-input" placeholder="¿Qué estás buscando?"></textarea>
     <button class="tool-btn" id="tool-search-btn" type="button">Buscar</button>
-    <div class="tool-result" id="tool-search-result"></div>
+    <div class="tool-result-wrap" id="tool-search-result-wrap">
+      <button class="tool-result-close" id="tool-search-close" type="button" aria-label="Cerrar">×</button>
+      <div class="tool-result" id="tool-search-result"></div>
+    </div>
   </div>
 
   <div class="tool-card">
@@ -297,7 +318,10 @@
     <p class="tool-hint">Código Civil de Yucatán, Ley Antilavado, actividades vulnerables del SAT.</p>
     <textarea id="tool-legal-input" placeholder="¿Cuánto tiempo tiene el arrendador para devolver el depósito?"></textarea>
     <button class="tool-btn" id="tool-legal-btn" type="button">Preguntar</button>
-    <pre class="tool-result" id="tool-legal-result"></pre>
+    <div class="tool-result-wrap" id="tool-legal-result-wrap">
+      <button class="tool-result-close" id="tool-legal-close" type="button" aria-label="Cerrar">×</button>
+      <pre class="tool-result" id="tool-legal-result"></pre>
+    </div>
   </div>
 
   <div class="tool-card">
@@ -305,7 +329,10 @@
     <p class="tool-hint">Pega cualquier link y te leo el contenido.</p>
     <input type="text" id="tool-link-input" placeholder="https://...">
     <button class="tool-btn" id="tool-link-btn" type="button">Resumir</button>
-    <pre class="tool-result" id="tool-link-result"></pre>
+    <div class="tool-result-wrap" id="tool-link-result-wrap">
+      <button class="tool-result-close" id="tool-link-close" type="button" aria-label="Cerrar">×</button>
+      <pre class="tool-result" id="tool-link-result"></pre>
+    </div>
   </div>
 </div>
 
@@ -557,10 +584,20 @@ async function boot(){
     }
   });
 
+  function wireResultClose(closeId, wrapId){
+    document.getElementById(closeId).addEventListener('click', ()=>{
+      document.getElementById(wrapId).classList.remove('open');
+    });
+  }
+  wireResultClose('tool-search-close', 'tool-search-result-wrap');
+  wireResultClose('tool-legal-close', 'tool-legal-result-wrap');
+  wireResultClose('tool-link-close', 'tool-link-result-wrap');
+
   function wireTool(btnId, inputId, resultId, run, busyLabel){
     const btn = document.getElementById(btnId);
     const input = document.getElementById(inputId);
     const result = document.getElementById(resultId);
+    const wrap = document.getElementById(resultId + '-wrap');
     btn.addEventListener('click', async ()=>{
       const value = input.value.trim();
       if(!value) return;
@@ -568,16 +605,16 @@ async function boot(){
       btn.disabled = true;
       btn.textContent = busyLabel;
       result.className = 'tool-result';
-      result.style.display = 'none';
+      wrap.classList.remove('open');
       try{
         const text = await run(value);
         result.textContent = text;
-        result.style.display = 'block';
+        wrap.classList.add('open');
       }catch(err){
         console.error('[Dashboard] error en herramienta:', err);
         result.textContent = err.message || 'Ocurrió un error.';
         result.className = 'tool-result error';
-        result.style.display = 'block';
+        wrap.classList.add('open');
       }finally{
         btn.disabled = false;
         btn.textContent = original;
@@ -589,6 +626,7 @@ async function boot(){
     const btn = document.getElementById('tool-search-btn');
     const input = document.getElementById('tool-search-input');
     const result = document.getElementById('tool-search-result');
+    const wrap = document.getElementById('tool-search-result-wrap');
     const value = input.value.trim();
     if(!value) return;
     const original = btn.textContent;
@@ -596,12 +634,12 @@ async function boot(){
     btn.textContent = 'Buscando...';
     result.className = 'tool-result cards';
     result.innerHTML = '';
-    result.style.display = 'none';
+    wrap.classList.remove('open');
     try{
       const {results, exact} = await window.tres65Sync.searchProperties(value);
       if(!results || !results.length){
         result.textContent = 'No encontré ninguna propiedad publicada con esos filtros.';
-        result.style.display = 'block';
+        wrap.classList.add('open');
       } else {
         if(!exact){
           const note = document.createElement('p');
@@ -611,13 +649,13 @@ async function boot(){
           result.appendChild(note);
         }
         results.forEach(p => result.appendChild(buildPropertyResultCard(p)));
-        result.style.display = 'block';
+        wrap.classList.add('open');
       }
     }catch(err){
       console.error('[Dashboard] error en herramienta:', err);
       result.className = 'tool-result error';
       result.textContent = err.message || 'Ocurrió un error.';
-      result.style.display = 'block';
+      wrap.classList.add('open');
     }finally{
       btn.disabled = false;
       btn.textContent = original;
