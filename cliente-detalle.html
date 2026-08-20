@@ -78,6 +78,31 @@
   .prop-link{font-size:12px; color:var(--acento); word-break:break-all;}
   .discarded-note{font-size:12px; color:#C0453A; margin-top:8px;}
 
+  .property-list-item{
+    background:var(--menta);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+  }
+  .property-list-item .prop-meta{margin:2px 0 4px;}
+  .analysis-btn{
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:10px 18px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .analysis-btn:hover{background:var(--medio);}
+  .analysis-btn:disabled{opacity:.6;}
+  .analysis-status{font-size:12px; margin-top:8px;}
+  .analysis-status.ok{color:var(--medio);}
+  .analysis-status.err{color:#C0453A;}
+
   .property-block{padding:12px 0; border-bottom:1px solid var(--menta);}
   .property-block:last-child{border-bottom:none;}
   .property-block .status{
@@ -246,6 +271,71 @@ function buildPropertyCard(ficha){
   return card;
 }
 
+function buildPropertiesListCard(ficha, token){
+  const properties = ficha.properties || [];
+  if(!properties.length) return null;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.innerHTML = '<i data-lucide="list"></i> Propiedades agregadas (' + properties.length + ')';
+  card.appendChild(title);
+
+  properties.forEach(entry=>{
+    const p = entry.data || {};
+    const row = document.createElement('div');
+    row.className = 'property-list-item';
+    const pt = document.createElement('div');
+    pt.className = 'prop-title';
+    pt.textContent = p.title || entry.url;
+    row.appendChild(pt);
+    const meta = document.createElement('div');
+    meta.className = 'prop-meta';
+    meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
+    row.appendChild(meta);
+    const link = document.createElement('a');
+    link.className = 'prop-link';
+    link.href = entry.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = entry.url;
+    row.appendChild(link);
+    card.appendChild(row);
+  });
+
+  const analysisBtn = document.createElement('button');
+  analysisBtn.type = 'button';
+  analysisBtn.className = 'analysis-btn';
+  analysisBtn.textContent = 'Hacer análisis';
+  const status = document.createElement('div');
+  status.className = 'analysis-status';
+  status.style.display = 'none';
+  analysisBtn.addEventListener('click', async ()=>{
+    const original = analysisBtn.textContent;
+    analysisBtn.disabled = true;
+    analysisBtn.textContent = 'Generando...';
+    status.style.display = 'none';
+    try{
+      const result = await window.tres65Sync.runAnalysis(token);
+      status.className = 'analysis-status ok';
+      status.innerHTML = 'Análisis listo: <a href="' + result.url + '" target="_blank" rel="noopener">' + result.url + '</a>';
+      status.style.display = 'block';
+    }catch(err){
+      status.className = 'analysis-status err';
+      status.textContent = err.message || 'Error generando el análisis.';
+      status.style.display = 'block';
+    }finally{
+      analysisBtn.disabled = false;
+      analysisBtn.textContent = original;
+    }
+  });
+  card.appendChild(analysisBtn);
+  card.appendChild(status);
+
+  return card;
+}
+
 function buildProgressCard(progress){
   const card = document.createElement('div');
   card.className = 'card';
@@ -360,6 +450,8 @@ async function boot(){
   content.appendChild(buildInfoCard(ficha));
   const propCard = buildPropertyCard(ficha);
   if(propCard) content.appendChild(propCard);
+  const propsListCard = buildPropertiesListCard(ficha, token);
+  if(propsListCard) content.appendChild(propsListCard);
   content.appendChild(buildProgressCard(progress));
 
   renderNotes(notes);

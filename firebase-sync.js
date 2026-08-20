@@ -197,8 +197,12 @@ async function searchProperties(query){
   return {results: data.results, exact: data.exact};
 }
 
-async function assignProperty(client_token, property_url){
-  return _authedPost("/portal/asignar-propiedad", {client_token, property_url});
+async function addProperties(client_token, urls){
+  return _authedPost("/portal/agregar-propiedades", {client_token, urls});
+}
+
+async function runAnalysis(client_token){
+  return _authedPost("/portal/analisis-cliente/" + encodeURIComponent(client_token), {});
 }
 
 async function getClientDetail(token){
@@ -230,7 +234,7 @@ async function summarizeLink(url){
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
-  searchProperties, askLegal, summarizeLink, assignProperty,
+  searchProperties, askLegal, summarizeLink, addProperties, runAnalysis,
   getClientDetail, addClientNote, deleteClient
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
