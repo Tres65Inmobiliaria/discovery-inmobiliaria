@@ -379,7 +379,7 @@ function initials(name){
 function buildClientCard(c){
   const a = document.createElement('a');
   a.className = 'client-card';
-  a.href = 'home.html?client=' + encodeURIComponent(c.token);
+  a.href = 'cliente-detalle.html?token=' + encodeURIComponent(c.token);
 
   const avatar = document.createElement('div');
   avatar.className = 'client-avatar';

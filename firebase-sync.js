@@ -194,6 +194,22 @@ async function assignProperty(client_token, property_url){
   return _authedPost("/portal/asignar-propiedad", {client_token, property_url});
 }
 
+async function getClientDetail(token){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/cliente-detalle/" + encodeURIComponent(token), {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error");
+  return data;
+}
+
+async function addClientNote(token, text){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/nota", {text});
+}
+
 async function askLegal(question){
   const data = await _authedPost("/portal/pregunta-legal", {question});
   return data.answer;
@@ -207,6 +223,7 @@ async function summarizeLink(url){
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
-  searchProperties, askLegal, summarizeLink, assignProperty
+  searchProperties, askLegal, summarizeLink, assignProperty,
+  getClientDetail, addClientNote
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));

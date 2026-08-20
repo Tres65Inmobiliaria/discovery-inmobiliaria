@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progreso de cliente — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script type="module" src="firebase-sync.js"></script>
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#FFFFFF;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.6;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:16px;}
+  header .logo{display:block; max-width:140px;}
+
+  .back-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px; font-weight:600;
+    color:var(--profundo);
+    background:none; border:none; cursor:pointer;
+    padding:0; margin-bottom:18px;
+    text-decoration:none;
+  }
+  .back-btn svg{width:16px; height:16px;}
+
+  h1{
+    font-family:'Montserrat',sans-serif;
+    font-size:20px;
+    font-weight:600;
+    color:var(--profundo);
+    margin:0 0 4px;
+  }
+  .subtitle{font-size:13px; color:var(--texto-suave); margin:0 0 24px;}
+
+  .card{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .card-title{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    color:var(--profundo);
+    font-size:14px;
+    margin-bottom:10px;
+  }
+  .card-title i{width:17px; height:17px; color:var(--acento);}
+
+  .info-row{display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--menta);}
+  .info-row:last-child{border-bottom:none;}
+  .info-row .label{color:var(--texto-suave);}
+  .info-row .value{font-weight:600; color:var(--texto); text-align:right;}
+
+  .prop-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:14px; color:var(--profundo);}
+  .prop-meta{font-size:12px; color:var(--texto-suave); margin:2px 0 6px;}
+  .prop-link{font-size:12px; color:var(--acento); word-break:break-all;}
+  .discarded-note{font-size:12px; color:#C0453A; margin-top:8px;}
+
+  .property-block{padding:12px 0; border-bottom:1px solid var(--menta);}
+  .property-block:last-child{border-bottom:none;}
+  .property-block .status{
+    display:inline-block; font-size:11px; font-weight:600;
+    padding:2px 10px; border-radius:20px;
+    background:var(--menta); color:var(--medio); margin-bottom:6px;
+  }
+  .report-text{
+    white-space:pre-wrap;
+    font-size:13px;
+    background:var(--menta);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-top:6px;
+    display:none;
+  }
+  .report-toggle{
+    font-size:12px; color:var(--acento); background:none; border:none;
+    cursor:pointer; padding:0; text-decoration:underline;
+  }
+
+  .empty-note{font-size:13px; color:var(--texto-suave);}
+
+  .note-item{
+    background:var(--menta);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    font-size:13px;
+  }
+  .note-meta{font-size:11px; color:var(--texto-suave); margin-top:4px;}
+
+  .note-form textarea{
+    width:100%;
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    margin-bottom:10px;
+    resize:vertical;
+    min-height:60px;
+  }
+  .note-form button{
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:10px 18px;
+    border-radius:8px;
+    border:none;
+    background:var(--profundo);
+    color:#fff;
+    cursor:pointer;
+  }
+  .note-form button:hover{background:var(--medio);}
+  .note-form button:disabled{opacity:.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
+  </header>
+
+  <a class="back-btn" href="agente-home.html">
+    <i data-lucide="arrow-left"></i> Volver a home
+  </a>
+
+  <h1 id="page-title">Progreso de cliente</h1>
+  <p class="subtitle" id="page-subtitle"></p>
+
+  <div id="content"></div>
+
+  <div class="card">
+    <div class="card-title"><i data-lucide="notebook-pen"></i> Notas internas</div>
+    <p class="subtitle" style="margin-bottom:14px;">Solo las ve el equipo — el cliente nunca tiene acceso a esto.</p>
+    <div id="notes-list"></div>
+    <div class="note-form">
+      <textarea id="note-input" placeholder="Escribe una nota sobre este cliente..."></textarea>
+      <button id="note-btn" type="button">Agregar nota</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
+function qs(name){
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function fmtDate(iso){
+  if(!iso) return '';
+  try{
+    return new Date(iso).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'});
+  }catch(e){ return iso; }
+}
+
+function buildInfoCard(ficha){
+  const card = document.createElement('div');
+  card.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.innerHTML = '<i data-lucide="user"></i> Datos del cliente';
+  card.appendChild(title);
+
+  [
+    ['Nombre', ficha.client_name],
+    ['Teléfono', ficha.client_phone],
+    ['Agente asignado', ficha.agent_name],
+  ].forEach(([label, value])=>{
+    const row = document.createElement('div');
+    row.className = 'info-row';
+    row.innerHTML = '<span class="label">' + label + '</span><span class="value"></span>';
+    row.querySelector('.value').textContent = value || '—';
+    card.appendChild(row);
+  });
+
+  return card;
+}
+
+function buildPropertyCard(ficha){
+  if(!ficha.property && !ficha.property_raw) return null;
+  const card = document.createElement('div');
+  card.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.innerHTML = '<i data-lucide="home"></i> Propiedad de interés';
+  card.appendChild(title);
+
+  const p = ficha.property;
+  if(p){
+    const pt = document.createElement('div');
+    pt.className = 'prop-title';
+    pt.textContent = p.title || 'Propiedad';
+    card.appendChild(pt);
+
+    const meta = document.createElement('div');
+    meta.className = 'prop-meta';
+    meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
+    card.appendChild(meta);
+  }
+  if(ficha.property_raw){
+    const link = document.createElement('a');
+    link.className = 'prop-link';
+    link.href = ficha.property_raw;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = ficha.property_raw;
+    card.appendChild(link);
+  }
+  if(ficha.property_discarded){
+    const note = document.createElement('div');
+    note.className = 'discarded-note';
+    note.textContent = 'Descartada' + (ficha.discard_reason ? ': ' + ficha.discard_reason : '');
+    card.appendChild(note);
+  }
+
+  return card;
+}
+
+function buildProgressCard(progress){
+  const card = document.createElement('div');
+  card.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.innerHTML = '<i data-lucide="list-checks"></i> Avance del discovery';
+  card.appendChild(title);
+
+  if(!progress){
+    const empty = document.createElement('p');
+    empty.className = 'empty-note';
+    empty.textContent = 'Todavía no hay avance registrado.';
+    card.appendChild(empty);
+    return card;
+  }
+
+  const metRow = document.createElement('div');
+  metRow.className = 'info-row';
+  metRow.innerHTML = '<span class="label">Ya conoció a su agente</span><span class="value"></span>';
+  metRow.querySelector('.value').textContent = progress.metAgent ? 'Sí' : 'No';
+  card.appendChild(metRow);
+
+  const count = progress.propertyCount || 1;
+  const properties = progress.properties || {};
+  for(let n = 1; n <= count; n++){
+    const block = document.createElement('div');
+    block.className = 'property-block';
+    const has = properties[n];
+    const status = document.createElement('span');
+    status.className = 'status';
+    status.textContent = has && has.report ? 'Reporte generado' : (has && has.state ? 'En progreso' : 'Sin iniciar');
+    block.appendChild(status);
+
+    const label = document.createElement('div');
+    label.style.fontSize = '13px';
+    label.style.fontWeight = '600';
+    label.textContent = count > 1 ? 'Propiedad ' + n : 'Discovery';
+    block.appendChild(label);
+
+    if(has && has.report){
+      const toggle = document.createElement('button');
+      toggle.className = 'report-toggle';
+      toggle.type = 'button';
+      toggle.textContent = 'Ver reporte';
+      const reportBox = document.createElement('div');
+      reportBox.className = 'report-text';
+      reportBox.textContent = has.report;
+      toggle.addEventListener('click', ()=>{
+        const open = reportBox.style.display === 'block';
+        reportBox.style.display = open ? 'none' : 'block';
+        toggle.textContent = open ? 'Ver reporte' : 'Ocultar reporte';
+      });
+      block.appendChild(toggle);
+      block.appendChild(reportBox);
+    }
+
+    card.appendChild(block);
+  }
+
+  return card;
+}
+
+function renderNotes(notes){
+  const list = document.getElementById('notes-list');
+  list.innerHTML = '';
+  if(!notes || !notes.length){
+    list.innerHTML = '<p class="empty-note" style="margin-bottom:14px;">Todavía no hay notas.</p>';
+    return;
+  }
+  notes.slice().reverse().forEach(n=>{
+    const item = document.createElement('div');
+    item.className = 'note-item';
+    const text = document.createElement('div');
+    text.textContent = n.text;
+    item.appendChild(text);
+    const meta = document.createElement('div');
+    meta.className = 'note-meta';
+    meta.textContent = (n.author || '') + (n.created_at ? ' — ' + fmtDate(n.created_at) : '');
+    item.appendChild(meta);
+    list.appendChild(item);
+  });
+}
+
+async function boot(){
+  await waitForSync();
+  const session = await window.tres65Sync.agentInit();
+  if(!session){
+    window.location.href = 'agente-login.html';
+    return;
+  }
+
+  const token = qs('token');
+  if(!token){
+    document.getElementById('content').innerHTML = '<p class="empty-note">Falta el cliente.</p>';
+    return;
+  }
+
+  let data;
+  try{
+    data = await window.tres65Sync.getClientDetail(token);
+  }catch(err){
+    document.getElementById('content').innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando el cliente.') + '</p>';
+    if(window.lucide) lucide.createIcons();
+    return;
+  }
+
+  const {ficha, progress, notes} = data;
+  document.getElementById('page-title').textContent = 'Progreso de cliente: ' + (ficha.client_name || 'Sin nombre');
+  document.getElementById('page-subtitle').textContent = ficha.client_phone || '';
+
+  const content = document.getElementById('content');
+  content.appendChild(buildInfoCard(ficha));
+  const propCard = buildPropertyCard(ficha);
+  if(propCard) content.appendChild(propCard);
+  content.appendChild(buildProgressCard(progress));
+
+  renderNotes(notes);
+  if(window.lucide) lucide.createIcons();
+
+  document.getElementById('note-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('note-btn');
+    const input = document.getElementById('note-input');
+    const text = input.value.trim();
+    if(!text) return;
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    try{
+      const result = await window.tres65Sync.addClientNote(token, text);
+      renderNotes(result.notes);
+      input.value = '';
+    }catch(err){
+      alert(err.message || 'Error guardando la nota.');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Agregar nota';
+    }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
