@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads del día — Tres65 Inmobiliaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script type="module" src="firebase-sync.js"></script>
+<style>
+  :root{
+    --profundo:#1A4F5C;
+    --acento:#2AA898;
+    --medio:#1E7A6E;
+    --marfil:#FFFFFF;
+    --menta:#E8F4F1;
+    --texto:#22383B;
+    --texto-suave:#5C7274;
+    --borde:#D9E4E1;
+    --alerta:#C97A3D;
+    --alerta-bg:#FBF0E6;
+    --listo:#00BF6F;
+    --listo-bg:#E3F8EE;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--marfil);
+    font-family:'Raleway',sans-serif;
+    color:var(--texto);
+    line-height:1.5;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:32px 20px 80px;}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:16px;}
+  header .logo{display:block; max-width:140px;}
+  .who{text-align:right;}
+  .who .name{font-family:'Montserrat',sans-serif; font-weight:600; color:var(--profundo); font-size:14px;}
+  .who .role{font-size:12px; color:var(--acento); text-transform:uppercase; letter-spacing:.5px;}
+
+  .back-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px; font-weight:600;
+    color:var(--profundo);
+    background:none; border:none; cursor:pointer;
+    padding:0; margin-bottom:18px;
+    text-decoration:none;
+  }
+  .back-btn svg{width:16px; height:16px;}
+
+  .topbar{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:22px;}
+  .topbar h1{font-family:'Montserrat',sans-serif; font-size:20px; font-weight:600; color:var(--profundo); margin:0 0 4px;}
+  .topbar p{margin:0; font-size:13px; color:var(--texto-suave);}
+  .refresh-btn{
+    font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600;
+    color:var(--profundo); background:none; border:1px solid var(--borde);
+    border-radius:8px; padding:8px 14px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .refresh-btn:hover{background:var(--menta);}
+  .refresh-btn svg{width:14px; height:14px;}
+
+  .stat-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:26px;}
+  .stat{background:#fff; border:1px solid var(--borde); border-radius:10px; padding:10px 16px; min-width:96px; text-align:center;}
+  .stat .n{font-family:'Montserrat',sans-serif; font-size:19px; font-weight:700; color:var(--profundo);}
+  .stat .l{font-size:10.5px; color:var(--texto-suave); text-transform:uppercase; letter-spacing:.4px; margin-top:2px;}
+  .stat.warn .n{color:var(--alerta);}
+  .stat.ok .n{color:var(--listo);}
+
+  .columns{display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start;}
+  @media (max-width:820px){.columns{grid-template-columns:1fr;}}
+
+  .col-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .col-head h2{font-family:'Montserrat',sans-serif; font-size:14px; font-weight:600; color:var(--profundo); margin:0; display:flex; align-items:center; gap:8px;}
+  .col-head .dot{width:8px; height:8px; border-radius:50%;}
+  .col-head .count{font-size:11px; color:var(--texto-suave); background:var(--menta); padding:2px 8px; border-radius:20px; font-family:'Montserrat',sans-serif; font-weight:600;}
+
+  .lead-card{background:#fff; border:1px solid var(--borde); border-radius:12px; padding:15px 16px; margin-bottom:12px;}
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .who-row{display:flex; gap:10px;}
+  .avatar{
+    width:36px; height:36px; border-radius:50%;
+    background:var(--menta); color:var(--medio);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Montserrat',sans-serif; font-weight:700; font-size:13px;
+    flex-shrink:0;
+  }
+  .who-text .name{font-family:'Montserrat',sans-serif; font-weight:600; font-size:14px; color:var(--texto);}
+  .who-text .meta{font-size:11.5px; color:var(--texto-suave); margin-top:1px;}
+
+  .src-tag{font-size:10px; font-family:'Montserrat',sans-serif; font-weight:600; color:var(--medio); background:var(--menta); padding:3px 8px; border-radius:6px; white-space:nowrap;}
+
+  .interes-tag{display:flex; align-items:flex-start; gap:5px; font-size:11.5px; color:var(--texto-suave); margin-top:10px;}
+  .interes-tag i{width:13px; height:13px; color:var(--acento); flex-shrink:0; margin-top:1px;}
+
+  .status-row{display:flex; align-items:center; gap:8px; margin-top:12px;}
+  .status-row .label{font-size:11.5px; color:var(--texto-suave); font-family:'Montserrat',sans-serif; font-weight:600;}
+  .answer-badge{font-size:11px; font-weight:700; font-family:'Montserrat',sans-serif; padding:3px 10px; border-radius:20px;}
+  .answer-badge.yes{background:var(--menta); color:var(--medio);}
+  .answer-badge.no{background:var(--alerta-bg); color:var(--alerta);}
+  .answer-badge.unknown{background:var(--menta); color:var(--texto-suave);}
+
+  .actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .btn{
+    flex:1; min-width:88px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:8px 10px; border-radius:8px;
+    font-family:'Montserrat',sans-serif; font-size:11.5px; font-weight:600;
+    border:1px solid var(--borde); background:#fff; color:var(--texto);
+    cursor:pointer; text-decoration:none;
+  }
+  .btn svg{width:14px; height:14px;}
+  .btn.call{color:var(--profundo);}
+  .btn.chat{background:var(--menta); border-color:var(--menta); color:var(--medio);}
+  .btn.profile{background:var(--profundo); border-color:var(--profundo); color:#fff;}
+
+  .empty-note{font-size:13px; color:var(--texto-suave); padding:16px; background:var(--menta); border-radius:8px; text-align:center;}
+  .error-note{font-size:13px; color:#C0453A; padding:16px; background:#F5E4E1; border-radius:8px; text-align:center;}
+
+  .modal-overlay{display:none; position:fixed; inset:0; background:rgba(26,79,92,0.55); align-items:center; justify-content:center; z-index:50; padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal-card{background:#fff; border-radius:12px; padding:24px; max-width:380px; width:100%;}
+  .modal-card h3{font-family:'Montserrat',sans-serif; color:var(--profundo); font-size:17px; margin:0 0 16px;}
+  .modal-card label{
+    font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600; color:var(--texto-suave);
+    text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; display:block;
+  }
+  .modal-card input, .modal-card select{
+    width:100%; font-family:'Raleway',sans-serif; font-size:14px; padding:10px 12px;
+    border-radius:8px; border:1px solid var(--borde); background:#fff; color:var(--texto); margin-bottom:14px;
+  }
+  .modal-buttons{display:flex; gap:8px; margin-top:8px;}
+  .modal-buttons button{flex:1; font-family:'Montserrat',sans-serif; font-size:14px; font-weight:600; padding:12px; border-radius:8px; border:none; cursor:pointer;}
+  .modal-save{background:var(--profundo); color:#fff;}
+  .modal-save:hover{background:var(--medio);}
+  .modal-save:disabled{opacity:.6;}
+  .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
+  .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
+  .modal-success{color:var(--acento); font-size:12px; margin:-6px 0 12px; display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
+    <div class="who">
+      <div class="name" id="who-name">—</div>
+      <div class="role" id="who-role">—</div>
+    </div>
+  </header>
+
+  <a class="back-btn" href="agente-home.html">
+    <i data-lucide="arrow-left"></i> Volver a home
+  </a>
+
+  <div class="topbar">
+    <div>
+      <h1>Leads del día</h1>
+      <p>Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"</p>
+    </div>
+    <button class="refresh-btn" id="refresh-btn" type="button"><i data-lucide="refresh-cw"></i> Actualizar</button>
+  </div>
+
+  <div class="stat-row" id="stat-row" style="display:none;">
+    <div class="stat"><div class="n" id="stat-total">0</div><div class="l">Total</div></div>
+    <div class="stat"><div class="n" id="stat-potencial">0</div><div class="l">Potencial</div></div>
+    <div class="stat ok"><div class="n" id="stat-listo">0</div><div class="l">Listos</div></div>
+    <div class="stat warn"><div class="n" id="stat-sinresp">0</div><div class="l">Sin resp.</div></div>
+  </div>
+
+  <div id="leads-status"></div>
+
+  <div class="columns" id="columns" style="display:none;">
+    <section>
+      <div class="col-head">
+        <h2><span class="dot" style="background:var(--alerta)"></span> Cliente potencial</h2>
+        <span class="count" id="count-potencial">0</span>
+      </div>
+      <div id="col-potencial"></div>
+    </section>
+    <section>
+      <div class="col-head">
+        <h2><span class="dot" style="background:var(--listo)"></span> Listo para asesor</h2>
+        <span class="count" id="count-listo">0</span>
+      </div>
+      <div id="col-listo"></div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-card">
+    <h3>Crear portal para este cliente</h3>
+    <div id="agent-select-wrap" style="display:none;">
+      <label for="agent-select">Asignar a</label>
+      <select id="agent-select"></select>
+    </div>
+    <label for="client-name">Nombre completo</label>
+    <input type="text" id="client-name" placeholder="Nombre del cliente">
+    <label for="client-phone">Teléfono</label>
+    <input type="text" id="client-phone" placeholder="9991234567">
+    <label for="client-property">Link de la propiedad (opcional)</label>
+    <input type="text" id="client-property" placeholder="https://...">
+    <p class="modal-error" id="modal-error"></p>
+    <p class="modal-success" id="modal-success"></p>
+    <div class="modal-buttons">
+      <button class="modal-cancel" id="modal-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="modal-save" type="button">Crear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const AGENTS = [
+  {uid:'5219992786153', name:'Damara Traconis Corres'},
+  {uid:'5219992399890', name:'Moises Traconis Corres'},
+  {uid:'5219992413657', name:'Guillermo Martínez Espinosa'}
+];
+
+function waitForSync(){
+  return new Promise(resolve=>{
+    if(window.tres65Sync){ resolve(); return; }
+    window.addEventListener('tres65-sync-ready', () => resolve(), {once:true});
+  });
+}
+
+function initials(name){
+  return (name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+function timeAgo(epochSeconds){
+  if(!epochSeconds) return '';
+  const diffMs = Date.now() - (epochSeconds * 1000);
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'ahora mismo';
+  if(mins < 60) return 'hace ' + mins + ' min';
+  const hours = Math.floor(mins / 60);
+  if(hours < 24) return 'hace ' + hours + 'h';
+  const days = Math.floor(hours / 24);
+  return 'hace ' + days + 'd';
+}
+
+let session = null;
+
+function buildLeadCard(lead){
+  const card = document.createElement('div');
+  card.className = 'lead-card';
+
+  const top = document.createElement('div');
+  top.className = 'card-top';
+  const who = document.createElement('div');
+  who.className = 'who-row';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = initials(lead.name);
+  who.appendChild(avatar);
+  const whoText = document.createElement('div');
+  whoText.className = 'who-text';
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = lead.name || 'Sin nombre';
+  whoText.appendChild(name);
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = [lead.phone, timeAgo(lead.last_activity)].filter(Boolean).join(' · ');
+  whoText.appendChild(meta);
+  who.appendChild(whoText);
+  top.appendChild(who);
+
+  const src = document.createElement('span');
+  src.className = 'src-tag';
+  src.textContent = lead.origen || 'Link directo';
+  top.appendChild(src);
+  card.appendChild(top);
+
+  if(lead.interes){
+    const interes = document.createElement('div');
+    interes.className = 'interes-tag';
+    interes.innerHTML = '<i data-lucide="map-pin"></i> <span></span>';
+    interes.querySelector('span').textContent = lead.interes;
+    card.appendChild(interes);
+  }
+
+  const statusRow = document.createElement('div');
+  statusRow.className = 'status-row';
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = '¿Contestó?';
+  statusRow.appendChild(label);
+  const badge = document.createElement('span');
+  if(lead.contesto === true){ badge.className = 'answer-badge yes'; badge.textContent = 'Sí'; }
+  else if(lead.contesto === false){ badge.className = 'answer-badge no'; badge.textContent = 'No'; }
+  else { badge.className = 'answer-badge unknown'; badge.textContent = '—'; }
+  statusRow.appendChild(badge);
+  card.appendChild(statusRow);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  if(lead.phone){
+    const callBtn = document.createElement('a');
+    callBtn.className = 'btn call';
+    callBtn.href = 'tel:' + lead.phone;
+    callBtn.innerHTML = '<i data-lucide="phone"></i> Llamar';
+    actions.appendChild(callBtn);
+  }
+
+  const chatBtn = document.createElement('a');
+  chatBtn.className = 'btn chat';
+  chatBtn.href = lead.chatwoot_url;
+  chatBtn.target = '_blank';
+  chatBtn.rel = 'noopener';
+  chatBtn.innerHTML = '<i data-lucide="message-square"></i> Chatwoot';
+  actions.appendChild(chatBtn);
+
+  const profileBtn = document.createElement('button');
+  profileBtn.className = 'btn profile';
+  profileBtn.type = 'button';
+  profileBtn.innerHTML = '<i data-lucide="user-plus"></i> Crear portal';
+  profileBtn.addEventListener('click', ()=> openCreateModal(lead));
+  actions.appendChild(profileBtn);
+
+  card.appendChild(actions);
+  return card;
+}
+
+function openCreateModal(lead){
+  document.getElementById('client-name').value = (lead.name && lead.name !== 'Por definir') ? lead.name : '';
+  document.getElementById('client-phone').value = (lead.phone || '').replace(/\D/g, '');
+  document.getElementById('client-property').value = '';
+  document.getElementById('modal-error').style.display = 'none';
+  document.getElementById('modal-success').style.display = 'none';
+  document.getElementById('modal').classList.add('open');
+}
+
+async function loadLeads(){
+  const statusEl = document.getElementById('leads-status');
+  const columnsEl = document.getElementById('columns');
+  const statRow = document.getElementById('stat-row');
+  statusEl.innerHTML = '<p class="empty-note">Consultando Chatwoot...</p>';
+  columnsEl.style.display = 'none';
+  statRow.style.display = 'none';
+
+  try{
+    const leads = await window.tres65Sync.getLeadsPotenciales();
+    statusEl.innerHTML = '';
+
+    const potenciales = leads.filter(l => l.label === 'cliente-potencial');
+    const listos = leads.filter(l => l.label === 'listo-para-asesor');
+    const sinResp = leads.filter(l => l.contesto === false).length;
+
+    document.getElementById('stat-total').textContent = leads.length;
+    document.getElementById('stat-potencial').textContent = potenciales.length;
+    document.getElementById('stat-listo').textContent = listos.length;
+    document.getElementById('stat-sinresp').textContent = sinResp;
+    statRow.style.display = 'flex';
+
+    const colPotencial = document.getElementById('col-potencial');
+    const colListo = document.getElementById('col-listo');
+    colPotencial.innerHTML = '';
+    colListo.innerHTML = '';
+    document.getElementById('count-potencial').textContent = potenciales.length;
+    document.getElementById('count-listo').textContent = listos.length;
+
+    if(!potenciales.length){
+      colPotencial.innerHTML = '<p class="empty-note">Sin leads potenciales por ahora.</p>';
+    } else {
+      potenciales.forEach(l => colPotencial.appendChild(buildLeadCard(l)));
+    }
+    if(!listos.length){
+      colListo.innerHTML = '<p class="empty-note">Sin leads listos para asesor por ahora.</p>';
+    } else {
+      listos.forEach(l => colListo.appendChild(buildLeadCard(l)));
+    }
+
+    columnsEl.style.display = 'grid';
+    if(window.lucide) lucide.createIcons();
+  }catch(err){
+    console.error('[Leads] error:', err);
+    statusEl.innerHTML = '<p class="error-note">' + (err.message || 'Error consultando Chatwoot.') + '</p>';
+  }
+}
+
+async function boot(){
+  await waitForSync();
+  session = await window.tres65Sync.agentInit();
+  if(!session){
+    window.location.href = 'agente-login.html';
+    return;
+  }
+  document.getElementById('who-name').textContent = session.email;
+  document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
+
+  if(session.isAdmin){
+    const wrap = document.getElementById('agent-select-wrap');
+    wrap.style.display = 'block';
+    const select = document.getElementById('agent-select');
+    AGENTS.forEach(a=>{
+      const opt = document.createElement('option');
+      opt.value = a.uid;
+      opt.textContent = a.name;
+      select.appendChild(opt);
+    });
+  }
+
+  await loadLeads();
+  if(window.lucide) lucide.createIcons();
+
+  document.getElementById('refresh-btn').addEventListener('click', loadLeads);
+
+  document.getElementById('modal-cancel').addEventListener('click', ()=>{
+    document.getElementById('modal').classList.remove('open');
+  });
+
+  document.getElementById('modal-save').addEventListener('click', async ()=>{
+    const btn = document.getElementById('modal-save');
+    const errorNote = document.getElementById('modal-error');
+    const successNote = document.getElementById('modal-success');
+    errorNote.style.display = 'none';
+    successNote.style.display = 'none';
+
+    const client_name = document.getElementById('client-name').value.trim();
+    const client_phone = document.getElementById('client-phone').value.trim();
+    const property_raw = document.getElementById('client-property').value.trim();
+    const agent_uid = session.isAdmin ? document.getElementById('agent-select').value : undefined;
+
+    if(!client_name || !client_phone){
+      errorNote.textContent = 'Falta el nombre o el teléfono.';
+      errorNote.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creando...';
+    try{
+      const result = await window.tres65Sync.createClient({client_name, client_phone, property_raw, agent_uid});
+      successNote.textContent = 'Portal creado. Link: ' + result.link;
+      successNote.style.display = 'block';
+    }catch(err){
+      console.error('[Leads] error creando cliente:', err);
+      errorNote.textContent = err.message || 'Error creando el portal.';
+      errorNote.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Crear';
+    }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

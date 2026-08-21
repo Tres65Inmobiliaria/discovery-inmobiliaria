@@ -169,6 +169,18 @@ async function agentInit(){
   });
 }
 
+async function getLeadsPotenciales(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/leads-potenciales", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando leads");
+  return data.leads;
+}
+
 async function listClients(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -268,7 +280,7 @@ window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
-  correctAnalysis, shareAnalysis,
+  correctAnalysis, shareAnalysis, getLeadsPotenciales,
   getClientDetail, addClientNote, deleteClient
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
