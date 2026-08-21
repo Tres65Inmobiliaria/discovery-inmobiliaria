@@ -113,18 +113,18 @@
   .client-tag.discarded{background:#F5E4E1; color:#C0453A;}
 
   .funnel{margin-bottom:14px;}
-  .funnel-row{margin-bottom:6px;}
-  .funnel-bar{
-    min-width:120px;
-    height:34px;
-    border-radius:6px;
-    display:flex; align-items:center;
-    padding:0 14px;
-    color:#fff;
+  .funnel-row{margin-bottom:10px;}
+  .funnel-label{
     font-family:'Montserrat',sans-serif;
     font-weight:600;
-    font-size:12px;
-    white-space:nowrap;
+    font-size:11px;
+    color:var(--texto-suave);
+    margin-bottom:4px;
+  }
+  .funnel-bar{
+    min-width:6px;
+    height:16px;
+    border-radius:4px;
     transition:width .3s;
   }
   .summary-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px;}
@@ -651,8 +651,8 @@ function renderAdminSummary(session, allClients){
   html += '<div class="funnel">';
   FUNNEL_STAGES.forEach((stage, i)=>{
     const n = counts[stage] || 0;
-    const pct = Math.max(14, Math.round((n / maxCount) * 100));
-    html += '<div class="funnel-row"><div class="funnel-bar" style="width:' + pct + '%; background:' + FUNNEL_COLORS[i] + ';">' + stage + ' · ' + n + '</div></div>';
+    const pct = Math.max(6, Math.round((n / maxCount) * 100));
+    html += '<div class="funnel-row"><div class="funnel-label">' + stage + ' · ' + n + '</div><div class="funnel-bar" style="width:' + pct + '%; background:' + FUNNEL_COLORS[i] + ';"></div></div>';
   });
   html += '</div>';
 
