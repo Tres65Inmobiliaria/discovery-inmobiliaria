@@ -200,8 +200,23 @@
   }
   .search-btn:hover{background:var(--medio);}
   .search-btn:disabled{opacity:.6;}
-  .search-results{margin-top:14px; display:none;}
+  .search-results{margin-top:14px; padding-top:26px; position:relative; display:none;}
   .search-results.open{display:block;}
+  .search-results-close{
+    position:absolute;
+    top:0; right:0;
+    width:22px; height:22px;
+    line-height:20px;
+    text-align:center;
+    border-radius:50%;
+    border:none;
+    background:rgba(26,79,92,0.12);
+    color:var(--profundo);
+    font-size:15px;
+    cursor:pointer;
+    padding:0;
+  }
+  .search-results-close:hover{background:rgba(26,79,92,0.22);}
   .prop-add-btn{
     display:block;
     margin-top:8px;
@@ -306,6 +321,7 @@
     <textarea id="search-input" placeholder="¿Qué estás buscando?"></textarea>
     <button class="search-btn" id="search-btn" type="button">Buscar</button>
     <div class="search-results" id="search-results">
+      <button class="search-results-close" id="search-results-close" type="button" aria-label="Cerrar">×</button>
       <p class="subtitle" id="search-exact-note" style="display:none;"></p>
       <div id="search-results-list"></div>
       <div class="shortlist-section" id="shortlist-section" style="display:none;">
@@ -525,10 +541,33 @@ function buildPropertiesListCard(ficha, token){
     const p = entry.data || {};
     const row = document.createElement('div');
     row.className = 'property-list-item';
+
+    const headRow = document.createElement('div');
+    headRow.style.display = 'flex';
+    headRow.style.justifyContent = 'space-between';
+    headRow.style.alignItems = 'flex-start';
+    headRow.style.gap = '8px';
     const pt = document.createElement('div');
     pt.className = 'prop-title';
     pt.textContent = p.title || entry.url;
-    row.appendChild(pt);
+    headRow.appendChild(pt);
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'shortlist-remove';
+    rm.textContent = '×';
+    rm.setAttribute('aria-label', 'Quitar');
+    rm.addEventListener('click', async ()=>{
+      if(!confirm('¿Quitar esta propiedad de la lista del cliente?')) return;
+      try{
+        await window.tres65Sync.removeProperty(token, entry.url);
+        await refreshClientContent(token);
+      }catch(err){
+        alert(err.message || 'Error quitando la propiedad.');
+      }
+    });
+    headRow.appendChild(rm);
+    row.appendChild(headRow);
+
     const meta = document.createElement('div');
     meta.className = 'prop-meta';
     meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
@@ -612,16 +651,25 @@ function buildProgressCard(progress){
     label.textContent = count > 1 ? 'Propiedad ' + n : 'Discovery';
     block.appendChild(label);
 
+    if(has && has.report_keywords){
+      const bubblesInline = buildKeywordBubbles(has.report_keywords);
+      if(bubblesInline){
+        bubblesInline.style.marginTop = '8px';
+        bubblesInline.style.paddingTop = '0';
+        bubblesInline.style.borderTop = 'none';
+        block.appendChild(bubblesInline);
+      }
+    }
+
     if(has && has.report){
       const toggle = document.createElement('button');
       toggle.className = 'report-toggle';
       toggle.type = 'button';
+      toggle.style.marginTop = '8px';
       toggle.textContent = 'Ver reporte';
       const reportBox = document.createElement('div');
       reportBox.className = 'report-text';
       reportBox.innerHTML = renderReportHtml(has.report);
-      const bubbles = buildKeywordBubbles(has.report_keywords);
-      if(bubbles) reportBox.appendChild(bubbles);
       toggle.addEventListener('click', ()=>{
         const open = reportBox.style.display === 'block';
         reportBox.style.display = open ? 'none' : 'block';
@@ -835,6 +883,11 @@ async function boot(){
       btn.disabled = false;
       btn.textContent = original;
     }
+  });
+
+  document.getElementById('search-results-close').addEventListener('click', ()=>{
+    document.getElementById('search-results').classList.remove('open');
+    document.getElementById('search-input').value = '';
   });
 
   document.getElementById('search-btn').addEventListener('click', async ()=>{
