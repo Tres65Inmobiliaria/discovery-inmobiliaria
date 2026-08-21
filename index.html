@@ -784,6 +784,7 @@ const API_URL = 'https://agente-tres65-production.up.railway.app/discovery/gener
 function stateKey(n){ return 'tres65_property_' + n + '_state'; }
 function reportKey(n){ return 'tres65_property_' + n + '_report'; }
 function reportKeywordsKey(n){ return 'tres65_property_' + n + '_report_keywords'; }
+function reportProfileKey(n){ return 'tres65_property_' + n + '_report_profile'; }
 function getActiveProperty(){ return parseInt(localStorage.getItem('tres65_active_property') || '1', 10); }
 function setActiveProperty(n){ localStorage.setItem('tres65_active_property', String(n)); }
 function getPropertyCount(){ return parseInt(localStorage.getItem('tres65_property_count') || '1', 10); }
@@ -974,10 +975,11 @@ function renderReportHtml(text){
   return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
-function showReport(perfilText, keywords){
+function showReport(perfilText, keywords, perfilComprador){
   localStorage.setItem(reportKey(getActiveProperty()), perfilText);
   localStorage.setItem('tres65_last_report', perfilText);
   if(keywords) localStorage.setItem(reportKeywordsKey(getActiveProperty()), JSON.stringify(keywords));
+  if(perfilComprador) localStorage.setItem(reportProfileKey(getActiveProperty()), JSON.stringify(perfilComprador));
   if(tres65Uid) window.tres65Sync.push(tres65Uid);
   document.querySelector('header').style.display = 'none';
   document.querySelector('.nav-bar').style.display = 'none';
@@ -1000,7 +1002,7 @@ async function finalizeProfile(){
     });
     const data = await res.json();
     if(!data.ok) throw new Error(data.error || 'error');
-    showReport(data.perfil, data.keywords);
+    showReport(data.perfil, data.keywords, data.perfil_comprador);
   }catch(e){
     console.error('[Discovery] error generando perfil:', e);
     alert('Tuvimos un problema técnico generando tu perfil. \nPor favor intenta de nuevo en un momento.');

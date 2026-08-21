@@ -68,6 +68,27 @@
   }
   .card-title i{width:17px; height:17px; color:var(--acento);}
 
+  .buyer-badge{
+    display:inline-block;
+    font-family:'Montserrat',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    color:#fff;
+    padding:6px 14px;
+    border-radius:20px;
+  }
+  .buyer-strategy-title{
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--profundo);
+    margin-top:14px;
+    margin-bottom:6px;
+  }
+  .buyer-strategy-list{margin:0; padding-left:18px;}
+  .buyer-strategy-list li{font-size:13px; margin-bottom:8px; line-height:1.5;}
+  .buyer-strategy-list strong{color:var(--profundo);}
+
   .info-row{display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--menta);}
   .info-row:last-child{border-bottom:none;}
   .info-row .label{color:var(--texto-suave);}
@@ -472,6 +493,64 @@ function fmtDate(iso){
   }catch(e){ return iso; }
 }
 
+function buildBuyerProfileCard(progress){
+  if(!progress || !progress.properties) return null;
+  const keys = Object.keys(progress.properties).sort((a, b) => Number(a) - Number(b));
+  let profile = null;
+  for(const k of keys){
+    if(progress.properties[k].report_profile){
+      profile = progress.properties[k].report_profile;
+      break;
+    }
+  }
+  if(!profile) return null;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.innerHTML = '<i data-lucide="user-search"></i> Tipo de comprador';
+  card.appendChild(title);
+
+  const isNeutral = !profile.perfil || profile.perfil === 'sin_clasificar' || profile.confianza === 'baja';
+  const color = isNeutral ? '#8A8A8A' : (profile.color_hex || '#8A8A8A');
+  const label = (profile.perfil && profile.perfil !== 'sin_clasificar') ? profile.perfil : 'Sin clasificar';
+
+  const badge = document.createElement('div');
+  badge.className = 'buyer-badge';
+  badge.style.background = color;
+  badge.textContent = label;
+  card.appendChild(badge);
+
+  if(isNeutral){
+    const note = document.createElement('p');
+    note.className = 'empty-note';
+    note.style.marginTop = '8px';
+    note.textContent = profile.perfil === 'sin_clasificar'
+      ? 'No hay señales suficientes en sus respuestas para clasificarlo con confianza — revísalo a mano.'
+      : 'Confianza baja en esta clasificación — revísala a mano antes de aplicar la estrategia.';
+    card.appendChild(note);
+  }
+
+  if(Array.isArray(profile.tips_estrategia) && profile.tips_estrategia.length){
+    const stratTitle = document.createElement('div');
+    stratTitle.className = 'buyer-strategy-title';
+    stratTitle.textContent = 'Estrategia de cierre:';
+    card.appendChild(stratTitle);
+
+    const list = document.createElement('ul');
+    list.className = 'buyer-strategy-list';
+    profile.tips_estrategia.forEach(tip=>{
+      const li = document.createElement('li');
+      li.innerHTML = renderReportHtml(tip);
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+  }
+
+  return card;
+}
+
 function buildInfoCard(ficha){
   const card = document.createElement('div');
   card.className = 'card';
@@ -733,6 +812,8 @@ async function refreshClientContent(token){
   const content = document.getElementById('content');
   content.innerHTML = '';
   content.appendChild(buildInfoCard(ficha));
+  const buyerCard = buildBuyerProfileCard(progress);
+  if(buyerCard) content.appendChild(buyerCard);
   const propCard = buildPropertyCard(ficha);
   if(propCard) content.appendChild(propCard);
   const propsListCard = buildPropertiesListCard(ficha, token);
