@@ -671,14 +671,15 @@ function renderAdminSummary(session, allClients){
     reasonCounts[r] = (reasonCounts[r] || 0) + 1;
   });
 
-  const maxCount = Math.max(1, ...FUNNEL_STAGES.map(s => counts[s] || 0));
+  const totalActive = active.length;
 
   let html = '<div class="tool-card"><div class="tool-title"><i data-lucide="bar-chart-3"></i> Resumen de clientes</div>';
   html += '<div class="funnel">';
   FUNNEL_STAGES.forEach((stage, i)=>{
     const n = counts[stage] || 0;
-    const pct = Math.max(6, Math.round((n / maxCount) * 100));
-    html += '<div class="funnel-row"><div class="funnel-label">' + stage + ' · ' + n + '</div><div class="funnel-bar" style="width:' + pct + '%; background:' + FUNNEL_COLORS[i] + ';"></div></div>';
+    const pct = totalActive > 0 ? Math.round((n / totalActive) * 100) : 0;
+    const barStyle = pct > 0 ? 'width:' + pct + '%; background:' + FUNNEL_COLORS[i] + ';' : 'width:0;';
+    html += '<div class="funnel-row"><div class="funnel-label">' + stage + ' · ' + n + '</div><div class="funnel-bar" style="' + barStyle + '"></div></div>';
   });
   html += '</div>';
 
