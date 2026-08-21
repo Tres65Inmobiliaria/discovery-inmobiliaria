@@ -52,6 +52,40 @@
   }
   header p{color:var(--texto-suave); font-size:14px; margin:0;}
 
+  .email-widget{
+    background:#F5E4E1;
+    border:1px solid #E3B3AC;
+    border-radius:8px;
+    padding:10px 14px;
+    margin:0 0 16px;
+    text-align:left;
+  }
+  .email-widget p{color:#C0453A; font-size:13px; font-weight:600; margin:0 0 8px;}
+  .email-widget-form{display:flex; gap:8px; flex-wrap:wrap;}
+  .email-widget-form input{
+    flex:1;
+    min-width:180px;
+    font-family:'Raleway',sans-serif;
+    font-size:13px;
+    padding:8px 10px;
+    border-radius:6px;
+    border:1px solid var(--borde);
+  }
+  .email-widget-form button{
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:6px;
+    border:none;
+    background:#C0453A;
+    color:#fff;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .email-widget-form button:disabled{opacity:.5; cursor:default;}
+  .email-widget-error{color:#C0453A; font-size:12px; margin:6px 0 0;}
+
   .stepper{display:flex; flex-direction:column; align-items:center;}
   .step-arrow{color:var(--borde); margin:2px 0;}
   .step-arrow svg{display:block; width:20px; height:20px;}
@@ -256,6 +290,7 @@
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
     <h1>Tu progreso</h1>
+    <div id="email-widget-wrap"></div>
     <p>Aquí puedes ver en qué paso vas de tu proceso con nosotros.</p>
   </header>
 
@@ -536,6 +571,61 @@ function renderStepper(container, cards){
   });
 }
 
+function renderEmailWidget(ficha){
+  const wrap = document.getElementById('email-widget-wrap');
+  wrap.innerHTML = '';
+  if(!activeToken || !ficha || ficha.client_email) return;
+
+  const box = document.createElement('div');
+  box.className = 'email-widget';
+
+  const msg = document.createElement('p');
+  msg.textContent = 'Nos falta tu correo para mantenerte al tanto.';
+  box.appendChild(msg);
+
+  const form = document.createElement('div');
+  form.className = 'email-widget-form';
+  const input = document.createElement('input');
+  input.type = 'email';
+  input.placeholder = 'tu@correo.com';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'Agregar';
+  form.appendChild(input);
+  form.appendChild(btn);
+  box.appendChild(form);
+
+  const errorNote = document.createElement('p');
+  errorNote.className = 'email-widget-error';
+  errorNote.style.display = 'none';
+  box.appendChild(errorNote);
+
+  btn.addEventListener('click', async ()=>{
+    const email = input.value.trim();
+    errorNote.style.display = 'none';
+    if(!email){
+      errorNote.textContent = 'Escribe un correo.';
+      errorNote.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Guardando...';
+    try{
+      await window.tres65Sync.addClientEmail(activeToken, email);
+      ficha.client_email = email;
+      wrap.innerHTML = '';
+    }catch(err){
+      errorNote.textContent = err.message || 'No se pudo guardar el correo.';
+      errorNote.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  wrap.appendChild(box);
+}
+
 async function init(){
   await waitForSync();
   const uid = await window.tres65Sync.init(activeToken);
@@ -556,6 +646,8 @@ async function init(){
       if(data.ok) ficha = data.ficha;
     }catch(e){ console.error('[Home] error consultando ficha:', e); }
   }
+
+  renderEmailWidget(ficha);
 
   const propertiesRow = document.getElementById('properties-row');
   if(propertyCount > 1) document.getElementById('wrap').classList.add('multi');

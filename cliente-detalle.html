@@ -564,6 +564,7 @@ function buildInfoCard(ficha){
   [
     ['Nombre', ficha.client_name],
     ['Teléfono', ficha.client_phone],
+    ['Correo', ficha.client_email],
     ['Agente asignado', ficha.agent_name],
   ].forEach(([label, value])=>{
     const row = document.createElement('div');

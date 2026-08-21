@@ -153,6 +153,17 @@ async function push(uid){
   }
 }
 
+async function addClientEmail(token, email){
+  const res = await fetch(API_BASE + "/portal/ficha/" + encodeURIComponent(token) + "/correo", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email})
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error guardando el correo");
+  return data;
+}
+
 async function signInAgent(email, password){
   const cred = await signInWithEmailAndPassword(auth, email, password);
   return cred.user.uid;
@@ -310,6 +321,6 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo,
-  getClientDetail, addClientNote, deleteClient
+  getClientDetail, addClientNote, deleteClient, addClientEmail
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
