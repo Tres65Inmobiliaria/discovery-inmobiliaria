@@ -68,6 +68,18 @@
   .stat.warn .n{color:var(--alerta);}
   .stat.ok .n{color:var(--listo);}
 
+  .filter-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px;}
+  .filter-chip{
+    display:flex; align-items:center; gap:6px;
+    background:#fff; border:1px solid var(--borde); border-radius:20px;
+    padding:8px 16px; cursor:pointer;
+    font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; color:var(--texto);
+  }
+  .filter-chip:hover{border-color:var(--acento);}
+  .filter-chip .n{font-weight:700; color:var(--profundo);}
+  .filter-chip.active{background:var(--profundo); border-color:var(--profundo); color:#fff;}
+  .filter-chip.active .n{color:#fff;}
+
   .columns{display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start;}
   @media (max-width:820px){.columns{grid-template-columns:1fr;}}
 
@@ -171,6 +183,10 @@
     <div class="stat"><div class="n" id="stat-potencial">0</div><div class="l">Potencial</div></div>
     <div class="stat ok"><div class="n" id="stat-listo">0</div><div class="l">Listos</div></div>
   </div>
+
+  <div class="filter-row" id="filter-row" style="display:none;"></div>
+
+  <h2 id="filter-title" style="font-family:'Montserrat',sans-serif; font-size:14px; font-weight:600; color:var(--profundo); margin:0 0 12px; display:none;"></h2>
 
   <div id="leads-status"></div>
 
@@ -285,25 +301,6 @@ function buildLeadCard(lead){
     card.appendChild(interes);
   }
 
-  if(session.isAdmin){
-    const assignRow = document.createElement('div');
-    assignRow.className = 'status-row';
-    const assignLabel = document.createElement('span');
-    assignLabel.className = 'label';
-    assignLabel.textContent = 'Asignado a';
-    assignRow.appendChild(assignLabel);
-    const assignBadge = document.createElement('span');
-    if(lead.assignee_name){
-      assignBadge.className = 'answer-badge yes';
-      assignBadge.textContent = lead.assignee_name;
-    } else {
-      assignBadge.className = 'answer-badge no';
-      assignBadge.textContent = 'Sin asignar';
-    }
-    assignRow.appendChild(assignBadge);
-    card.appendChild(assignRow);
-  }
-
   const actions = document.createElement('div');
   actions.className = 'actions';
 
@@ -367,6 +364,85 @@ function openCreateModal(lead){
   document.getElementById('modal').classList.add('open');
 }
 
+let allLeads = [];
+let currentFilter = 'unassigned';
+
+function leadsForFilter(filter){
+  if(filter === 'unassigned') return allLeads.filter(l => !l.assignee_uid);
+  return allLeads.filter(l => l.assignee_uid === filter);
+}
+
+function renderFilters(){
+  const row = document.getElementById('filter-row');
+  if(!session.isAdmin){
+    row.style.display = 'none';
+    return;
+  }
+  row.innerHTML = '';
+  const options = [{key: 'unassigned', label: 'Sin asignar'}].concat(
+    AGENTS.map(a => ({key: a.uid, label: a.name.split(' ')[0]}))
+  );
+  options.forEach(opt=>{
+    const count = leadsForFilter(opt.key).length;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'filter-chip' + (currentFilter === opt.key ? ' active' : '');
+    chip.innerHTML = '<span class="n">' + count + '</span> ' + (opt.key === 'unassigned' ? opt.label : 'Asignados ' + opt.label);
+    chip.addEventListener('click', ()=>{
+      currentFilter = opt.key;
+      renderFilters();
+      renderColumns();
+    });
+    row.appendChild(chip);
+  });
+  row.style.display = 'flex';
+}
+
+function renderColumns(){
+  const columnsEl = document.getElementById('columns');
+  const statRow = document.getElementById('stat-row');
+  const filterTitle = document.getElementById('filter-title');
+  const leads = session.isAdmin ? leadsForFilter(currentFilter) : allLeads;
+
+  const potenciales = leads.filter(l => l.label === 'cliente-potencial');
+  const listos = leads.filter(l => l.label === 'listo-para-asesor');
+
+  document.getElementById('stat-total').textContent = leads.length;
+  document.getElementById('stat-potencial').textContent = potenciales.length;
+  document.getElementById('stat-listo').textContent = listos.length;
+  statRow.style.display = 'flex';
+
+  if(session.isAdmin){
+    const opt = [{key:'unassigned', label:'Leads sin asignar'}].concat(AGENTS.map(a=>({key:a.uid, label:'Asignados a ' + a.name})))
+      .find(o => o.key === currentFilter);
+    filterTitle.textContent = opt ? opt.label : '';
+    filterTitle.style.display = 'block';
+  } else {
+    filterTitle.style.display = 'none';
+  }
+
+  const colPotencial = document.getElementById('col-potencial');
+  const colListo = document.getElementById('col-listo');
+  colPotencial.innerHTML = '';
+  colListo.innerHTML = '';
+  document.getElementById('count-potencial').textContent = potenciales.length;
+  document.getElementById('count-listo').textContent = listos.length;
+
+  if(!potenciales.length){
+    colPotencial.innerHTML = '<p class="empty-note">Sin leads potenciales por ahora.</p>';
+  } else {
+    potenciales.forEach(l => colPotencial.appendChild(buildLeadCard(l)));
+  }
+  if(!listos.length){
+    colListo.innerHTML = '<p class="empty-note">Sin leads listos para asesor por ahora.</p>';
+  } else {
+    listos.forEach(l => colListo.appendChild(buildLeadCard(l)));
+  }
+
+  columnsEl.style.display = 'grid';
+  if(window.lucide) lucide.createIcons();
+}
+
 async function loadLeads(){
   const statusEl = document.getElementById('leads-status');
   const columnsEl = document.getElementById('columns');
@@ -376,37 +452,10 @@ async function loadLeads(){
   statRow.style.display = 'none';
 
   try{
-    const leads = await window.tres65Sync.getLeadsPotenciales();
+    allLeads = await window.tres65Sync.getLeadsPotenciales();
     statusEl.innerHTML = '';
-
-    const potenciales = leads.filter(l => l.label === 'cliente-potencial');
-    const listos = leads.filter(l => l.label === 'listo-para-asesor');
-
-    document.getElementById('stat-total').textContent = leads.length;
-    document.getElementById('stat-potencial').textContent = potenciales.length;
-    document.getElementById('stat-listo').textContent = listos.length;
-    statRow.style.display = 'flex';
-
-    const colPotencial = document.getElementById('col-potencial');
-    const colListo = document.getElementById('col-listo');
-    colPotencial.innerHTML = '';
-    colListo.innerHTML = '';
-    document.getElementById('count-potencial').textContent = potenciales.length;
-    document.getElementById('count-listo').textContent = listos.length;
-
-    if(!potenciales.length){
-      colPotencial.innerHTML = '<p class="empty-note">Sin leads potenciales por ahora.</p>';
-    } else {
-      potenciales.forEach(l => colPotencial.appendChild(buildLeadCard(l)));
-    }
-    if(!listos.length){
-      colListo.innerHTML = '<p class="empty-note">Sin leads listos para asesor por ahora.</p>';
-    } else {
-      listos.forEach(l => colListo.appendChild(buildLeadCard(l)));
-    }
-
-    columnsEl.style.display = 'grid';
-    if(window.lucide) lucide.createIcons();
+    renderFilters();
+    renderColumns();
   }catch(err){
     console.error('[Leads] error:', err);
     statusEl.innerHTML = '<p class="error-note">' + (err.message || 'Error consultando Chatwoot.') + '</p>';
