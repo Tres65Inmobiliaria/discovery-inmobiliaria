@@ -193,6 +193,10 @@ async function getLeadsCount(){
   return data.count;
 }
 
+async function sendWelcomeMessage(token){
+  return _authedPost("/portal/enviar-bienvenida/" + encodeURIComponent(token), {});
+}
+
 async function getLeadsPotenciales(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -304,7 +308,7 @@ window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
-  correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount,
+  correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo,
   getClientDetail, addClientNote, deleteClient
 };

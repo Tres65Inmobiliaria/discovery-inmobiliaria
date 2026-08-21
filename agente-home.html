@@ -483,7 +483,14 @@
     <label for="client-property">Link de la propiedad (opcional)</label>
     <input type="text" id="client-property" placeholder="https://...">
     <p class="modal-error" id="modal-error"></p>
-    <p class="modal-success" id="modal-success"></p>
+    <div id="modal-success-wrap" style="display:none; margin-bottom:14px;">
+      <p class="modal-success" style="display:block;">Cliente creado.</p>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <a id="modal-success-link" href="#" target="_blank" rel="noopener" style="font-size:12px; color:var(--acento); word-break:break-all; flex:1; min-width:0;"></a>
+        <button id="modal-send-welcome" type="button" style="font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; border:none; background:var(--profundo); color:#fff; cursor:pointer; white-space:nowrap;">Enviar a cliente</button>
+      </div>
+      <p class="modal-success" id="modal-send-status" style="display:none; margin-top:6px;"></p>
+    </div>
     <div class="modal-buttons">
       <button class="modal-cancel" id="modal-cancel" type="button">Cancelar</button>
       <button class="modal-save" id="modal-save" type="button">Crear</button>
@@ -863,7 +870,8 @@ async function boot(){
     document.getElementById('client-email').value = '';
     document.getElementById('client-property').value = '';
     document.getElementById('modal-error').style.display = 'none';
-    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal-success-wrap').style.display = 'none';
+    document.getElementById('modal-send-status').style.display = 'none';
     document.getElementById('modal').classList.add('open');
   });
   document.getElementById('modal-cancel').addEventListener('click', ()=>{
@@ -904,12 +912,34 @@ async function boot(){
     if(!reason) return;
     submitDeleteReason(reason);
   });
+  document.getElementById('modal-send-welcome').addEventListener('click', async ()=>{
+    const btn = document.getElementById('modal-send-welcome');
+    const status = document.getElementById('modal-send-status');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    status.style.display = 'none';
+    try{
+      await window.tres65Sync.sendWelcomeMessage(btn.dataset.token);
+      status.className = 'modal-success';
+      status.textContent = '¡Mensaje enviado!';
+      status.style.display = 'block';
+    }catch(err){
+      status.className = 'modal-error';
+      status.textContent = err.message || 'No se pudo enviar (revisa si el template ya está aprobado).';
+      status.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
   document.getElementById('modal-save').addEventListener('click', async ()=>{
     const btn = document.getElementById('modal-save');
     const errorNote = document.getElementById('modal-error');
-    const successNote = document.getElementById('modal-success');
+    const successWrap = document.getElementById('modal-success-wrap');
     errorNote.style.display = 'none';
-    successNote.style.display = 'none';
+    successWrap.style.display = 'none';
 
     const client_name = document.getElementById('client-name').value.trim();
     const client_phone = document.getElementById('client-phone').value.trim();
@@ -927,8 +957,12 @@ async function boot(){
     btn.textContent = 'Creando...';
     try{
       const result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid});
-      successNote.textContent = 'Cliente creado. Link: ' + result.link;
-      successNote.style.display = 'block';
+      const linkEl = document.getElementById('modal-success-link');
+      linkEl.href = result.link;
+      linkEl.textContent = result.link;
+      document.getElementById('modal-send-welcome').dataset.token = result.ficha.token;
+      document.getElementById('modal-send-status').style.display = 'none';
+      successWrap.style.display = 'block';
       await loadClients(session);
     }catch(err){
       console.error('[Dashboard] error creando cliente:', err);
