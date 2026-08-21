@@ -106,7 +106,7 @@
   .check-item{border-bottom:1px solid var(--menta);}
   .check-item:last-child{border-bottom:none;}
   .check-row{
-    display:flex; align-items:center; gap:9px;
+    display:flex; align-items:center; flex-wrap:wrap; row-gap:6px; gap:9px;
     padding:9px 0;
     font-size:13px; font-weight:600; color:var(--texto);
   }
@@ -131,6 +131,10 @@
     display:flex; flex-wrap:wrap; gap:6px;
     margin-top:12px; padding-top:12px;
     border-top:1px solid var(--borde);
+  }
+  .keyword-bubbles.inline{
+    margin:0 0 0 auto; padding:0; border-top:none;
+    justify-content:flex-end;
   }
   .keyword-bubble{
     font-size:11px; font-weight:600;
@@ -660,20 +664,18 @@ function buildProgressCard(progress){
 
     const itemWrap = document.createElement('div');
     itemWrap.className = 'check-item';
-    itemWrap.appendChild(buildCheckRow(label, done));
-
-    const extra = document.createElement('div');
-    extra.className = 'check-row-extra';
-
+    const row = buildCheckRow(label, done);
     if(has && has.report_keywords){
       const bubblesInline = buildKeywordBubbles(has.report_keywords);
       if(bubblesInline){
-        bubblesInline.style.marginTop = '0';
-        bubblesInline.style.paddingTop = '0';
-        bubblesInline.style.borderTop = 'none';
-        extra.appendChild(bubblesInline);
+        bubblesInline.classList.add('inline');
+        row.appendChild(bubblesInline);
       }
     }
+    itemWrap.appendChild(row);
+
+    const extra = document.createElement('div');
+    extra.className = 'check-row-extra';
 
     if(has && has.report){
       const toggle = document.createElement('button');
