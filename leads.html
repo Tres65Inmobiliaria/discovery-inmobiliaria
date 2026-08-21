@@ -389,6 +389,10 @@ async function boot(){
     window.location.href = 'agente-login.html';
     return;
   }
+  if(!session.isAdmin){
+    window.location.href = 'agente-home.html';
+    return;
+  }
   document.getElementById('who-name').textContent = session.email;
   document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
 
