@@ -103,13 +103,16 @@
   .analysis-status.ok{color:var(--medio);}
   .analysis-status.err{color:#C0453A;}
 
-  .property-block{padding:12px 0; border-bottom:1px solid var(--menta);}
-  .property-block:last-child{border-bottom:none;}
-  .property-block .status{
-    display:inline-block; font-size:11px; font-weight:600;
-    padding:2px 10px; border-radius:20px;
-    background:var(--menta); color:var(--medio); margin-bottom:6px;
+  .check-item{border-bottom:1px solid var(--menta);}
+  .check-item:last-child{border-bottom:none;}
+  .check-row{
+    display:flex; align-items:center; gap:9px;
+    padding:9px 0;
+    font-size:13px; font-weight:600; color:var(--texto);
   }
+  .check-row-icon{width:18px; height:18px; color:var(--borde); flex-shrink:0;}
+  .check-row-icon.done{color:var(--medio);}
+  .check-row-extra{padding:0 0 12px 27px;}
   .report-text{
     white-space:pre-wrap;
     font-size:13px;
@@ -246,6 +249,8 @@
   .search-btn.secondary{background:#fff; color:var(--profundo); border:1px solid var(--borde);}
   .search-btn.secondary:hover{background:var(--menta);}
 
+  .link-add-section{margin-top:16px; padding-top:16px; border-top:1px solid var(--borde);}
+  .link-add-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px; color:var(--profundo); margin-bottom:4px;}
   .link-add-row{display:flex; gap:8px; margin-top:4px;}
   .link-add-row input{
     flex:1;
@@ -305,16 +310,6 @@
 
   <div id="content"></div>
 
-  <div class="card">
-    <div class="card-title"><i data-lucide="link"></i> Agregar propiedad por link</div>
-    <p class="subtitle" style="margin-bottom:10px;">Pega un link de EasyBroker que te haya llegado de fuera (otro agente, un colega, etc.).</p>
-    <div class="link-add-row">
-      <input type="text" id="link-add-input" placeholder="https://www.easybroker.com/mx/listings/...">
-      <button class="search-btn" id="link-add-btn" type="button">Agregar</button>
-    </div>
-    <div class="link-add-status" id="link-add-status" style="display:none;"></div>
-  </div>
-
   <div class="card search-card">
     <div class="card-title"><i data-lucide="search"></i> Buscar propiedades para este cliente</div>
     <p class="subtitle" style="margin-bottom:10px;">Ej: "busca 3 casas en venta centro de Mérida, 2 recámaras, hasta 6.5 millones"</p>
@@ -333,6 +328,16 @@
         </div>
         <div class="analysis-status" id="shortlist-status" style="display:none;"></div>
       </div>
+    </div>
+
+    <div class="link-add-section">
+      <div class="link-add-title">O agrega una propiedad por link</div>
+      <p class="subtitle" style="margin-bottom:10px;">Pega un link de EasyBroker que te haya llegado de fuera (otro agente, un colega, etc.).</p>
+      <div class="link-add-row">
+        <input type="text" id="link-add-input" placeholder="https://www.easybroker.com/mx/listings/...">
+        <button class="search-btn" id="link-add-btn" type="button">Agregar</button>
+      </div>
+      <div class="link-add-status" id="link-add-status" style="display:none;"></div>
     </div>
   </div>
 
@@ -612,12 +617,25 @@ function buildPropertiesListCard(ficha, token){
   return card;
 }
 
+function buildCheckRow(label, done){
+  const row = document.createElement('div');
+  row.className = 'check-row';
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide', done ? 'check-circle-2' : 'circle');
+  icon.className = 'check-row-icon' + (done ? ' done' : '');
+  row.appendChild(icon);
+  const text = document.createElement('span');
+  text.textContent = label;
+  row.appendChild(text);
+  return row;
+}
+
 function buildProgressCard(progress){
   const card = document.createElement('div');
   card.className = 'card';
   const title = document.createElement('div');
   title.className = 'card-title';
-  title.innerHTML = '<i data-lucide="list-checks"></i> Avance del discovery';
+  title.innerHTML = '<i data-lucide="list-checks"></i> Avance del progreso';
   card.appendChild(title);
 
   if(!progress){
@@ -628,36 +646,32 @@ function buildProgressCard(progress){
     return card;
   }
 
-  const metRow = document.createElement('div');
-  metRow.className = 'info-row';
-  metRow.innerHTML = '<span class="label">Ya conoció a su agente</span><span class="value"></span>';
-  metRow.querySelector('.value').textContent = progress.metAgent ? 'Sí' : 'No';
-  card.appendChild(metRow);
+  const metWrap = document.createElement('div');
+  metWrap.className = 'check-item';
+  metWrap.appendChild(buildCheckRow('Ya conoció a su agente', !!progress.metAgent));
+  card.appendChild(metWrap);
 
   const count = progress.propertyCount || 1;
   const properties = progress.properties || {};
   for(let n = 1; n <= count; n++){
-    const block = document.createElement('div');
-    block.className = 'property-block';
     const has = properties[n];
-    const status = document.createElement('span');
-    status.className = 'status';
-    status.textContent = has && has.report ? 'Reporte generado' : (has && has.state ? 'En progreso' : 'Sin iniciar');
-    block.appendChild(status);
+    const done = !!(has && has.report);
+    const label = count > 1 ? 'Discovery — Propiedad ' + n : 'Discovery';
 
-    const label = document.createElement('div');
-    label.style.fontSize = '13px';
-    label.style.fontWeight = '600';
-    label.textContent = count > 1 ? 'Propiedad ' + n : 'Discovery';
-    block.appendChild(label);
+    const itemWrap = document.createElement('div');
+    itemWrap.className = 'check-item';
+    itemWrap.appendChild(buildCheckRow(label, done));
+
+    const extra = document.createElement('div');
+    extra.className = 'check-row-extra';
 
     if(has && has.report_keywords){
       const bubblesInline = buildKeywordBubbles(has.report_keywords);
       if(bubblesInline){
-        bubblesInline.style.marginTop = '8px';
+        bubblesInline.style.marginTop = '0';
         bubblesInline.style.paddingTop = '0';
         bubblesInline.style.borderTop = 'none';
-        block.appendChild(bubblesInline);
+        extra.appendChild(bubblesInline);
       }
     }
 
@@ -665,6 +679,7 @@ function buildProgressCard(progress){
       const toggle = document.createElement('button');
       toggle.className = 'report-toggle';
       toggle.type = 'button';
+      toggle.style.display = 'block';
       toggle.style.marginTop = '8px';
       toggle.textContent = 'Ver reporte';
       const reportBox = document.createElement('div');
@@ -675,11 +690,12 @@ function buildProgressCard(progress){
         reportBox.style.display = open ? 'none' : 'block';
         toggle.textContent = open ? 'Ver reporte' : 'Ocultar reporte';
       });
-      block.appendChild(toggle);
-      block.appendChild(reportBox);
+      extra.appendChild(toggle);
+      extra.appendChild(reportBox);
     }
 
-    card.appendChild(block);
+    if(extra.childNodes.length) itemWrap.appendChild(extra);
+    card.appendChild(itemWrap);
   }
 
   return card;
