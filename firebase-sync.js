@@ -169,6 +169,14 @@ async function agentInit(){
   });
 }
 
+async function runLeadsRoundRobin(){
+  return _authedPost("/portal/leads-round-robin", {});
+}
+
+async function convertLeadToListo(conv_id){
+  return _authedPost("/portal/lead-a-listo/" + encodeURIComponent(conv_id), {});
+}
+
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -293,6 +301,7 @@ window.tres65Sync = {
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount,
+  runLeadsRoundRobin, convertLeadToListo,
   getClientDetail, addClientNote, deleteClient
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));

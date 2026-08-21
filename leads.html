@@ -159,14 +159,17 @@
       <h1>Leads del día</h1>
       <p>Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"</p>
     </div>
-    <button class="refresh-btn" id="refresh-btn" type="button"><i data-lucide="refresh-cw"></i> Actualizar</button>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="refresh-btn" id="round-robin-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin</button>
+      <button class="refresh-btn" id="refresh-btn" type="button"><i data-lucide="refresh-cw"></i> Actualizar</button>
+    </div>
   </div>
+  <div id="round-robin-status" style="display:none; margin-bottom:16px;" class="empty-note"></div>
 
   <div class="stat-row" id="stat-row" style="display:none;">
     <div class="stat"><div class="n" id="stat-total">0</div><div class="l">Total</div></div>
     <div class="stat"><div class="n" id="stat-potencial">0</div><div class="l">Potencial</div></div>
     <div class="stat ok"><div class="n" id="stat-listo">0</div><div class="l">Listos</div></div>
-    <div class="stat warn"><div class="n" id="stat-sinresp">0</div><div class="l">Sin resp.</div></div>
   </div>
 
   <div id="leads-status"></div>
@@ -282,18 +285,24 @@ function buildLeadCard(lead){
     card.appendChild(interes);
   }
 
-  const statusRow = document.createElement('div');
-  statusRow.className = 'status-row';
-  const label = document.createElement('span');
-  label.className = 'label';
-  label.textContent = '¿Contestó?';
-  statusRow.appendChild(label);
-  const badge = document.createElement('span');
-  if(lead.contesto === true){ badge.className = 'answer-badge yes'; badge.textContent = 'Sí'; }
-  else if(lead.contesto === false){ badge.className = 'answer-badge no'; badge.textContent = 'No'; }
-  else { badge.className = 'answer-badge unknown'; badge.textContent = '—'; }
-  statusRow.appendChild(badge);
-  card.appendChild(statusRow);
+  if(session.isAdmin){
+    const assignRow = document.createElement('div');
+    assignRow.className = 'status-row';
+    const assignLabel = document.createElement('span');
+    assignLabel.className = 'label';
+    assignLabel.textContent = 'Asignado a';
+    assignRow.appendChild(assignLabel);
+    const assignBadge = document.createElement('span');
+    if(lead.assignee_name){
+      assignBadge.className = 'answer-badge yes';
+      assignBadge.textContent = lead.assignee_name;
+    } else {
+      assignBadge.className = 'answer-badge no';
+      assignBadge.textContent = 'Sin asignar';
+    }
+    assignRow.appendChild(assignBadge);
+    card.appendChild(assignRow);
+  }
 
   const actions = document.createElement('div');
   actions.className = 'actions';
@@ -314,12 +323,33 @@ function buildLeadCard(lead){
   chatBtn.innerHTML = '<i data-lucide="message-square"></i> Chatwoot';
   actions.appendChild(chatBtn);
 
-  const profileBtn = document.createElement('button');
-  profileBtn.className = 'btn profile';
-  profileBtn.type = 'button';
-  profileBtn.innerHTML = '<i data-lucide="user-plus"></i> Crear portal';
-  profileBtn.addEventListener('click', ()=> openCreateModal(lead));
-  actions.appendChild(profileBtn);
+  if(lead.label === 'cliente-potencial'){
+    const convertBtn = document.createElement('button');
+    convertBtn.className = 'btn profile';
+    convertBtn.type = 'button';
+    convertBtn.innerHTML = '<i data-lucide="arrow-up-circle"></i> Convertir a listo';
+    convertBtn.addEventListener('click', async ()=>{
+      const original = convertBtn.innerHTML;
+      convertBtn.disabled = true;
+      convertBtn.textContent = 'Convirtiendo...';
+      try{
+        await window.tres65Sync.convertLeadToListo(lead.conv_id);
+        await loadLeads();
+      }catch(err){
+        alert(err.message || 'Error convirtiendo el lead.');
+        convertBtn.disabled = false;
+        convertBtn.innerHTML = original;
+      }
+    });
+    actions.appendChild(convertBtn);
+  } else if(lead.assignee_uid){
+    const profileBtn = document.createElement('button');
+    profileBtn.className = 'btn profile';
+    profileBtn.type = 'button';
+    profileBtn.innerHTML = '<i data-lucide="user-plus"></i> Crear portal';
+    profileBtn.addEventListener('click', ()=> openCreateModal(lead));
+    actions.appendChild(profileBtn);
+  }
 
   card.appendChild(actions);
   return card;
@@ -331,6 +361,9 @@ function openCreateModal(lead){
   document.getElementById('client-property').value = '';
   document.getElementById('modal-error').style.display = 'none';
   document.getElementById('modal-success').style.display = 'none';
+  if(session.isAdmin && lead.assignee_uid){
+    document.getElementById('agent-select').value = lead.assignee_uid;
+  }
   document.getElementById('modal').classList.add('open');
 }
 
@@ -348,12 +381,10 @@ async function loadLeads(){
 
     const potenciales = leads.filter(l => l.label === 'cliente-potencial');
     const listos = leads.filter(l => l.label === 'listo-para-asesor');
-    const sinResp = leads.filter(l => l.contesto === false).length;
 
     document.getElementById('stat-total').textContent = leads.length;
     document.getElementById('stat-potencial').textContent = potenciales.length;
     document.getElementById('stat-listo').textContent = listos.length;
-    document.getElementById('stat-sinresp').textContent = sinResp;
     statRow.style.display = 'flex';
 
     const colPotencial = document.getElementById('col-potencial');
@@ -389,10 +420,6 @@ async function boot(){
     window.location.href = 'agente-login.html';
     return;
   }
-  if(!session.isAdmin){
-    window.location.href = 'agente-home.html';
-    return;
-  }
   document.getElementById('who-name').textContent = session.email;
   document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
 
@@ -406,12 +433,38 @@ async function boot(){
       opt.textContent = a.name;
       select.appendChild(opt);
     });
+    document.getElementById('round-robin-btn').style.display = 'inline-flex';
   }
 
   await loadLeads();
   if(window.lucide) lucide.createIcons();
 
   document.getElementById('refresh-btn').addEventListener('click', loadLeads);
+
+  document.getElementById('round-robin-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('round-robin-btn');
+    const status = document.getElementById('round-robin-status');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Repartiendo...';
+    status.style.display = 'none';
+    try{
+      const result = await window.tres65Sync.runLeadsRoundRobin();
+      const a = result.asignados || {};
+      status.className = 'empty-note';
+      status.textContent = 'Repartidos: ' + (a['cliente-potencial'] || 0) + ' cliente(s) potencial(es), ' + (a['listo-para-asesor'] || 0) + ' listo(s) para asesor.';
+      status.style.display = 'block';
+      await loadLeads();
+    }catch(err){
+      status.className = 'error-note';
+      status.textContent = err.message || 'Error repartiendo los leads.';
+      status.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.innerHTML = original;
+      if(window.lucide) lucide.createIcons();
+    }
+  });
 
   document.getElementById('modal-cancel').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
