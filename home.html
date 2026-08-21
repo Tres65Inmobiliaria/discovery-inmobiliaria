@@ -185,6 +185,54 @@
   .property-step-reason-text{margin:0 0 8px;}
   .property-step-reason-link{color:var(--acento); font-size:12px; font-weight:600; text-decoration:underline;}
   .property-step.discarded.open .property-step-reason{display:block;}
+
+  .popup-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(26,79,92,0.55);
+    align-items:center; justify-content:center;
+    z-index:50; padding:20px;
+  }
+  .popup-overlay.open{display:flex;}
+  .popup-card{
+    background:#fff;
+    border-radius:12px;
+    padding:24px;
+    max-width:320px;
+    text-align:center;
+  }
+  .popup-card h3{
+    font-family:'Montserrat',sans-serif;
+    color:var(--profundo);
+    font-size:16px;
+    margin:0 0 8px;
+  }
+  .popup-card p{font-size:13px; color:var(--texto-suave); margin:0 0 18px;}
+  .popup-card a{color:var(--acento); font-weight:600;}
+  .popup-card button{
+    width:100%;
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    background:var(--acento);
+    color:#fff;
+    cursor:pointer;
+  }
+  .popup-card button:disabled{opacity:.5; cursor:default;}
+  .privacy-check{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    text-align:left;
+    font-size:13px;
+    color:var(--texto);
+    margin-bottom:16px;
+    cursor:pointer;
+  }
+  .privacy-check input{margin-top:3px; flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -196,6 +244,18 @@
   </header>
 
   <div class="properties-row" id="properties-row"></div>
+</div>
+
+<div class="popup-overlay" id="popup-privacidad">
+  <div class="popup-card">
+    <h3>Antes de continuar</h3>
+    <p>Vamos a pedirte algunos datos personales para ayudarte a encontrar tu propiedad ideal. Antes de continuar, por favor lee nuestro <a href="https://www.tres65inmobiliaria.com/Aviso_privacidad" target="_blank" rel="noopener">Aviso de Privacidad</a>.</p>
+    <label class="privacy-check">
+      <input type="checkbox" id="privacidad-checkbox">
+      He leído y acepto el Aviso de Privacidad
+    </label>
+    <button id="privacidad-continuar" disabled>Continuar</button>
+  </div>
 </div>
 
 <script>
@@ -435,6 +495,10 @@ async function init(){
   const uid = await window.tres65Sync.init(activeToken);
   if(uid) await window.tres65Sync.pull(uid);
 
+  if(localStorage.getItem('tres65_privacy_accepted') !== 'true'){
+    document.getElementById('popup-privacidad').classList.add('open');
+  }
+
   metAgent = localStorage.getItem('tres65_met_agent') === 'true';
   propertyCount = parseInt(localStorage.getItem('tres65_property_count') || '1', 10);
 
@@ -476,6 +540,16 @@ async function init(){
 
   if(window.lucide) lucide.createIcons();
 }
+
+document.getElementById('privacidad-checkbox').addEventListener('change', (e)=>{
+  document.getElementById('privacidad-continuar').disabled = !e.target.checked;
+});
+document.getElementById('privacidad-continuar').addEventListener('click', async ()=>{
+  localStorage.setItem('tres65_privacy_accepted', 'true');
+  const uid = window.tres65Sync.getUid();
+  if(uid) await window.tres65Sync.push(uid);
+  document.getElementById('popup-privacidad').classList.remove('open');
+});
 
 init();
 </script>

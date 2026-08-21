@@ -278,6 +278,19 @@
     border:1px solid var(--borde);
     margin-top:8px;
   }
+  .popup-card button:disabled{opacity:.5; cursor:default;}
+  .popup-card a{color:var(--acento); font-weight:600;}
+  .privacy-check{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    text-align:left;
+    font-size:13px;
+    color:var(--texto);
+    margin-bottom:16px;
+    cursor:pointer;
+  }
+  .privacy-check input{margin-top:3px; flex-shrink:0;}
 
   .note-tag{
     display:inline-block;
@@ -353,6 +366,18 @@ desde el inicio a la propiedad ideal para ti.</p>
 Para nosotros es muy importante escuchar a nuestros clientes.</p>
     <button id="popup-bloque2-completar">Completar bloque 2</button>
     <button id="popup-bloque2-continuar" class="secondary">Generar de todos modos</button>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popup-privacidad">
+  <div class="popup-card">
+    <h3>Antes de continuar</h3>
+    <p>Vamos a pedirte algunos datos personales para ayudarte a encontrar tu propiedad ideal. Antes de continuar, por favor lee nuestro <a href="https://www.tres65inmobiliaria.com/Aviso_privacidad" target="_blank" rel="noopener">Aviso de Privacidad</a>.</p>
+    <label class="privacy-check">
+      <input type="checkbox" id="privacidad-checkbox">
+      He leído y acepto el Aviso de Privacidad
+    </label>
+    <button id="privacidad-continuar" disabled>Continuar</button>
   </div>
 </div>
 
@@ -1113,11 +1138,7 @@ document.getElementById('report-agree-btn').addEventListener('click', ()=>{
   document.getElementById('reportView').innerHTML = '<div class="bloque-label">Guardado</div><p class="bloque-intro">Tu perfil y tus notas quedaron guardados. Tu agente se va a contactar contigo pronto.</p>';
 });
 
-(async function boot(){
-  await waitForSync();
-  tres65Uid = await window.tres65Sync.init(activeClientToken);
-  if(tres65Uid) await window.tres65Sync.pull(tres65Uid);
-
+function proceedAfterPrivacy(){
   const alreadyCompleted = !!localStorage.getItem(reportKey(getActiveProperty()));
   if(alreadyCompleted){
     document.getElementById('popup-segunda').style.display = 'flex';
@@ -1126,10 +1147,33 @@ document.getElementById('report-agree-btn').addEventListener('click', ()=>{
     if(restoredPage >= 0 && restoredPage < pages.length) currentPage = restoredPage;
     document.getElementById('popup-welcome-call').style.display = 'flex';
   }
-
   updateProgress();
   showPage();
   if(window.lucide) lucide.createIcons();
+}
+
+document.getElementById('privacidad-checkbox').addEventListener('change', (e)=>{
+  document.getElementById('privacidad-continuar').disabled = !e.target.checked;
+});
+document.getElementById('privacidad-continuar').addEventListener('click', async ()=>{
+  localStorage.setItem('tres65_privacy_accepted', 'true');
+  if(tres65Uid) await window.tres65Sync.push(tres65Uid);
+  document.getElementById('popup-privacidad').style.display = 'none';
+  proceedAfterPrivacy();
+});
+
+(async function boot(){
+  await waitForSync();
+  tres65Uid = await window.tres65Sync.init(activeClientToken);
+  if(tres65Uid) await window.tres65Sync.pull(tres65Uid);
+
+  const privacyAccepted = localStorage.getItem('tres65_privacy_accepted') === 'true';
+  if(!privacyAccepted){
+    document.getElementById('popup-privacidad').style.display = 'flex';
+    if(window.lucide) lucide.createIcons();
+  } else {
+    proceedAfterPrivacy();
+  }
 })();
 </script>
 </body>

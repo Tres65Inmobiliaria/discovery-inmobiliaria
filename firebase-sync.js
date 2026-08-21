@@ -71,7 +71,7 @@ function clearLocalProgress(){
   const keys = [];
   for(let i = 0; i < localStorage.length; i++){
     const k = localStorage.key(i);
-    if(k && (k.startsWith("tres65_property_") || k === "tres65_met_agent" || k === "tres65_last_report")){
+    if(k && (k.startsWith("tres65_property_") || k === "tres65_met_agent" || k === "tres65_last_report" || k === "tres65_privacy_accepted")){
       keys.push(k);
     }
   }
@@ -93,6 +93,9 @@ async function pull(uid){
 
     if(typeof data.metAgent === "boolean"){
       localStorage.setItem("tres65_met_agent", data.metAgent ? "true" : "false");
+    }
+    if(data.privacyAccepted === true){
+      localStorage.setItem("tres65_privacy_accepted", "true");
     }
     if(data.propertyCount){
       localStorage.setItem("tres65_property_count", String(data.propertyCount));
@@ -138,6 +141,7 @@ async function push(uid){
   }
   const data = {
     metAgent: localStorage.getItem("tres65_met_agent") === "true",
+    privacyAccepted: localStorage.getItem("tres65_privacy_accepted") === "true",
     propertyCount,
     properties,
     updated_at: new Date().toISOString()
