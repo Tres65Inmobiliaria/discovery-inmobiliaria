@@ -26,35 +26,44 @@ function syncKey(n){ return "tres65_property_" + n + "_state"; }
 function reportKey(n){ return "tres65_property_" + n + "_report"; }
 function reportKeywordsKey(n){ return "tres65_property_" + n + "_report_keywords"; }
 
-async function init(fichaToken){
+function waitForAuthUser(){
   return new Promise((resolve) => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
       unsub();
-      if(user){
-        resolve(user.uid);
-        return;
-      }
-      if(!fichaToken){ resolve(null); return; }
-      try{
-        const res = await fetch(API_BASE + "/portal/auth-token", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ficha_token: fichaToken})
-        });
-        const data = await res.json();
-        if(data.ok){
-          await signInWithCustomToken(auth, data.token);
-          resolve(data.uid);
-        } else {
-          console.warn("[Firebase] no se pudo generar el token:", data.error);
-          resolve(null);
-        }
-      }catch(e){
-        console.error("[Firebase] error autenticando:", e);
-        resolve(null);
-      }
+      resolve(user);
     });
   });
+}
+
+async function init(fichaToken){
+  const current = await waitForAuthUser();
+  if(!fichaToken){
+    return current ? current.uid : null;
+  }
+  // No basta con "ya hay alguien firmado" — hay que confirmar que sea
+  // la identidad de ESTE link. Si en este navegador quedó abierta la
+  // sesión de OTRO cliente (típico al probar varias fichas seguidas),
+  // reusarla mostraría el avance/reporte de esa otra persona.
+  try{
+    const res = await fetch(API_BASE + "/portal/auth-token", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ficha_token: fichaToken})
+    });
+    const data = await res.json();
+    if(!data.ok){
+      console.warn("[Firebase] no se pudo generar el token:", data.error);
+      return current ? current.uid : null;
+    }
+    if(current && current.uid === data.uid){
+      return current.uid;
+    }
+    await signInWithCustomToken(auth, data.token);
+    return data.uid;
+  }catch(e){
+    console.error("[Firebase] error autenticando:", e);
+    return current ? current.uid : null;
+  }
 }
 
 function clearLocalProgress(){
