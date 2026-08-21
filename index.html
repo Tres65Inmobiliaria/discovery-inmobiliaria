@@ -252,7 +252,23 @@
     padding:24px;
     max-width:320px;
     text-align:center;
+    position:relative;
   }
+  .popup-close{
+    position:absolute;
+    top:10px; right:10px;
+    width:24px; height:24px;
+    line-height:22px;
+    text-align:center;
+    border-radius:50%;
+    border:none;
+    background:rgba(26,79,92,0.1);
+    color:var(--profundo);
+    font-size:16px;
+    cursor:pointer;
+    padding:0;
+  }
+  .popup-close:hover{background:rgba(26,79,92,0.2);}
   .popup-card h3{
     font-family:'Montserrat',sans-serif;
     color:var(--profundo);
@@ -1175,6 +1191,18 @@ document.getElementById('privacidad-continuar').addEventListener('click', async 
     proceedAfterPrivacy();
   }
 })();
+
+document.querySelectorAll('.popup-overlay').forEach(overlay=>{
+  const card = overlay.querySelector('.popup-card');
+  if(!card) return;
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'popup-close';
+  closeBtn.setAttribute('aria-label', 'Cerrar');
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', ()=>{ overlay.style.display = 'none'; });
+  card.insertBefore(closeBtn, card.firstChild);
+});
 </script>
 </body>
 </html>

@@ -134,7 +134,9 @@
 
   .modal-overlay{display:none; position:fixed; inset:0; background:rgba(26,79,92,0.55); align-items:center; justify-content:center; z-index:50; padding:20px;}
   .modal-overlay.open{display:flex;}
-  .modal-card{background:#fff; border-radius:12px; padding:24px; max-width:380px; width:100%;}
+  .modal-card{background:#fff; border-radius:12px; padding:24px; max-width:380px; width:100%; position:relative;}
+  .modal-close{position:absolute; top:14px; right:14px; width:24px; height:24px; line-height:22px; text-align:center; border-radius:50%; border:none; background:rgba(26,79,92,0.1); color:var(--profundo); font-size:16px; cursor:pointer; padding:0;}
+  .modal-close:hover{background:rgba(26,79,92,0.2);}
   .modal-card h3{font-family:'Montserrat',sans-serif; color:var(--profundo); font-size:17px; margin:0 0 16px;}
   .modal-card label{
     font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600; color:var(--texto-suave);
@@ -212,6 +214,7 @@
 
 <div class="modal-overlay" id="modal">
   <div class="modal-card">
+    <button class="modal-close" id="modal-close-x" type="button" aria-label="Cerrar">×</button>
     <h3>Crear portal para este cliente</h3>
     <div id="agent-select-wrap" style="display:none;">
       <label for="agent-select">Asignar a</label>
@@ -230,6 +233,7 @@
       <p class="modal-success" style="display:block;">Cliente creado.</p>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <a id="modal-success-link" href="#" target="_blank" rel="noopener" style="font-size:12px; color:var(--acento); word-break:break-all; flex:1; min-width:0;"></a>
+        <button id="modal-copy-link" type="button" style="font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; border:1px solid var(--borde); background:#fff; color:var(--texto); cursor:pointer; white-space:nowrap;">Copiar link</button>
         <button id="modal-send-welcome" type="button" style="font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; border:none; background:var(--profundo); color:#fff; cursor:pointer; white-space:nowrap;">Enviar a cliente</button>
       </div>
       <p class="modal-success" id="modal-send-status" style="display:none; margin-top:6px;"></p>
@@ -541,8 +545,25 @@ async function boot(){
     }
   });
 
+  document.getElementById('modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('modal').classList.remove('open');
+  });
+
   document.getElementById('modal-cancel').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
+  });
+
+  document.getElementById('modal-copy-link').addEventListener('click', async ()=>{
+    const btn = document.getElementById('modal-copy-link');
+    const link = document.getElementById('modal-success-link').href;
+    try{
+      await navigator.clipboard.writeText(link);
+      const original = btn.textContent;
+      btn.textContent = '¡Copiado!';
+      setTimeout(()=>{ btn.textContent = original; }, 1500);
+    }catch(err){
+      prompt('Copia el link:', link);
+    }
   });
 
   document.getElementById('modal-send-welcome').addEventListener('click', async ()=>{
