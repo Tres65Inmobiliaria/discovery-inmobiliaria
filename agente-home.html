@@ -112,6 +112,21 @@
   }
   .client-tag.discarded{background:#F5E4E1; color:#C0453A;}
 
+  .funnel{margin-bottom:14px;}
+  .funnel-row{margin-bottom:6px;}
+  .funnel-bar{
+    min-width:120px;
+    height:34px;
+    border-radius:6px;
+    display:flex; align-items:center;
+    padding:0 14px;
+    color:#fff;
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    font-size:12px;
+    white-space:nowrap;
+    transition:width .3s;
+  }
   .summary-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px;}
   .summary-pill{
     font-size:12px;
@@ -357,6 +372,20 @@
   .modal-save:disabled{opacity:.6;}
   .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
   .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
+
+  .delete-reason-options{display:flex; flex-direction:column; gap:8px; margin-bottom:6px;}
+  .delete-reason-btn{
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    text-align:left;
+    padding:11px 14px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    cursor:pointer;
+  }
+  .delete-reason-btn:hover{border-color:#C0453A; background:#F5E4E1;}
   .modal-success{color:var(--acento); font-size:12px; margin:-6px 0 12px; display:none;}
 </style>
 </head>
@@ -460,6 +489,28 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-card">
+    <h3 id="delete-modal-title">¿Por qué se elimina a este cliente?</h3>
+    <p style="font-size:12px; color:var(--texto-suave); margin:-10px 0 16px;">Es permanente: desaparece de la lista y no se puede deshacer desde aquí (el registro se conserva en la base de datos).</p>
+    <div class="delete-reason-options" id="delete-reason-options">
+      <button class="delete-reason-btn" data-reason="Nunca contestó" type="button">Nunca contestó</button>
+      <button class="delete-reason-btn" data-reason="Se fue con otro agente" type="button">Se fue con otro agente</button>
+      <button class="delete-reason-btn" data-reason="Ya no está interesado" type="button">Ya no está interesado</button>
+      <button class="delete-reason-btn" id="delete-reason-other-btn" type="button">Otra razón</button>
+    </div>
+    <div id="delete-reason-other-wrap" style="display:none; margin-top:4px;">
+      <label for="delete-reason-other-input">Explica la razón</label>
+      <input type="text" id="delete-reason-other-input" placeholder="Ej: cambió de ciudad">
+    </div>
+    <p class="modal-error" id="delete-modal-error"></p>
+    <div class="modal-buttons">
+      <button class="modal-cancel" id="delete-modal-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="delete-reason-other-confirm" type="button" style="display:none;">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const AGENTS = [
   {uid:'5219992786153', name:'Damara Traconis Corres'},
@@ -548,9 +599,7 @@ function buildClientCard(c, onDelete){
   delBtn.textContent = 'Eliminar cliente';
   delBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
-    const ok = confirm('¿Eliminar a ' + (c.client_name || 'este cliente') + '? Es permanente: desaparece de esta lista y no se puede deshacer desde aquí (el registro se conserva en la base de datos).');
-    if(!ok) return;
-    onDelete(c.token);
+    openDeleteReasonModal(c.client_name, (reason)=> onDelete(c.token, reason));
   });
   actionsRow.appendChild(delBtn);
   info.appendChild(actionsRow);
@@ -566,6 +615,9 @@ function buildClientCard(c, onDelete){
 
 let clientsCache = [];
 
+const FUNNEL_STAGES = ['Conociendo a su agente', 'En discovery', 'Esperando propiedad', 'Con propiedad'];
+const FUNNEL_COLORS = ['#1A4F5C', '#1E7A6E', '#2AA898', '#5FC3B4'];
+
 function renderAdminSummary(session, allClients){
   const el = document.getElementById('admin-summary');
   if(!session.isAdmin){
@@ -580,20 +632,46 @@ function renderAdminSummary(session, allClients){
     counts[s] = (counts[s] || 0) + 1;
   });
   const inactiveCount = active.filter(c => c.inactive).length;
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const deletedToday = allClients.filter(c => c.deleted && (c.deleted_at || '').slice(0, 10) === todayStr).length;
+  const descartadaCount = counts['Propiedad descartada'] || 0;
 
-  let html = '<div class="tool-card"><div class="tool-title"><i data-lucide="bar-chart-3"></i> Resumen de clientes</div><div class="summary-pills">';
-  Object.keys(counts).forEach(k=>{
-    html += '<span class="summary-pill">' + k + ': ' + counts[k] + '</span>';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const deletedClients = allClients.filter(c => c.deleted);
+  const deletedToday = deletedClients.filter(c => (c.deleted_at || '').slice(0, 10) === todayStr);
+  const reasonCounts = {};
+  deletedToday.forEach(c=>{
+    const r = c.delete_reason || 'Sin razón registrada';
+    reasonCounts[r] = (reasonCounts[r] || 0) + 1;
   });
+
+  const maxCount = Math.max(1, ...FUNNEL_STAGES.map(s => counts[s] || 0));
+
+  let html = '<div class="tool-card"><div class="tool-title"><i data-lucide="bar-chart-3"></i> Resumen de clientes</div>';
+  html += '<div class="funnel">';
+  FUNNEL_STAGES.forEach((stage, i)=>{
+    const n = counts[stage] || 0;
+    const pct = Math.max(14, Math.round((n / maxCount) * 100));
+    html += '<div class="funnel-row"><div class="funnel-bar" style="width:' + pct + '%; background:' + FUNNEL_COLORS[i] + ';">' + stage + ' · ' + n + '</div></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="summary-pills">';
+  if(descartadaCount){
+    html += '<span class="summary-pill">Propiedad descartada: ' + descartadaCount + '</span>';
+  }
   if(inactiveCount){
     html += '<span class="summary-pill warn">Sin actividad +24h: ' + inactiveCount + '</span>';
   }
   html += '</div>';
-  if(deletedToday){
-    html += '<p class="summary-alert">' + deletedToday + ' cliente' + (deletedToday > 1 ? 's' : '') + ' eliminado' + (deletedToday > 1 ? 's' : '') + ' hoy</p>';
+
+  if(deletedToday.length){
+    html += '<p class="summary-alert">' + deletedToday.length + ' cliente' + (deletedToday.length > 1 ? 's' : '') + ' eliminado' + (deletedToday.length > 1 ? 's' : '') + ' hoy</p>';
+    html += '<div class="summary-pills">';
+    Object.keys(reasonCounts).forEach(r=>{
+      html += '<span class="summary-pill warn">' + r + ': ' + reasonCounts[r] + '</span>';
+    });
+    html += '</div>';
   }
+
   html += '</div>';
   el.innerHTML = html;
   el.style.display = 'block';
@@ -611,14 +689,27 @@ async function loadClients(session){
     list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
     return;
   }
-  clientsCache.forEach(c => list.appendChild(buildClientCard(c, async (token)=>{
+  clientsCache.forEach(c => list.appendChild(buildClientCard(c, async (token, reason)=>{
     try{
-      await window.tres65Sync.deleteClient(token);
+      await window.tres65Sync.deleteClient(token, reason);
       await loadClients(session);
     }catch(err){
       alert(err.message || 'Error eliminando el cliente.');
     }
   })));
+}
+
+let deleteReasonCallback = null;
+
+function openDeleteReasonModal(clientName, onConfirm){
+  deleteReasonCallback = onConfirm;
+  document.getElementById('delete-modal-title').textContent = '¿Por qué se elimina a ' + (clientName || 'este cliente') + '?';
+  document.getElementById('delete-reason-options').style.display = 'flex';
+  document.getElementById('delete-reason-other-wrap').style.display = 'none';
+  document.getElementById('delete-reason-other-input').value = '';
+  document.getElementById('delete-reason-other-confirm').style.display = 'none';
+  document.getElementById('delete-modal-error').style.display = 'none';
+  document.getElementById('delete-modal').classList.add('open');
 }
 
 let lastSearchResults = [];
@@ -775,6 +866,41 @@ async function boot(){
   });
   document.getElementById('modal-cancel').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
+  });
+
+  document.getElementById('delete-modal-cancel').addEventListener('click', ()=>{
+    document.getElementById('delete-modal').classList.remove('open');
+    deleteReasonCallback = null;
+  });
+
+  async function submitDeleteReason(reason){
+    const errorNote = document.getElementById('delete-modal-error');
+    errorNote.style.display = 'none';
+    if(!deleteReasonCallback) return;
+    try{
+      await deleteReasonCallback(reason);
+      document.getElementById('delete-modal').classList.remove('open');
+      deleteReasonCallback = null;
+    }catch(err){
+      errorNote.textContent = err.message || 'Error eliminando el cliente.';
+      errorNote.style.display = 'block';
+    }
+  }
+
+  document.querySelectorAll('#delete-reason-options .delete-reason-btn[data-reason]').forEach(btn=>{
+    btn.addEventListener('click', ()=> submitDeleteReason(btn.dataset.reason));
+  });
+
+  document.getElementById('delete-reason-other-btn').addEventListener('click', ()=>{
+    document.getElementById('delete-reason-options').style.display = 'none';
+    document.getElementById('delete-reason-other-wrap').style.display = 'block';
+    document.getElementById('delete-reason-other-confirm').style.display = 'block';
+  });
+
+  document.getElementById('delete-reason-other-confirm').addEventListener('click', ()=>{
+    const reason = document.getElementById('delete-reason-other-input').value.trim();
+    if(!reason) return;
+    submitDeleteReason(reason);
   });
   document.getElementById('modal-save').addEventListener('click', async ()=>{
     const btn = document.getElementById('modal-save');
