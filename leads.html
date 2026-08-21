@@ -105,6 +105,8 @@
 
   .interes-tag{display:flex; align-items:flex-start; gap:5px; font-size:11.5px; color:var(--texto-suave); margin-top:10px;}
   .interes-tag i{width:13px; height:13px; color:var(--acento); flex-shrink:0; margin-top:1px;}
+  .asesor-tag{font-size:11px; font-weight:700; color:var(--alerta); margin-top:2px;}
+  .resumen-text{font-size:12px; color:var(--texto); line-height:1.5; margin:10px 0 0; background:var(--menta); border-radius:8px; padding:9px 11px;}
 
   .status-row{display:flex; align-items:center; gap:8px; margin-top:12px;}
   .status-row .label{font-size:11.5px; color:var(--texto-suave); font-family:'Montserrat',sans-serif; font-weight:600;}
@@ -219,6 +221,8 @@
     <input type="text" id="client-name" placeholder="Nombre del cliente">
     <label for="client-phone">Teléfono</label>
     <input type="text" id="client-phone" placeholder="9991234567">
+    <label for="client-email">Correo (opcional)</label>
+    <input type="email" id="client-email" placeholder="cliente@correo.com">
     <label for="client-property">Link de la propiedad (opcional)</label>
     <input type="text" id="client-property" placeholder="https://...">
     <p class="modal-error" id="modal-error"></p>
@@ -284,6 +288,12 @@ function buildLeadCard(lead){
   meta.className = 'meta';
   meta.textContent = [lead.phone, timeAgo(lead.last_activity)].filter(Boolean).join(' · ');
   whoText.appendChild(meta);
+  if(lead.posible_asesor){
+    const asesorTag = document.createElement('div');
+    asesorTag.className = 'asesor-tag';
+    asesorTag.textContent = 'Posible asesor inmobiliario';
+    whoText.appendChild(asesorTag);
+  }
   who.appendChild(whoText);
   top.appendChild(who);
 
@@ -299,6 +309,13 @@ function buildLeadCard(lead){
     interes.innerHTML = '<i data-lucide="map-pin"></i> <span></span>';
     interes.querySelector('span').textContent = lead.interes;
     card.appendChild(interes);
+  }
+
+  if(lead.resumen){
+    const resumen = document.createElement('p');
+    resumen.className = 'resumen-text';
+    resumen.textContent = lead.resumen;
+    card.appendChild(resumen);
   }
 
   const actions = document.createElement('div');
@@ -355,6 +372,7 @@ function buildLeadCard(lead){
 function openCreateModal(lead){
   document.getElementById('client-name').value = (lead.name && lead.name !== 'Por definir') ? lead.name : '';
   document.getElementById('client-phone').value = (lead.phone || '').replace(/\D/g, '');
+  document.getElementById('client-email').value = lead.email || '';
   document.getElementById('client-property').value = '';
   document.getElementById('modal-error').style.display = 'none';
   document.getElementById('modal-success').style.display = 'none';
@@ -528,6 +546,7 @@ async function boot(){
 
     const client_name = document.getElementById('client-name').value.trim();
     const client_phone = document.getElementById('client-phone').value.trim();
+    const client_email = document.getElementById('client-email').value.trim();
     const property_raw = document.getElementById('client-property').value.trim();
     const agent_uid = session.isAdmin ? document.getElementById('agent-select').value : undefined;
 
@@ -540,7 +559,7 @@ async function boot(){
     btn.disabled = true;
     btn.textContent = 'Creando...';
     try{
-      const result = await window.tres65Sync.createClient({client_name, client_phone, property_raw, agent_uid});
+      const result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid});
       successNote.textContent = 'Portal creado. Link: ' + result.link;
       successNote.style.display = 'block';
     }catch(err){

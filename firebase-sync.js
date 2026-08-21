@@ -213,18 +213,18 @@ async function listClients(){
   return data.clients;
 }
 
-async function deleteClient(token){
-  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/eliminar", {});
+async function deleteClient(token, reason){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/eliminar", {reason});
 }
 
-async function createClient({client_name, client_phone, property_raw, agent_uid}){
+async function createClient({client_name, client_phone, client_email, property_raw, agent_uid}){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
   const idToken = await user.getIdToken();
   const res = await fetch(API_BASE + "/portal/crear-cliente", {
     method: "POST",
     headers: {"Content-Type": "application/json", "Authorization": "Bearer " + idToken},
-    body: JSON.stringify({client_name, client_phone, property_raw, agent_uid})
+    body: JSON.stringify({client_name, client_phone, client_email, property_raw, agent_uid})
   });
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || "Error creando el cliente");
