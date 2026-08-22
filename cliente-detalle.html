@@ -176,7 +176,13 @@
     padding:10px 12px;
     margin-bottom:8px;
     font-size:13px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
   }
+  .note-item input[type="checkbox"]{margin-top:2px; flex-shrink:0; cursor:pointer;}
+  .note-item-body{flex:1; min-width:0;}
+  .note-item.done .note-item-text{text-decoration:line-through; color:var(--texto-suave);}
   .note-meta{font-size:11px; color:var(--texto-suave); margin-top:4px;}
 
   .note-form textarea{
@@ -371,12 +377,12 @@
   </div>
 
   <div class="card">
-    <div class="card-title"><i data-lucide="notebook-pen"></i> Notas internas</div>
+    <div class="card-title"><i data-lucide="notebook-pen"></i> Tareas</div>
     <p class="subtitle" style="margin-bottom:14px;">Solo las ve el equipo — el cliente nunca tiene acceso a esto.</p>
     <div id="notes-list"></div>
     <div class="note-form">
-      <textarea id="note-input" placeholder="Escribe una nota sobre este cliente..."></textarea>
-      <button id="note-btn" type="button">Agregar nota</button>
+      <textarea id="note-input" placeholder="Escribe una tarea sobre este cliente..."></textarea>
+      <button id="note-btn" type="button">Agregar tarea</button>
     </div>
   </div>
 </div>
@@ -811,23 +817,45 @@ function buildProgressCard(progress){
   return card;
 }
 
-function renderNotes(notes){
+function renderNotes(notes, token){
   const list = document.getElementById('notes-list');
   list.innerHTML = '';
   if(!notes || !notes.length){
-    list.innerHTML = '<p class="empty-note" style="margin-bottom:14px;">Todavía no hay notas.</p>';
+    list.innerHTML = '<p class="empty-note" style="margin-bottom:14px;">Todavía no hay tareas.</p>';
     return;
   }
   notes.slice().reverse().forEach(n=>{
     const item = document.createElement('div');
-    item.className = 'note-item';
+    item.className = 'note-item' + (n.done ? ' done' : '');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !!n.done;
+    checkbox.addEventListener('change', async ()=>{
+      checkbox.disabled = true;
+      try{
+        const result = await window.tres65Sync.toggleClientNote(token, n.created_at);
+        renderNotes(result.notes, token);
+      }catch(err){
+        alert(err.message || 'Error actualizando la tarea.');
+        checkbox.checked = !checkbox.checked;
+        checkbox.disabled = false;
+      }
+    });
+    item.appendChild(checkbox);
+
+    const body = document.createElement('div');
+    body.className = 'note-item-body';
     const text = document.createElement('div');
+    text.className = 'note-item-text';
     text.textContent = n.text;
-    item.appendChild(text);
+    body.appendChild(text);
     const meta = document.createElement('div');
     meta.className = 'note-meta';
     meta.textContent = (n.author || '') + (n.created_at ? ' — ' + fmtDate(n.created_at) : '');
-    item.appendChild(meta);
+    body.appendChild(meta);
+    item.appendChild(body);
+
     list.appendChild(item);
   });
 }
@@ -849,7 +877,7 @@ async function refreshClientContent(token){
   if(propsListCard) content.appendChild(propsListCard);
   content.appendChild(buildProgressCard(progress));
 
-  renderNotes(notes);
+  renderNotes(notes, token);
   if(window.lucide) lucide.createIcons();
 }
 
@@ -969,13 +997,13 @@ async function boot(){
     btn.textContent = 'Guardando...';
     try{
       const result = await window.tres65Sync.addClientNote(token, text);
-      renderNotes(result.notes);
+      renderNotes(result.notes, token);
       input.value = '';
     }catch(err){
-      alert(err.message || 'Error guardando la nota.');
+      alert(err.message || 'Error guardando la tarea.');
     }finally{
       btn.disabled = false;
-      btn.textContent = 'Agregar nota';
+      btn.textContent = 'Agregar tarea';
     }
   });
 

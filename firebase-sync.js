@@ -311,6 +311,10 @@ async function addClientNote(token, text){
   return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/nota", {text});
 }
 
+async function toggleClientNote(token, created_at){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/nota/completar", {created_at});
+}
+
 async function askLegal(question){
   const data = await _authedPost("/portal/pregunta-legal", {question});
   return data.answer;
@@ -327,6 +331,6 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo,
-  getClientDetail, addClientNote, deleteClient, addClientEmail
+  getClientDetail, addClientNote, toggleClientNote, deleteClient, addClientEmail
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
