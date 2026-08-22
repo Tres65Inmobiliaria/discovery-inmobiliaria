@@ -77,6 +77,8 @@
     padding:6px 14px;
     border-radius:20px;
   }
+  .badges-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .priority-note{font-size:12px; color:var(--texto-suave); margin:8px 0 0;}
   .buyer-strategy-title{
     font-family:'Montserrat',sans-serif;
     font-weight:600;
@@ -499,9 +501,11 @@ function buildBuyerProfileCard(progress){
   if(!progress || !progress.properties) return null;
   const keys = Object.keys(progress.properties).sort((a, b) => Number(a) - Number(b));
   let profile = null;
+  let priority = null;
   for(const k of keys){
     if(progress.properties[k].report_profile){
       profile = progress.properties[k].report_profile;
+      priority = progress.properties[k].report_priority || null;
       break;
     }
   }
@@ -518,11 +522,33 @@ function buildBuyerProfileCard(progress){
   const color = isNeutral ? '#8A8A8A' : (profile.color_hex || '#8A8A8A');
   const label = (profile.perfil && profile.perfil !== 'sin_clasificar') ? profile.perfil : 'Sin clasificar';
 
+  const badgesRow = document.createElement('div');
+  badgesRow.className = 'badges-row';
+
   const badge = document.createElement('div');
   badge.className = 'buyer-badge';
   badge.style.background = color;
   badge.textContent = label;
-  card.appendChild(badge);
+  badgesRow.appendChild(badge);
+
+  const _PRIORITY_LABELS = {alta: 'Prioridad alta', media: 'Prioridad media', baja: 'Prioridad baja'};
+  if(priority && priority.prioridad && _PRIORITY_LABELS[priority.prioridad]){
+    const priorityBadge = document.createElement('div');
+    priorityBadge.className = 'buyer-badge';
+    priorityBadge.style.background = priority.color_hex || '#8A8A8A';
+    priorityBadge.textContent = _PRIORITY_LABELS[priority.prioridad];
+    if(priority.razon) priorityBadge.title = priority.razon;
+    badgesRow.appendChild(priorityBadge);
+  }
+
+  card.appendChild(badgesRow);
+
+  if(priority && priority.razon){
+    const priorityNote = document.createElement('p');
+    priorityNote.className = 'priority-note';
+    priorityNote.textContent = priority.razon;
+    card.appendChild(priorityNote);
+  }
 
   if(isNeutral){
     const note = document.createElement('p');

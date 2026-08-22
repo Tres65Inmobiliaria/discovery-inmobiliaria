@@ -26,6 +26,7 @@ function syncKey(n){ return "tres65_property_" + n + "_state"; }
 function reportKey(n){ return "tres65_property_" + n + "_report"; }
 function reportKeywordsKey(n){ return "tres65_property_" + n + "_report_keywords"; }
 function reportProfileKey(n){ return "tres65_property_" + n + "_report_profile"; }
+function reportPriorityKey(n){ return "tres65_property_" + n + "_report_priority"; }
 
 function waitForAuthUser(){
   return new Promise((resolve) => {
@@ -107,6 +108,7 @@ async function pull(uid){
         if(p.report) localStorage.setItem(reportKey(n), p.report);
         if(p.report_keywords) localStorage.setItem(reportKeywordsKey(n), JSON.stringify(p.report_keywords));
         if(p.report_profile) localStorage.setItem(reportProfileKey(n), JSON.stringify(p.report_profile));
+        if(p.report_priority) localStorage.setItem(reportPriorityKey(n), JSON.stringify(p.report_priority));
       });
     }
     return data;
@@ -125,6 +127,7 @@ async function push(uid){
     const report = localStorage.getItem(reportKey(n));
     const reportKeywordsRaw = localStorage.getItem(reportKeywordsKey(n));
     const reportProfileRaw = localStorage.getItem(reportProfileKey(n));
+    const reportPriorityRaw = localStorage.getItem(reportPriorityKey(n));
     if(stateRaw || report){
       properties[n] = {};
       if(stateRaw){
@@ -136,6 +139,9 @@ async function push(uid){
       }
       if(reportProfileRaw){
         try{ properties[n].report_profile = JSON.parse(reportProfileRaw); }catch(e){}
+      }
+      if(reportPriorityRaw){
+        try{ properties[n].report_priority = JSON.parse(reportPriorityRaw); }catch(e){}
       }
     }
   }
