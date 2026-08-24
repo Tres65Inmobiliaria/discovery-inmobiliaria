@@ -178,6 +178,21 @@
     text-align:center;
   }
 
+  .task-item{
+    background:var(--menta);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    font-size:13px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .task-item input[type="checkbox"]{margin-top:2px; flex-shrink:0; cursor:pointer;}
+  .task-item-body{flex:1; min-width:0;}
+  .task-item.done .task-item-text{text-decoration:line-through; color:var(--texto-suave);}
+  .task-meta{font-size:11px; color:var(--texto-suave); margin-top:4px;}
+
   .tool-card{
     background:#fff;
     border:1px solid var(--borde);
@@ -447,6 +462,17 @@
     <i data-lucide="inbox"></i> Leads del día
     <span id="leads-count-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
   </a>
+
+  <div class="tool-card" style="margin-bottom:24px;">
+    <div class="tool-title"><i data-lucide="check-square"></i> Tareas</div>
+    <div id="agent-task-assign-wrap" style="display:none; margin-bottom:14px;">
+      <label class="tool-select-label" for="agent-task-select">Asignar a</label>
+      <select class="tool-select" id="agent-task-select"></select>
+      <textarea id="agent-task-input" placeholder="Escribe la tarea..." style="margin-top:8px;"></textarea>
+      <button class="tool-btn" id="agent-task-assign-btn" type="button" style="margin-top:8px;">Asignar tarea</button>
+    </div>
+    <div id="agent-tasks-list"></div>
+  </div>
 
   <div id="admin-summary" style="display:none;"></div>
 
@@ -770,6 +796,84 @@ async function loadClients(session){
   })));
 }
 
+function fmtTaskDate(iso){
+  if(!iso) return '';
+  try{
+    return new Date(iso).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'});
+  }catch(e){ return iso; }
+}
+
+async function renderAgentTasks(session){
+  const assignWrap = document.getElementById('agent-task-assign-wrap');
+  const listEl = document.getElementById('agent-tasks-list');
+  if(session.isAdmin){
+    assignWrap.style.display = 'block';
+    const select = document.getElementById('agent-task-select');
+    if(!select.options.length){
+      AGENTS.forEach(a=>{
+        const opt = document.createElement('option');
+        opt.value = a.uid;
+        opt.textContent = a.name;
+        select.appendChild(opt);
+      });
+    }
+  }
+  let tasks = [];
+  try{
+    tasks = await window.tres65Sync.getAgentTasks();
+  }catch(err){
+    listEl.innerHTML = '<p class="empty-note">Error cargando tareas.</p>';
+    return;
+  }
+  renderAgentTasksList(tasks, session);
+}
+
+function renderAgentTasksList(tasks, session){
+  const listEl = document.getElementById('agent-tasks-list');
+  listEl.innerHTML = '';
+  if(!tasks || !tasks.length){
+    listEl.innerHTML = '<p class="empty-note">' + (session.isAdmin ? 'No hay tareas asignadas.' : 'No tienes tareas por ahora.') + '</p>';
+    return;
+  }
+  tasks.forEach(t=>{
+    const item = document.createElement('div');
+    item.className = 'task-item' + (t.done ? ' done' : '');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !!t.done;
+    checkbox.addEventListener('change', async ()=>{
+      checkbox.disabled = true;
+      try{
+        await window.tres65Sync.toggleAgentTask(t.id);
+        await renderAgentTasks(session);
+      }catch(err){
+        alert(err.message || 'Error actualizando la tarea.');
+        checkbox.checked = !checkbox.checked;
+        checkbox.disabled = false;
+      }
+    });
+    item.appendChild(checkbox);
+
+    const body = document.createElement('div');
+    body.className = 'task-item-body';
+    const text = document.createElement('div');
+    text.className = 'task-item-text';
+    text.textContent = t.text;
+    body.appendChild(text);
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+    const agentPart = session.isAdmin && t.agent_name ? (t.agent_name + ' — ') : '';
+    const byPart = t.created_by ? ('de ' + t.created_by) : '';
+    const datePart = t.created_at ? (' — ' + fmtTaskDate(t.created_at)) : '';
+    meta.textContent = agentPart + byPart + datePart;
+    body.appendChild(meta);
+    item.appendChild(body);
+
+    listEl.appendChild(item);
+  });
+}
+
 async function renderAgentRoster(session, allClients){
   const section = document.getElementById('agent-roster-section');
   if(!session.isAdmin){
@@ -980,6 +1084,29 @@ async function boot(){
     badge.style.color = count > 0 ? '#C0453A' : 'var(--medio)';
     badge.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando leads:', err));
+
+  renderAgentTasks(session);
+  document.getElementById('agent-task-assign-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('agent-task-assign-btn');
+    const select = document.getElementById('agent-task-select');
+    const input = document.getElementById('agent-task-input');
+    const text = input.value.trim();
+    const agentUid = select.value;
+    if(!text || !agentUid) return;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Asignando...';
+    try{
+      await window.tres65Sync.createAgentTask(agentUid, text);
+      input.value = '';
+      await renderAgentTasks(session);
+    }catch(err){
+      alert(err.message || 'Error asignando la tarea.');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 
   await loadClients(session);
 

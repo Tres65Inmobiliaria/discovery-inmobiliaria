@@ -214,6 +214,28 @@ async function sendWelcomeMessage(token){
   return _authedPost("/portal/enviar-bienvenida/" + encodeURIComponent(token), {});
 }
 
+async function getAgentTasks(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/tareas-agente", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando tareas");
+  return data.tasks;
+}
+
+async function createAgentTask(agent_uid, text){
+  const data = await _authedPost("/portal/tareas-agente", {agent_uid, text});
+  return data.task;
+}
+
+async function toggleAgentTask(task_id){
+  const data = await _authedPost("/portal/tareas-agente/" + encodeURIComponent(task_id) + "/completar", {});
+  return data.task;
+}
+
 async function getLeadsPotenciales(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -331,6 +353,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo,
-  getClientDetail, addClientNote, toggleClientNote, deleteClient, addClientEmail
+  getClientDetail, addClientNote, toggleClientNote, deleteClient, addClientEmail,
+  getAgentTasks, createAgentTask, toggleAgentTask
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
