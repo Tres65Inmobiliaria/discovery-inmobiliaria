@@ -145,6 +145,10 @@
   }
 
   .roster-agent-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
     font-family:'Montserrat',sans-serif;
     font-size:13px;
     font-weight:600;
@@ -592,6 +596,10 @@
     <div id="agents-modal-roster-wrap" style="display:none; margin-bottom:20px;">
       <div class="tool-select-label" style="margin-bottom:8px;">Clientes por agente</div>
       <div id="agent-roster-buttons" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      <div id="agent-roster-table-wrap" style="display:none; margin-top:14px;">
+        <div class="shortlist-title" id="agent-roster-table-title"></div>
+        <div id="agent-roster-table-body" style="max-height:260px; overflow-y:auto;"></div>
+      </div>
     </div>
     <div id="agent-task-assign-wrap" style="display:none; margin-bottom:14px;">
       <label class="tool-select-label" for="agent-task-select">Asignar tarea a</label>
@@ -600,14 +608,6 @@
       <button class="tool-btn" id="agent-task-assign-btn" type="button" style="margin-top:8px;">Asignar tarea</button>
     </div>
     <div id="agent-tasks-list" style="max-height:300px; overflow-y:auto;"></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="agent-roster-modal">
-  <div class="modal-card" style="max-width:480px;">
-    <button class="modal-close" id="agent-roster-modal-close-x" type="button" aria-label="Cerrar">×</button>
-    <h3 id="agent-roster-modal-title">Clientes de</h3>
-    <div id="agent-roster-modal-body" style="max-height:400px; overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -918,7 +918,7 @@ async function renderAgentRoster(session, allClients){
 }
 
 function openAgentRosterModal(agent, agentLeads, agentClients){
-  document.getElementById('agent-roster-modal-title').textContent = 'Clientes de ' + agent.name;
+  document.getElementById('agent-roster-table-title').textContent = 'Clientes de ' + agent.name;
   const rows = [];
   agentLeads.forEach(l=>{
     rows.push({name: l.name || l.phone || 'Sin nombre', status: l.label === 'cliente-potencial' ? 'Cliente potencial' : 'Listo para asesor'});
@@ -926,7 +926,7 @@ function openAgentRosterModal(agent, agentLeads, agentClients){
   agentClients.forEach(c=>{
     rows.push({name: c.client_name || 'Sin nombre', status: 'Portal creado - ' + (c.status || 'Sin estado')});
   });
-  const body = document.getElementById('agent-roster-modal-body');
+  const body = document.getElementById('agent-roster-table-body');
   body.innerHTML = '';
   if(!rows.length){
     body.innerHTML = '<p class="empty-note">Sin clientes asignados todavía.</p>';
@@ -948,7 +948,7 @@ function openAgentRosterModal(agent, agentLeads, agentClients){
     table.appendChild(tbody);
     body.appendChild(table);
   }
-  document.getElementById('agent-roster-modal').classList.add('open');
+  document.getElementById('agent-roster-table-wrap').style.display = 'block';
 }
 
 let deleteReasonCallback = null;
@@ -1156,10 +1156,6 @@ async function boot(){
   document.getElementById('delete-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('delete-modal').classList.remove('open');
     deleteReasonCallback = null;
-  });
-
-  document.getElementById('agent-roster-modal-close-x').addEventListener('click', ()=>{
-    document.getElementById('agent-roster-modal').classList.remove('open');
   });
 
   document.getElementById('agents-toggle-btn').addEventListener('click', ()=>{
