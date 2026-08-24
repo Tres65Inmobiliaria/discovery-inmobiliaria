@@ -458,30 +458,18 @@
     </div>
   </header>
 
-  <a href="leads.html" id="leads-link" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); text-decoration:none; margin-bottom:20px;">
-    <i data-lucide="inbox"></i> Leads del día
-    <span id="leads-count-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
-  </a>
-
-  <div class="tool-card" style="margin-bottom:24px;">
-    <div class="tool-title"><i data-lucide="check-square"></i> Tareas</div>
-    <div id="agent-task-assign-wrap" style="display:none; margin-bottom:14px;">
-      <label class="tool-select-label" for="agent-task-select">Asignar a</label>
-      <select class="tool-select" id="agent-task-select"></select>
-      <textarea id="agent-task-input" placeholder="Escribe la tarea..." style="margin-top:8px;"></textarea>
-      <button class="tool-btn" id="agent-task-assign-btn" type="button" style="margin-top:8px;">Asignar tarea</button>
-    </div>
-    <div id="agent-tasks-list"></div>
+  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+    <a href="leads.html" id="leads-link" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); text-decoration:none;">
+      <i data-lucide="inbox"></i> Leads del día
+      <span id="leads-count-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
+    </a>
+    <button id="agents-toggle-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 14px; cursor:pointer;">
+      <i data-lucide="users"></i> <span id="agents-toggle-label">Agentes</span>
+      <span id="agents-toggle-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
+    </button>
   </div>
 
   <div id="admin-summary" style="display:none;"></div>
-
-  <div id="agent-roster-section" style="display:none; margin-bottom:24px;">
-    <div class="tool-card">
-      <div class="tool-title"><i data-lucide="users"></i> Clientes por agente</div>
-      <div id="agent-roster-buttons" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
-    </div>
-  </div>
 
   <h1>Mis clientes</h1>
 
@@ -594,6 +582,24 @@
       <button class="modal-cancel" id="delete-modal-cancel" type="button">Cancelar</button>
       <button class="modal-save" id="delete-reason-other-confirm" type="button" style="display:none;">Confirmar</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="agents-modal">
+  <div class="modal-card" style="max-width:480px;">
+    <button class="modal-close" id="agents-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3 id="agents-modal-title">Agentes</h3>
+    <div id="agents-modal-roster-wrap" style="display:none; margin-bottom:20px;">
+      <div class="tool-select-label" style="margin-bottom:8px;">Clientes por agente</div>
+      <div id="agent-roster-buttons" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+    </div>
+    <div id="agent-task-assign-wrap" style="display:none; margin-bottom:14px;">
+      <label class="tool-select-label" for="agent-task-select">Asignar tarea a</label>
+      <select class="tool-select" id="agent-task-select"></select>
+      <textarea id="agent-task-input" placeholder="Escribe la tarea..." style="margin-top:8px;"></textarea>
+      <button class="tool-btn" id="agent-task-assign-btn" type="button" style="margin-top:8px;">Asignar tarea</button>
+    </div>
+    <div id="agent-tasks-list" style="max-height:300px; overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -826,6 +832,15 @@ async function renderAgentTasks(session){
     return;
   }
   renderAgentTasksList(tasks, session);
+
+  const pending = tasks.filter(t => !t.done).length;
+  const badge = document.getElementById('agents-toggle-badge');
+  if(pending > 0){
+    badge.textContent = String(pending);
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 function renderAgentTasksList(tasks, session){
@@ -875,9 +890,9 @@ function renderAgentTasksList(tasks, session){
 }
 
 async function renderAgentRoster(session, allClients){
-  const section = document.getElementById('agent-roster-section');
+  const wrap = document.getElementById('agents-modal-roster-wrap');
   if(!session.isAdmin){
-    section.style.display = 'none';
+    wrap.style.display = 'none';
     return;
   }
   let leads = [];
@@ -899,7 +914,7 @@ async function renderAgentRoster(session, allClients){
     btn.addEventListener('click', ()=> openAgentRosterModal(agent, agentLeads, agentClients));
     btnsWrap.appendChild(btn);
   });
-  section.style.display = 'block';
+  wrap.style.display = 'block';
 }
 
 function openAgentRosterModal(agent, agentLeads, agentClients){
@@ -1064,6 +1079,8 @@ async function boot(){
 
   document.getElementById('who-name').textContent = session.email;
   document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
+  document.getElementById('agents-toggle-label').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
+  document.getElementById('agents-modal-title').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
 
   if(session.isAdmin){
     const wrap = document.getElementById('agent-select-wrap');
@@ -1143,6 +1160,13 @@ async function boot(){
 
   document.getElementById('agent-roster-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('agent-roster-modal').classList.remove('open');
+  });
+
+  document.getElementById('agents-toggle-btn').addEventListener('click', ()=>{
+    document.getElementById('agents-modal').classList.add('open');
+  });
+  document.getElementById('agents-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('agents-modal').classList.remove('open');
   });
 
   async function submitDeleteReason(reason){
