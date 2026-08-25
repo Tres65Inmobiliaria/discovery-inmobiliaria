@@ -374,6 +374,8 @@
     padding:24px;
     max-width:380px;
     width:100%;
+    max-height:85vh;
+    overflow-y:auto;
     position:relative;
   }
   .modal-close{
@@ -407,7 +409,7 @@
     margin-bottom:6px;
     display:block;
   }
-  .modal-card input, .modal-card select{
+  .modal-card input, .modal-card select, .modal-card textarea{
     width:100%;
     font-family:'Raleway',sans-serif;
     font-size:14px;
@@ -417,7 +419,9 @@
     background:#fff;
     color:var(--texto);
     margin-bottom:14px;
+    resize:vertical;
   }
+  .modal-card .tool-btn{width:100%; text-align:center;}
   .modal-buttons{display:flex; gap:8px; margin-top:8px;}
   .modal-buttons button{
     flex:1;
