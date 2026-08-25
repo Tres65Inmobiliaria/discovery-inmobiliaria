@@ -591,6 +591,12 @@ function renderEmailWidget(ficha){
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = 'Agregar';
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      btn.click();
+    }
+  });
   form.appendChild(input);
   form.appendChild(btn);
   box.appendChild(form);

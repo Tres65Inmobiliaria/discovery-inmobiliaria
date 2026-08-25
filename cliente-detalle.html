@@ -988,6 +988,20 @@ async function boot(){
     return;
   }
 
+  document.getElementById('note-input').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      document.getElementById('note-btn').click();
+    }
+  });
+
+  document.getElementById('search-input').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      document.getElementById('search-btn').click();
+    }
+  });
+
   document.getElementById('note-btn').addEventListener('click', async ()=>{
     const btn = document.getElementById('note-btn');
     const input = document.getElementById('note-input');

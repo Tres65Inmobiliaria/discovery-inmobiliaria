@@ -803,6 +803,12 @@ function renderQuestion(q, index, container){
       notas.placeholder = 'Notas (opcional)';
       notas.style.marginTop = '8px';
       notas.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
+      notas.addEventListener('keydown', e=>{
+        if(e.key === 'Enter' && !e.shiftKey){
+          e.preventDefault();
+          document.getElementById('next-btn').click();
+        }
+      });
       block.appendChild(notas);
     }
   }
@@ -812,6 +818,12 @@ function renderQuestion(q, index, container){
     t.placeholder = displayPlaceholder(q);
     t.style.minHeight = '64px';
     t.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
+    t.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        document.getElementById('next-btn').click();
+      }
+    });
     block.appendChild(t);
   }
 
@@ -1194,6 +1206,12 @@ document.getElementById('restart-btn').addEventListener('click', ()=>{
   if(!ok) return;
   localStorage.removeItem(stateKey(getActiveProperty()));
   location.reload();
+});
+document.getElementById('reportComments').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    document.getElementById('report-agree-btn').click();
+  }
 });
 document.getElementById('report-agree-btn').addEventListener('click', ()=>{
   // Nota: aún no manda nada a los agentes — por ahora solo confirma en pantalla,

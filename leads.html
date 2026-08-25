@@ -688,6 +688,19 @@ async function boot(){
       btn.textContent = 'Crear';
     }
   });
+
+  function submitOnEnter(inputId, btnId, {allowNewline} = {}){
+    document.getElementById(inputId).addEventListener('keydown', (e)=>{
+      if(e.key !== 'Enter') return;
+      if(allowNewline && e.shiftKey) return;
+      e.preventDefault();
+      document.getElementById(btnId).click();
+    });
+  }
+  submitOnEnter('client-name', 'modal-save');
+  submitOnEnter('client-phone', 'modal-save');
+  submitOnEnter('client-email', 'modal-save');
+  submitOnEnter('client-property', 'modal-save');
 }
 
 boot();

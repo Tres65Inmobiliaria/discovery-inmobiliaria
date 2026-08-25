@@ -1296,7 +1296,10 @@ async function boot(){
   submitOnEnter('tool-link-input', 'tool-link-btn');
   submitOnEnter('client-name', 'modal-save');
   submitOnEnter('client-phone', 'modal-save');
+  submitOnEnter('client-email', 'modal-save');
   submitOnEnter('client-property', 'modal-save');
+  submitOnEnter('delete-reason-other-input', 'delete-reason-other-confirm');
+  submitOnEnter('agent-task-input', 'agent-task-assign-btn', {allowNewline: true});
 
   function wireTool(btnId, inputId, resultId, run, busyLabel){
     const btn = document.getElementById(btnId);
