@@ -93,6 +93,26 @@
     text-align:center;
     display:none;
   }
+  .success-note{
+    font-size:13px;
+    color:var(--medio);
+    text-align:center;
+    display:none;
+  }
+  .forgot-link{
+    background:none;
+    border:none;
+    padding:0;
+    font-family:'Raleway',sans-serif;
+    font-size:13px;
+    color:var(--texto-suave);
+    text-decoration:underline;
+    cursor:pointer;
+    align-self:center;
+    margin-top:-4px;
+  }
+  .forgot-link:hover{color:var(--profundo);}
+  .forgot-link:disabled{opacity:.6; cursor:default;}
 </style>
 </head>
 <body>
@@ -113,7 +133,9 @@
       <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
     </div>
     <p class="error-note" id="error-note">Correo o contraseña incorrectos.</p>
+    <p class="success-note" id="success-note">Te mandamos un correo para poner una contraseña nueva.</p>
     <button class="submit-btn" id="submit-btn" type="submit">Entrar</button>
+    <button class="forgot-link" id="forgot-btn" type="button">¿Olvidaste tu contraseña?</button>
   </form>
 </div>
 
@@ -146,6 +168,36 @@ document.getElementById('login-form').addEventListener('submit', async (e)=>{
     btn.disabled = false;
     btn.textContent = 'Entrar';
   }
+});
+
+document.getElementById('forgot-btn').addEventListener('click', async ()=>{
+  const forgotBtn = document.getElementById('forgot-btn');
+  const errorNote = document.getElementById('error-note');
+  const successNote = document.getElementById('success-note');
+  errorNote.style.display = 'none';
+  successNote.style.display = 'none';
+
+  const email = document.getElementById('email').value.trim();
+  if(!email){
+    errorNote.textContent = 'Escribe tu correo arriba y da clic de nuevo.';
+    errorNote.style.display = 'block';
+    document.getElementById('email').focus();
+    return;
+  }
+
+  forgotBtn.disabled = true;
+  forgotBtn.textContent = 'Enviando...';
+  await waitForSync();
+  try{
+    await window.tres65Sync.resetAgentPassword(email);
+    successNote.style.display = 'block';
+  }catch(err){
+    console.error('[Login] error recuperando contraseña:', err);
+    errorNote.textContent = 'No pudimos enviar el correo. Revisa que esté bien escrito.';
+    errorNote.style.display = 'block';
+  }
+  forgotBtn.disabled = false;
+  forgotBtn.textContent = '¿Olvidaste tu contraseña?';
 });
 </script>
 </body>

@@ -4,7 +4,7 @@
 // ya se verificó al escribirle a María por WhatsApp).
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -177,6 +177,10 @@ async function signInAgent(email, password){
 
 function signOutAgent(){
   return signOut(auth);
+}
+
+function resetAgentPassword(email){
+  return sendPasswordResetEmail(auth, email);
 }
 
 async function agentInit(){
@@ -426,7 +430,7 @@ async function summarizeLink(url){
 
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
-  signInAgent, signOutAgent, agentInit, listClients, createClient,
+  signInAgent, signOutAgent, resetAgentPassword, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
