@@ -28,7 +28,7 @@ Módulo ES central, cargado en casi todas las páginas (`<script type="module" s
 
 **Importante — `init(fichaToken)`:** resuelve la identidad del CLIENTE para un link específico. Siempre valida contra el backend (`/portal/auth-token`) que el usuario YA firmado en el navegador coincida con el que corresponde a ese `ficha_token` — si no coincide, cierra esa sesión y firma con la correcta. Esto existe porque probar varias fichas seguidas en el mismo navegador hacía que se reusara la sesión de un cliente anterior (bug real, ya corregido). No revertir a la versión simple de "si ya hay alguien firmado, úsalo".
 
-**`agentInit()`** es la función distinta para agentes/admin (email/password + custom claim `admin`) — no confundir con `init()`.
+**`agentInit()`** es la función distinta para agentes/admin (email/password + custom claim `admin`) — no confundir con `init()`. Usa `getIdTokenResult(true)` (forceRefresh) a propósito: un token en caché de antes de que a la cuenta se le asignara el claim `admin` hace que `_verify_agent_token` en el backend lea `is_admin=False` aunque la cuenta ya sea admin — esto causó un bug real (una propiedad sugerida por Admin a un cliente de otro agente nunca se guardó, sin error visible, porque el backend la rechazó silenciosamente por permisos). Con el checkbox de "recordar contraseña" en `agente-login.html` las sesiones duran más sin re-loguearse, así que este forceRefresh es más importante todavía — no quitarlo.
 
 ## Convenciones de UI que ya se repiten
 
