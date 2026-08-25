@@ -136,6 +136,18 @@
   .btn.chat{background:var(--menta); border-color:var(--menta); color:var(--medio);}
   .btn.profile{background:var(--profundo); border-color:var(--profundo); color:#fff;}
 
+  .method-row{display:flex; gap:8px; margin-top:8px;}
+  .method-btn{
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    padding:8px; border-radius:8px;
+    border:1px solid var(--borde); background:#fff; color:var(--texto-suave);
+    cursor:pointer;
+  }
+  .method-btn svg{width:15px; height:15px;}
+  .method-btn.selected{background:var(--profundo); border-color:var(--profundo); color:#fff;}
+  .btn:disabled{opacity:.5; cursor:default;}
+
   .empty-note{font-size:13px; color:var(--texto-suave); padding:16px; background:var(--menta); border-radius:8px; text-align:center;}
   .error-note{font-size:13px; color:#C0453A; padding:16px; background:#F5E4E1; border-radius:8px; text-align:center;}
 
@@ -403,7 +415,7 @@ function buildLeadCard(lead){
     statusRow.className = 'status-row';
     const statusLabel = document.createElement('span');
     statusLabel.className = 'label';
-    statusLabel.textContent = 'Contacto ' + att.attempt_number + ':';
+    statusLabel.textContent = 'Contacto ' + att.attempt_number + (att.method ? ' (' + att.method + '):' : ':');
     statusRow.appendChild(statusLabel);
     const badge = document.createElement('span');
     badge.className = 'answer-badge ' + (att.contacted ? 'yes' : 'no');
@@ -460,6 +472,28 @@ function buildLeadCard(lead){
   }
 
   const nextAttemptNum = attempts.length + 1;
+  let selectedMethod = null;
+
+  const methodRow = document.createElement('div');
+  methodRow.className = 'method-row';
+  const METHODS = [['Llamada', 'phone'], ['WhatsApp', 'message-circle'], ['Chatwoot', 'message-square'], ['Email', 'mail']];
+  const methodBtns = METHODS.map(([label, icon])=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'method-btn';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+    btn.innerHTML = '<i data-lucide="' + icon + '"></i>';
+    btn.addEventListener('click', ()=>{
+      selectedMethod = label;
+      methodBtns.forEach(b => b.classList.toggle('selected', b === btn));
+      noAnswerBtn.disabled = false;
+      answeredBtn.disabled = false;
+    });
+    methodRow.appendChild(btn);
+    return btn;
+  });
+
   const contactRow = document.createElement('div');
   contactRow.className = 'actions';
   contactRow.style.marginTop = '8px';
@@ -467,11 +501,13 @@ function buildLeadCard(lead){
   const noAnswerBtn = document.createElement('button');
   noAnswerBtn.className = 'btn';
   noAnswerBtn.type = 'button';
+  noAnswerBtn.disabled = true;
   noAnswerBtn.innerHTML = '<i data-lucide="phone-missed"></i> Contacto ' + nextAttemptNum + ': No contestó';
   noAnswerBtn.addEventListener('click', async ()=>{
+    if(!selectedMethod) return;
     noAnswerBtn.disabled = true;
     try{
-      await window.tres65Sync.logLeadContact(lead.conv_id, false, '');
+      await window.tres65Sync.logLeadContact(lead.conv_id, false, '', selectedMethod);
       await loadLeads();
     }catch(err){
       alert(err.message || 'Error registrando el contacto.');
@@ -483,13 +519,15 @@ function buildLeadCard(lead){
   const answeredBtn = document.createElement('button');
   answeredBtn.className = 'btn';
   answeredBtn.type = 'button';
+  answeredBtn.disabled = true;
   answeredBtn.innerHTML = '<i data-lucide="phone-call"></i> Contacto ' + nextAttemptNum + ': Sí contestó';
   answeredBtn.addEventListener('click', async ()=>{
+    if(!selectedMethod) return;
     const result = prompt('¿Qué resultó del contacto?', '');
     if(result === null) return;
     answeredBtn.disabled = true;
     try{
-      await window.tres65Sync.logLeadContact(lead.conv_id, true, result.trim());
+      await window.tres65Sync.logLeadContact(lead.conv_id, true, result.trim(), selectedMethod);
       await loadLeads();
     }catch(err){
       alert(err.message || 'Error registrando el contacto.');
@@ -510,6 +548,7 @@ function buildLeadCard(lead){
   });
 
   card.appendChild(actions);
+  card.appendChild(methodRow);
   card.appendChild(contactRow);
   card.appendChild(deleteBtn);
   return card;

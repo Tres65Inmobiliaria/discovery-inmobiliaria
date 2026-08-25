@@ -202,8 +202,8 @@ async function convertLeadToListo(conv_id){
   return _authedPost("/portal/lead-a-listo/" + encodeURIComponent(conv_id), {});
 }
 
-async function logLeadContact(conv_id, contacted, result){
-  const data = await _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/contacto", {contacted, result});
+async function logLeadContact(conv_id, contacted, result, method){
+  const data = await _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/contacto", {contacted, result, method});
   return data.attempts;
 }
 
