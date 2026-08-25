@@ -259,6 +259,18 @@ async function getAgentTasks(){
   return data.tasks;
 }
 
+async function getTareasPorCliente(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/tareas-por-cliente", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando tareas por cliente");
+  return data.clients;
+}
+
 async function createAgentTask(agent_uid, text){
   const data = await _authedPost("/portal/tareas-agente", {agent_uid, text});
   return data.task;
@@ -395,6 +407,6 @@ window.tres65Sync = {
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos, getLeadsPerdidosCount,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
-  getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask
+  getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));

@@ -619,7 +619,13 @@
       <textarea id="agent-task-input" placeholder="Escribe la tarea..." style="margin-top:8px;"></textarea>
       <button class="tool-btn" id="agent-task-assign-btn" type="button" style="margin-top:8px;">Asignar tarea</button>
     </div>
+    <div id="agent-tasks-section-label" class="tool-select-label" style="display:none; margin-bottom:8px;">Tareas generales</div>
     <div id="agent-tasks-list" style="max-height:300px; overflow-y:auto;"></div>
+
+    <div id="client-tasks-wrap" style="display:none; margin-top:20px;">
+      <div class="tool-select-label" style="margin-bottom:8px;">Tareas por cliente</div>
+      <div id="client-tasks-list" style="max-height:300px; overflow-y:auto;"></div>
+    </div>
   </div>
 </div>
 
@@ -844,6 +850,7 @@ async function renderAgentTasks(session){
     return;
   }
   renderAgentTasksList(tasks, session);
+  document.getElementById('agent-tasks-section-label').style.display = session.isAdmin ? 'none' : 'block';
 
   const pending = tasks.filter(t => !t.done).length;
   const badge = document.getElementById('agents-toggle-badge');
@@ -853,6 +860,92 @@ async function renderAgentTasks(session){
   } else {
     badge.style.display = 'none';
   }
+}
+
+async function renderClientTasks(session){
+  const wrap = document.getElementById('client-tasks-wrap');
+  if(session.isAdmin){
+    wrap.style.display = 'none';
+    return;
+  }
+  let clients = [];
+  try{
+    clients = await window.tres65Sync.getTareasPorCliente();
+  }catch(err){
+    wrap.style.display = 'none';
+    return;
+  }
+  const listEl = document.getElementById('client-tasks-list');
+  listEl.innerHTML = '';
+  if(!clients.length){
+    listEl.innerHTML = '<p class="empty-note">No tienes tareas de cliente por ahora.</p>';
+  } else {
+    clients.forEach(c=>{
+      const group = document.createElement('div');
+      group.style.marginBottom = '14px';
+
+      const clientLabel = document.createElement('a');
+      clientLabel.href = 'cliente-detalle.html?token=' + encodeURIComponent(c.client_token);
+      clientLabel.style.cssText = 'display:block; font-family:"Montserrat",sans-serif; font-size:12.5px; font-weight:700; color:var(--profundo); margin-bottom:6px; text-decoration:none;';
+      clientLabel.textContent = c.client_name;
+      group.appendChild(clientLabel);
+
+      c.notes.forEach(n=>{
+        const item = document.createElement('div');
+        item.className = 'task-item' + (n.done ? ' done' : '');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = !!n.done;
+        checkbox.addEventListener('change', async ()=>{
+          checkbox.disabled = true;
+          try{
+            await window.tres65Sync.toggleClientNote(c.client_token, n.created_at);
+            await renderClientTasks(session);
+          }catch(err){
+            alert(err.message || 'Error actualizando la tarea.');
+            checkbox.checked = !checkbox.checked;
+            checkbox.disabled = false;
+          }
+        });
+        item.appendChild(checkbox);
+
+        const body = document.createElement('div');
+        body.className = 'task-item-body';
+        const text = document.createElement('div');
+        text.className = 'task-item-text';
+        text.textContent = n.text;
+        body.appendChild(text);
+        const meta = document.createElement('div');
+        meta.className = 'task-meta';
+        meta.textContent = (n.author || '') + (n.created_at ? ' — ' + fmtTaskDate(n.created_at) : '');
+        body.appendChild(meta);
+        item.appendChild(body);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'shortlist-remove';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('aria-label', 'Borrar tarea');
+        removeBtn.addEventListener('click', async ()=>{
+          removeBtn.disabled = true;
+          try{
+            await window.tres65Sync.deleteClientNote(c.client_token, n.created_at);
+            await renderClientTasks(session);
+          }catch(err){
+            alert(err.message || 'Error borrando la tarea.');
+            removeBtn.disabled = false;
+          }
+        });
+        item.appendChild(removeBtn);
+
+        group.appendChild(item);
+      });
+      listEl.appendChild(group);
+    });
+  }
+  wrap.style.display = 'block';
+  if(window.lucide) lucide.createIcons();
 }
 
 function renderAgentTasksList(tasks, session){
@@ -1142,6 +1235,7 @@ async function boot(){
   }).catch(err=> console.error('[Dashboard] error contando leads perdidos:', err));
 
   renderAgentTasks(session);
+  renderClientTasks(session);
   document.getElementById('agent-task-assign-btn').addEventListener('click', async ()=>{
     const btn = document.getElementById('agent-task-assign-btn');
     const select = document.getElementById('agent-task-select');
