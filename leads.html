@@ -239,9 +239,12 @@
       </div>
       <p class="modal-success" id="modal-send-status" style="display:none; margin-top:6px;"></p>
     </div>
-    <div class="modal-buttons">
+    <div class="modal-buttons" id="modal-buttons-default">
       <button class="modal-cancel" id="modal-cancel" type="button">Cancelar</button>
       <button class="modal-save" id="modal-save" type="button">Crear</button>
+    </div>
+    <div class="modal-buttons" id="modal-buttons-success" style="display:none;">
+      <button class="modal-save" id="modal-close-success" type="button">Cerrar</button>
     </div>
   </div>
 </div>
@@ -444,6 +447,8 @@ function openCreateModal(lead){
   document.getElementById('modal-error').style.display = 'none';
   document.getElementById('modal-success-wrap').style.display = 'none';
   document.getElementById('modal-send-status').style.display = 'none';
+  document.getElementById('modal-buttons-default').style.display = 'flex';
+  document.getElementById('modal-buttons-success').style.display = 'none';
   if(session.isAdmin && lead.assignee_uid){
     document.getElementById('agent-select').value = lead.assignee_uid;
   }
@@ -613,6 +618,9 @@ async function boot(){
   document.getElementById('modal-cancel').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
   });
+  document.getElementById('modal-close-success').addEventListener('click', ()=>{
+    document.getElementById('modal').classList.remove('open');
+  });
 
   document.getElementById('modal-copy-link').addEventListener('click', async ()=>{
     const btn = document.getElementById('modal-copy-link');
@@ -678,6 +686,8 @@ async function boot(){
       document.getElementById('modal-send-welcome').dataset.token = result.ficha.token;
       document.getElementById('modal-send-status').style.display = 'none';
       successWrap.style.display = 'block';
+      document.getElementById('modal-buttons-default').style.display = 'none';
+      document.getElementById('modal-buttons-success').style.display = 'flex';
     }catch(err){
       console.error('[Leads] error creando cliente:', err);
       errorNote.textContent = err.message || 'Error creando el portal.';

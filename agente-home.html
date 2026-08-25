@@ -563,9 +563,12 @@
       </div>
       <p class="modal-success" id="modal-send-status" style="display:none; margin-top:6px;"></p>
     </div>
-    <div class="modal-buttons">
+    <div class="modal-buttons" id="modal-buttons-default">
       <button class="modal-cancel" id="modal-cancel" type="button">Cancelar</button>
       <button class="modal-save" id="modal-save" type="button">Crear</button>
+    </div>
+    <div class="modal-buttons" id="modal-buttons-success" style="display:none;">
+      <button class="modal-save" id="modal-close-success" type="button">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1144,9 +1147,14 @@ async function boot(){
     document.getElementById('modal-error').style.display = 'none';
     document.getElementById('modal-success-wrap').style.display = 'none';
     document.getElementById('modal-send-status').style.display = 'none';
+    document.getElementById('modal-buttons-default').style.display = 'flex';
+    document.getElementById('modal-buttons-success').style.display = 'none';
     document.getElementById('modal').classList.add('open');
   });
   document.getElementById('modal-cancel').addEventListener('click', ()=>{
+    document.getElementById('modal').classList.remove('open');
+  });
+  document.getElementById('modal-close-success').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
   });
   document.getElementById('modal-close-x').addEventListener('click', ()=>{
@@ -1262,6 +1270,8 @@ async function boot(){
       document.getElementById('modal-send-welcome').dataset.token = result.ficha.token;
       document.getElementById('modal-send-status').style.display = 'none';
       successWrap.style.display = 'block';
+      document.getElementById('modal-buttons-default').style.display = 'none';
+      document.getElementById('modal-buttons-success').style.display = 'flex';
       await loadClients(session);
     }catch(err){
       console.error('[Dashboard] error creando cliente:', err);
