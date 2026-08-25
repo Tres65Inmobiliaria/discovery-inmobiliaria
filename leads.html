@@ -154,6 +154,26 @@
   .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
   .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
   .modal-success{color:var(--acento); font-size:12px; margin:-6px 0 12px; display:none;}
+
+  .btn.danger{background:#C0453A; border-color:#C0453A; color:#fff; flex:1 1 100%; margin-top:8px;}
+  .btn.danger:hover{background:#a83a30;}
+
+  .delete-reason-options{display:flex; flex-direction:column; gap:8px; margin-bottom:6px;}
+  .delete-reason-btn{
+    font-family:'Raleway',sans-serif;
+    font-size:14px;
+    text-align:left;
+    padding:11px 14px;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    background:#fff;
+    color:var(--texto);
+    cursor:pointer;
+  }
+  .delete-reason-btn:hover{border-color:#C0453A; background:#F5E4E1;}
+
+  .lost-reason{font-size:12px; color:var(--texto-suave); margin-top:10px; padding:9px 11px; background:#F5E4E1; border-radius:8px;}
+  .lost-reason strong{color:#C0453A;}
 </style>
 </head>
 <body>
@@ -172,12 +192,13 @@
 
   <div class="topbar">
     <div>
-      <h1>Leads del día</h1>
-      <p>Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"</p>
+      <h1 id="page-title">Leads del día</h1>
+      <p id="page-subtitle">Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"</p>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="refresh-btn" id="round-robin-potencial-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin Potencial</button>
       <button class="refresh-btn" id="round-robin-listo-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin Listos</button>
+      <button class="refresh-btn" id="view-toggle-btn" type="button"><i data-lucide="archive"></i> <span id="view-toggle-label">Ver leads perdidos</span></button>
       <button class="refresh-btn" id="refresh-btn" type="button"><i data-lucide="refresh-cw"></i> Actualizar</button>
     </div>
   </div>
@@ -211,6 +232,8 @@
       <div id="col-listo"></div>
     </section>
   </div>
+
+  <div id="perdidos-list" style="display:none;"></div>
 </div>
 
 <div class="modal-overlay" id="modal">
@@ -245,6 +268,28 @@
     </div>
     <div class="modal-buttons" id="modal-buttons-success" style="display:none;">
       <button class="modal-save" id="modal-close-success" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-card">
+    <button class="modal-close" id="delete-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3 id="delete-modal-title">¿Por qué se pierde este lead?</h3>
+    <div class="delete-reason-options" id="delete-reason-options">
+      <button class="delete-reason-btn" data-reason="Nunca contestó" type="button">Nunca contestó</button>
+      <button class="delete-reason-btn" data-reason="Se fue con otro agente" type="button">Se fue con otro agente</button>
+      <button class="delete-reason-btn" data-reason="Ya no está interesado" type="button">Ya no está interesado</button>
+      <button class="delete-reason-btn" id="delete-reason-other-btn" type="button">Otra razón</button>
+    </div>
+    <div id="delete-reason-other-wrap" style="display:none; margin-top:4px;">
+      <label for="delete-reason-other-input">Explica la razón</label>
+      <input type="text" id="delete-reason-other-input" placeholder="Ej: cambió de ciudad">
+    </div>
+    <p class="modal-error" id="delete-modal-error"></p>
+    <div class="modal-buttons">
+      <button class="modal-cancel" id="delete-modal-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="delete-reason-other-confirm" type="button" style="display:none;">Confirmar</button>
     </div>
   </div>
 </div>
@@ -434,9 +479,34 @@ function buildLeadCard(lead){
   });
   contactRow.appendChild(answeredBtn);
 
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn danger';
+  deleteBtn.type = 'button';
+  deleteBtn.innerHTML = '<i data-lucide="trash-2"></i> Borrar lead';
+  deleteBtn.addEventListener('click', ()=>{
+    openDeleteReasonModal(lead.name, async (reason)=>{
+      await window.tres65Sync.deleteLead(lead.conv_id, reason);
+      await loadLeads();
+    });
+  });
+
   card.appendChild(actions);
   card.appendChild(contactRow);
+  card.appendChild(deleteBtn);
   return card;
+}
+
+let deleteReasonCallback = null;
+
+function openDeleteReasonModal(leadName, onConfirm){
+  deleteReasonCallback = onConfirm;
+  document.getElementById('delete-modal-title').textContent = '¿Por qué se pierde ' + (leadName && leadName !== 'Por definir' ? leadName : 'este lead') + '?';
+  document.getElementById('delete-reason-options').style.display = 'flex';
+  document.getElementById('delete-reason-other-wrap').style.display = 'none';
+  document.getElementById('delete-reason-other-input').value = '';
+  document.getElementById('delete-reason-other-confirm').style.display = 'none';
+  document.getElementById('delete-modal-error').style.display = 'none';
+  document.getElementById('delete-modal').classList.add('open');
 }
 
 function openCreateModal(lead){
@@ -457,6 +527,7 @@ function openCreateModal(lead){
 
 let allLeads = [];
 let currentFilter = 'unassigned';
+let currentView = 'activos';
 
 function leadsForFilter(filter){
   if(filter === 'unassigned') return allLeads.filter(l => !l.assignee_uid);
@@ -534,19 +605,124 @@ function renderColumns(){
   if(window.lucide) lucide.createIcons();
 }
 
+function buildLostLeadCard(lead){
+  const card = document.createElement('div');
+  card.className = 'lead-card';
+
+  const top = document.createElement('div');
+  top.className = 'card-top';
+  const who = document.createElement('div');
+  who.className = 'who-row';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = initials(lead.name);
+  who.appendChild(avatar);
+  const whoText = document.createElement('div');
+  whoText.className = 'who-text';
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = lead.name || 'Sin nombre';
+  whoText.appendChild(name);
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = [lead.phone, lead.assignee_name].filter(Boolean).join(' · ');
+  whoText.appendChild(meta);
+  who.appendChild(whoText);
+  top.appendChild(who);
+  card.appendChild(top);
+
+  if(lead.interes){
+    const interes = document.createElement('div');
+    interes.className = 'interes-tag';
+    interes.innerHTML = '<i data-lucide="map-pin"></i> <span></span>';
+    interes.querySelector('span').textContent = lead.interes;
+    card.appendChild(interes);
+  }
+
+  const info = lead.deleted_info || {};
+  const reasonBox = document.createElement('div');
+  reasonBox.className = 'lost-reason';
+  const reasonLine = document.createElement('div');
+  reasonLine.innerHTML = '<strong>Razón:</strong> ';
+  reasonLine.appendChild(document.createTextNode(info.reason || 'Sin razón registrada'));
+  reasonBox.appendChild(reasonLine);
+  if(info.deleted_by || info.deleted_at){
+    const byLine = document.createElement('div');
+    byLine.style.marginTop = '4px';
+    byLine.textContent = [info.deleted_by, info.deleted_at ? new Date(info.deleted_at).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'}) : ''].filter(Boolean).join(' — ');
+    reasonBox.appendChild(byLine);
+  }
+  card.appendChild(reasonBox);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const chatBtn = document.createElement('a');
+  chatBtn.className = 'btn chat';
+  chatBtn.href = lead.chatwoot_url;
+  chatBtn.target = '_blank';
+  chatBtn.rel = 'noopener';
+  chatBtn.innerHTML = '<i data-lucide="message-square"></i> Chatwoot';
+  actions.appendChild(chatBtn);
+  card.appendChild(actions);
+
+  return card;
+}
+
+function renderPerdidos(leads){
+  const listEl = document.getElementById('perdidos-list');
+  listEl.innerHTML = '';
+  if(!leads.length){
+    listEl.innerHTML = '<p class="empty-note">No hay leads perdidos.</p>';
+  } else {
+    leads.forEach(l => listEl.appendChild(buildLostLeadCard(l)));
+  }
+  listEl.style.display = 'block';
+  if(window.lucide) lucide.createIcons();
+}
+
+function setView(view){
+  currentView = view;
+  const title = document.getElementById('page-title');
+  const subtitle = document.getElementById('page-subtitle');
+  const label = document.getElementById('view-toggle-label');
+  if(view === 'perdidos'){
+    title.textContent = 'Leads perdidos';
+    subtitle.textContent = 'Leads marcados como perdidos, con la razón por la que ya no se siguieron.';
+    label.textContent = 'Ver leads activos';
+  } else {
+    title.textContent = 'Leads del día';
+    subtitle.textContent = 'Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"';
+    label.textContent = 'Ver leads perdidos';
+  }
+  document.getElementById('round-robin-potencial-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
+  document.getElementById('round-robin-listo-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
+}
+
 async function loadLeads(){
   const statusEl = document.getElementById('leads-status');
   const columnsEl = document.getElementById('columns');
   const statRow = document.getElementById('stat-row');
+  const filterRow = document.getElementById('filter-row');
+  const filterTitle = document.getElementById('filter-title');
+  const perdidosList = document.getElementById('perdidos-list');
   statusEl.innerHTML = '<p class="empty-note">Consultando Chatwoot...</p>';
   columnsEl.style.display = 'none';
   statRow.style.display = 'none';
+  filterRow.style.display = 'none';
+  filterTitle.style.display = 'none';
+  perdidosList.style.display = 'none';
 
   try{
-    allLeads = await window.tres65Sync.getLeadsPotenciales();
-    statusEl.innerHTML = '';
-    renderFilters();
-    renderColumns();
+    if(currentView === 'perdidos'){
+      const leads = await window.tres65Sync.getLeadsPerdidos();
+      statusEl.innerHTML = '';
+      renderPerdidos(leads);
+    } else {
+      allLeads = await window.tres65Sync.getLeadsPotenciales();
+      statusEl.innerHTML = '';
+      renderFilters();
+      renderColumns();
+    }
   }catch(err){
     console.error('[Leads] error:', err);
     statusEl.innerHTML = '<p class="error-note">' + (err.message || 'Error consultando Chatwoot.') + '</p>';
@@ -573,14 +749,21 @@ async function boot(){
       opt.textContent = a.name;
       select.appendChild(opt);
     });
-    document.getElementById('round-robin-potencial-btn').style.display = 'inline-flex';
-    document.getElementById('round-robin-listo-btn').style.display = 'inline-flex';
   }
+
+  const initialView = new URLSearchParams(window.location.search).get('view') === 'perdidos' ? 'perdidos' : 'activos';
+  setView(initialView);
 
   await loadLeads();
   if(window.lucide) lucide.createIcons();
 
   document.getElementById('refresh-btn').addEventListener('click', loadLeads);
+
+  document.getElementById('view-toggle-btn').addEventListener('click', async ()=>{
+    setView(currentView === 'perdidos' ? 'activos' : 'perdidos');
+    await loadLeads();
+    if(window.lucide) lucide.createIcons();
+  });
 
   function wireRoundRobinBtn(btnId, label, statusLabel){
     document.getElementById(btnId).addEventListener('click', async ()=>{
@@ -621,6 +804,43 @@ async function boot(){
   document.getElementById('modal-close-success').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
   });
+
+  document.getElementById('delete-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('delete-modal').classList.remove('open');
+    deleteReasonCallback = null;
+  });
+  document.getElementById('delete-modal-cancel').addEventListener('click', ()=>{
+    document.getElementById('delete-modal').classList.remove('open');
+    deleteReasonCallback = null;
+  });
+
+  async function submitDeleteReason(reason){
+    const errorNote = document.getElementById('delete-modal-error');
+    errorNote.style.display = 'none';
+    if(!deleteReasonCallback) return;
+    try{
+      await deleteReasonCallback(reason);
+      document.getElementById('delete-modal').classList.remove('open');
+      deleteReasonCallback = null;
+    }catch(err){
+      errorNote.textContent = err.message || 'Error borrando el lead.';
+      errorNote.style.display = 'block';
+    }
+  }
+  document.querySelectorAll('#delete-reason-options .delete-reason-btn[data-reason]').forEach(btn=>{
+    btn.addEventListener('click', ()=> submitDeleteReason(btn.dataset.reason));
+  });
+  document.getElementById('delete-reason-other-btn').addEventListener('click', ()=>{
+    document.getElementById('delete-reason-options').style.display = 'none';
+    document.getElementById('delete-reason-other-wrap').style.display = 'block';
+    document.getElementById('delete-reason-other-confirm').style.display = 'block';
+  });
+  document.getElementById('delete-reason-other-confirm').addEventListener('click', ()=>{
+    const reason = document.getElementById('delete-reason-other-input').value.trim();
+    if(!reason) return;
+    submitDeleteReason(reason);
+  });
+  submitOnEnter('delete-reason-other-input', 'delete-reason-other-confirm');
 
   document.getElementById('modal-copy-link').addEventListener('click', async ()=>{
     const btn = document.getElementById('modal-copy-link');
