@@ -141,7 +141,7 @@
     flex:1;
     display:flex; align-items:center; justify-content:center;
     padding:8px; border-radius:8px;
-    border:1px solid var(--borde); background:#fff; color:var(--texto-suave);
+    border:1px solid var(--menta); background:var(--menta); color:var(--medio);
     cursor:pointer;
   }
   .method-btn svg{width:15px; height:15px;}
@@ -548,8 +548,8 @@ function buildLeadCard(lead){
   });
 
   card.appendChild(actions);
-  card.appendChild(methodRow);
   card.appendChild(contactRow);
+  card.appendChild(methodRow);
   card.appendChild(deleteBtn);
   return card;
 }
