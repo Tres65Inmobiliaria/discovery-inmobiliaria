@@ -207,6 +207,10 @@ async function deleteLead(conv_id, reason){
   return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/borrar", {reason});
 }
 
+async function reactivarLead(conv_id){
+  return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/reactivar", {});
+}
+
 async function getLeadsPerdidos(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -426,7 +430,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos, getLeadsPerdidosCount, getDirectorio,
+  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getDirectorio,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

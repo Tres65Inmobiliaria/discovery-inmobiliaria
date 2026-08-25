@@ -897,7 +897,7 @@ async function renderDirectorio(){
   }
   const table = document.createElement('table');
   table.className = 'roster-table';
-  table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>Agente</th></tr></thead>';
+  table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>Agente</th><th></th></tr></thead>';
   const tbody = document.createElement('tbody');
   entries.forEach(e=>{
     const tr = document.createElement('tr');
@@ -906,6 +906,28 @@ async function renderDirectorio(){
       td.textContent = val || '—';
       tr.appendChild(td);
     });
+    const actionTd = document.createElement('td');
+    if(e.status === 'Perdido'){
+      const btn = document.createElement('button');
+      btn.className = 'search-btn secondary';
+      btn.style.fontSize = '12px';
+      btn.style.padding = '4px 10px';
+      btn.textContent = 'Reactivar';
+      btn.onclick = async ()=>{
+        btn.disabled = true;
+        btn.textContent = 'Reactivando...';
+        try{
+          await window.tres65Sync.reactivarLead(e.conv_id);
+          renderDirectorio();
+        }catch(err){
+          alert(err.message || 'Error reactivando el lead.');
+          btn.disabled = false;
+          btn.textContent = 'Reactivar';
+        }
+      };
+      actionTd.appendChild(btn);
+    }
+    tr.appendChild(actionTd);
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
