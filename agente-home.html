@@ -798,30 +798,6 @@ const FUNNEL_COLORS = ['#1A4F5C', '#1E7A6E', '#2AA898', '#5FC3B4'];
 
 let inactiveClientsCache = [];
 
-function buildDeletedSummaryHtml(deletedClients, leadItems){
-  const total = deletedClients.length + leadItems.length;
-  if(!total) return '';
-  const reasonCounts = {};
-  deletedClients.forEach(c=>{
-    const r = c.delete_reason || 'Sin razón registrada';
-    reasonCounts[r] = (reasonCounts[r] || 0) + 1;
-  });
-  leadItems.forEach(item=>{
-    const r = item.reason || 'Sin razón registrada';
-    reasonCounts[r] = (reasonCounts[r] || 0) + 1;
-  });
-  const allNames = deletedClients.map(c => c.client_name || 'Sin nombre')
-    .concat(leadItems.map(i => i.name || 'Sin nombre')).join(', ');
-  let html = '<p class="summary-alert" title="' + allNames.replace(/"/g, '&quot;') + '">' +
-    total + ' perdido' + (total > 1 ? 's' : '') + ' en las últimas 24 horas (clientes eliminados + leads perdidos)</p>';
-  html += '<div class="summary-pills">';
-  Object.keys(reasonCounts).forEach(r=>{
-    html += '<span class="summary-pill warn">' + r + ': ' + reasonCounts[r] + '</span>';
-  });
-  html += '</div>';
-  return html;
-}
-
 function renderAdminSummary(session, allClients){
   const el = document.getElementById('admin-summary');
   if(!session.isAdmin){
@@ -861,6 +837,8 @@ function renderAdminSummary(session, allClients){
   });
   html += '</div>';
 
+  const deletedRecentNames = deletedRecent.map(c => c.client_name || 'Sin nombre').join(', ');
+
   html += '<div class="summary-pills">';
   if(descartadaCount){
     html += '<span class="summary-pill" title="' + descartadaNames.replace(/"/g, '&quot;') + '">Propiedad descartada: ' + descartadaCount + '</span>';
@@ -868,9 +846,8 @@ function renderAdminSummary(session, allClients){
   if(inactiveCount){
     html += '<button type="button" class="summary-pill warn clickable" id="inactive-pill-btn">Sin actividad +24h: ' + inactiveCount + '</button>';
   }
+  html += '<span class="summary-pill warn" id="deleted-summary-pill" title="' + deletedRecentNames.replace(/"/g, '&quot;') + '" style="' + (deletedRecent.length ? '' : 'display:none;') + '">Clientes/leads perdidos: ' + deletedRecent.length + '</span>';
   html += '</div>';
-
-  html += '<div id="deleted-summary-block">' + buildDeletedSummaryHtml(deletedRecent, []) + '</div>';
 
   html += '</div>';
   el.innerHTML = html;
@@ -885,9 +862,16 @@ function renderAdminSummary(session, allClients){
   }
 
   window.tres65Sync.getLeadsPerdidosCount().then(({items})=>{
-    const block = document.getElementById('deleted-summary-block');
-    if(!block) return;
-    block.innerHTML = buildDeletedSummaryHtml(deletedRecent, items || []);
+    const pill = document.getElementById('deleted-summary-pill');
+    if(!pill) return;
+    const leadItems = items || [];
+    const total = deletedRecent.length + leadItems.length;
+    if(!total) return;
+    const allNames = deletedRecent.map(c => c.client_name || 'Sin nombre')
+      .concat(leadItems.map(i => i.name || 'Sin nombre')).join(', ');
+    pill.textContent = 'Clientes/leads perdidos: ' + total;
+    pill.title = allNames;
+    pill.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando leads perdidos en resumen:', err));
 }
 
