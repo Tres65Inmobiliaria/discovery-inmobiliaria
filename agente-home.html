@@ -409,7 +409,7 @@
     margin-bottom:6px;
     display:block;
   }
-  .modal-card input, .modal-card select, .modal-card textarea{
+  .modal-card input:not([type="checkbox"]), .modal-card select, .modal-card textarea{
     width:100%;
     font-family:'Raleway',sans-serif;
     font-size:14px;
@@ -421,6 +421,7 @@
     margin-bottom:14px;
     resize:vertical;
   }
+  .modal-card input[type="checkbox"]{width:auto; margin-bottom:0;}
   .modal-card .tool-btn{width:100%; text-align:center;}
   .modal-buttons{display:flex; gap:8px; margin-top:8px;}
   .modal-buttons button{
