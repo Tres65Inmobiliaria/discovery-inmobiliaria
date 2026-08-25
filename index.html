@@ -474,13 +474,17 @@ const b1 = [
     followUpTrigger:'No', followUpLabel:'¿De dónde nos visitas?',
     followUpOptions:['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas','Otro país']},
   {id:'operacion', title:'¿Buscas para comprar o rentar?', options:['Comprar','Rentar'], optionIcons:{'Comprar':'home','Rentar':'key'}, req:true},
+  {id:'urgencia_compra', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'],
+    optionIcons:{'Inmediato':'zap','En preventa':'hammer','Dentro de los próximos 6 meses':'calendar','Sin prisa, explorando':'compass'}, req:true, flow:'comprar'},
+  {id:'urgencia_renta', title:'¿Qué tan pronto quieres mudarte a tu nueva renta?', options:['Inmediato','El próximo mes','Dentro de 6 meses','Sin prisa, explorando'],
+    optionIcons:{'Inmediato':'zap','El próximo mes':'calendar-days','Dentro de 6 meses':'calendar','Sin prisa, explorando':'compass'}, req:true, flow:'renta'},
+  {id:'presupuesto_compra', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], optionIcons:{'Hasta $2M':'banknote','$2M a $4M':'banknote','$4M a $8M':'banknote','Más de $8M':'banknote'}, req:true, flow:'comprar'},
+  {id:'presupuesto_renta', title:'¿Cuál es tu monto para rentar?', options:['$15,000 a $20,000 al mes','$20,000 a $30,000 al mes','$40,000 a $50,000 al mes','$60,000 a $70,000 al mes'],
+    optionIcons:{'$15,000 a $20,000 al mes':'banknote','$20,000 a $30,000 al mes':'banknote','$40,000 a $50,000 al mes':'banknote','$60,000 a $70,000 al mes':'banknote'}, req:true, flow:'renta'},
   {id:'uso', title:'¿La propiedad es para habitarla o para inversión?', options:['Para habitarla','Para inversión'], optionIcons:{'Para habitarla':'home','Para inversión':'trending-up'}, req:true, flow:'comprar'},
   {id:'aval', title:'¿Cuentas con una propiedad en Yucatán o vas a usar aval para esta renta?', options:['Sí, tengo una propiedad en Yucatán','Voy a usar aval','No tengo ninguna, necesito asesoría'], optionIcons:{'Sí, tengo una propiedad en Yucatán':'home','Voy a usar aval':'user-check','No tengo ninguna, necesito asesoría':'help-circle'}, span:true, req:true, flow:'renta'},
   {id:'tipo', title:'¿Qué tipo de inmueble buscas?', sub:'Puedes elegir varios', multi:true, options:['Casa','Departamento','Townhouse','Terreno','Oficina','Nave industrial','Casa en la playa','Tiempo compartido'],
     optionIcons:{'Casa':'home','Departamento':'building-2','Townhouse':'building','Terreno':'trees','Oficina':'briefcase','Nave industrial':'warehouse','Casa en la playa':'palmtree','Tiempo compartido':'calendar-clock'}, req:true},
-  {id:'presupuesto_compra', title:'¿Cuál es tu monto de inversión?', options:['Hasta $2M','$2M a $4M','$4M a $8M','Más de $8M'], optionIcons:{'Hasta $2M':'banknote','$2M a $4M':'banknote','$4M a $8M':'banknote','Más de $8M':'banknote'}, req:true, flow:'comprar'},
-  {id:'presupuesto_renta', title:'¿Cuál es tu monto para rentar?', options:['$15,000 a $20,000 al mes','$20,000 a $30,000 al mes','$40,000 a $50,000 al mes','$60,000 a $70,000 al mes'],
-    optionIcons:{'$15,000 a $20,000 al mes':'banknote','$20,000 a $30,000 al mes':'banknote','$40,000 a $50,000 al mes':'banknote','$60,000 a $70,000 al mes':'banknote'}, req:true, flow:'renta'},
   {id:'escrituras', title:'¿Tu monto de inversión contempla gastos relacionados con escrituración?', options:['Sí, estoy considerando los gastos de escrituración','Cuento con monto adicional para los gastos de escrituración','No tengo el conocimiento, necesito asesoría'],
     optionIcons:{'Sí, estoy considerando los gastos de escrituración':'file-check','Cuento con monto adicional para los gastos de escrituración':'wallet','No tengo el conocimiento, necesito asesoría':'help-circle'}, span:true, req:true, flow:'comprar'},
   {id:'compra', title:'¿Cuál es tu forma de pago?', options:['Recurso propio','Crédito bancario','Infonavit','Recurso Propio / Crédito'],
@@ -500,10 +504,6 @@ const b1 = [
   {id:'carac', title:'¿Qué características te emocionan más?', sub:'Pica en orden, de lo que más te emociona a lo que menos', rank:true,
     options:['Amenidades','Alberca propia','Paneles solares','Garage / cochera','Jardín','Roof garden','Seguridad','Recámara en planta baja','Una sola planta','Condominio / privada','Casa a pie de calle','Luz natural'],
     optionIcons:{'Amenidades':'sparkles','Alberca propia':'waves','Paneles solares':'zap','Garage / cochera':'car','Jardín':'leaf','Roof garden':'building','Seguridad':'shield','Recámara en planta baja':'bed','Una sola planta':'layers','Condominio / privada':'building-2','Casa a pie de calle':'door-open','Luz natural':'sun'}, req:true},
-  {id:'urgencia_compra', title:'¿Qué tan pronto quieres esta inversión?', options:['Inmediato','En preventa','Dentro de los próximos 6 meses','Sin prisa, explorando'],
-    optionIcons:{'Inmediato':'zap','En preventa':'hammer','Dentro de los próximos 6 meses':'calendar','Sin prisa, explorando':'compass'}, req:true, flow:'comprar'},
-  {id:'urgencia_renta', title:'¿Qué tan pronto quieres mudarte a tu nueva renta?', options:['Inmediato','El próximo mes','Dentro de 6 meses','Sin prisa, explorando'],
-    optionIcons:{'Inmediato':'zap','El próximo mes':'calendar-days','Dentro de 6 meses':'calendar','Sin prisa, explorando':'compass'}, req:true, flow:'renta'},
   {id:'tiempo', title:'¿Cuánto tiempo llevas buscando propiedad?', options:['Apenas empiezo','Unas semanas','Varios meses','Más de medio año'],
     optionIcons:{'Apenas empiezo':'flag','Unas semanas':'calendar-days','Varios meses':'calendar','Más de medio año':'hourglass'}, req:true},
   {id:'otros', title:'¿Has visto propiedades con otro agente o directo por tu cuenta?', sub:'Cualquier respuesta está bien, nos ayuda a enfocarnos en lo que de verdad te sirve.', options:['Solo con ustedes','Visito portales / Redes Sociales','También con otro agente','Por mi cuenta directamente'],
@@ -511,7 +511,7 @@ const b1 = [
 ];
 
 const b2 = [
-  {id:'paraquien', title:'¿Quién haría goce de esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia','Clientes (propiedad de inversión)'],
+  {id:'paraquien', title:'¿Quién va a usar esta propiedad?', options:['Para mí','Un familiar','Mis hijos','Regalo o herencia','Clientes (propiedad de inversión)'],
     optionIcons:{'Para mí':'user','Un familiar':'users','Mis hijos':'baby','Regalo o herencia':'gift','Clientes (propiedad de inversión)':'briefcase'}},
   {id:'domingo', title:'Imagina un domingo ideal en tu nueva propiedad. ¿Cómo se ve?',
     titleAlt:'Imagina un domingo ideal del cliente en esta propiedad. ¿Cómo se ve?',
@@ -629,7 +629,8 @@ function renderQuestion(q, index, container){
 
   const num = document.createElement('p');
   num.className = 'q-num ' + (q.req ? 'req' : 'opt');
-  num.textContent = 'Pregunta ' + (index+1) + (q.req ? ' *' : '');
+  num.textContent = q.req ? 'Obligatoria' : '';
+  if(!q.req) num.style.display = 'none';
   block.appendChild(num);
 
   const title = document.createElement('p');
