@@ -190,8 +190,8 @@ async function agentInit(){
   });
 }
 
-async function runLeadsRoundRobin(){
-  return _authedPost("/portal/leads-round-robin", {});
+async function runLeadsRoundRobin(label){
+  return _authedPost("/portal/leads-round-robin", label ? {label} : {});
 }
 
 async function convertLeadToListo(conv_id){

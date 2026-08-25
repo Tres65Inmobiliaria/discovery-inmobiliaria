@@ -176,7 +176,8 @@
       <p>Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"</p>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="refresh-btn" id="round-robin-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin</button>
+      <button class="refresh-btn" id="round-robin-potencial-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin Potencial</button>
+      <button class="refresh-btn" id="round-robin-listo-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin Listos</button>
       <button class="refresh-btn" id="refresh-btn" type="button"><i data-lucide="refresh-cw"></i> Actualizar</button>
     </div>
   </div>
@@ -512,7 +513,8 @@ async function boot(){
       opt.textContent = a.name;
       select.appendChild(opt);
     });
-    document.getElementById('round-robin-btn').style.display = 'inline-flex';
+    document.getElementById('round-robin-potencial-btn').style.display = 'inline-flex';
+    document.getElementById('round-robin-listo-btn').style.display = 'inline-flex';
   }
 
   await loadLeads();
@@ -520,30 +522,34 @@ async function boot(){
 
   document.getElementById('refresh-btn').addEventListener('click', loadLeads);
 
-  document.getElementById('round-robin-btn').addEventListener('click', async ()=>{
-    const btn = document.getElementById('round-robin-btn');
-    const status = document.getElementById('round-robin-status');
-    const original = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = 'Repartiendo...';
-    status.style.display = 'none';
-    try{
-      const result = await window.tres65Sync.runLeadsRoundRobin();
-      const a = result.asignados || {};
-      status.className = 'empty-note';
-      status.textContent = 'Repartidos: ' + (a['cliente-potencial'] || 0) + ' cliente(s) potencial(es), ' + (a['listo-para-asesor'] || 0) + ' listo(s) para asesor.';
-      status.style.display = 'block';
-      await loadLeads();
-    }catch(err){
-      status.className = 'error-note';
-      status.textContent = err.message || 'Error repartiendo los leads.';
-      status.style.display = 'block';
-    }finally{
-      btn.disabled = false;
-      btn.innerHTML = original;
-      if(window.lucide) lucide.createIcons();
-    }
-  });
+  function wireRoundRobinBtn(btnId, label, statusLabel){
+    document.getElementById(btnId).addEventListener('click', async ()=>{
+      const btn = document.getElementById(btnId);
+      const status = document.getElementById('round-robin-status');
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = 'Repartiendo...';
+      status.style.display = 'none';
+      try{
+        const result = await window.tres65Sync.runLeadsRoundRobin(label);
+        const a = result.asignados || {};
+        status.className = 'empty-note';
+        status.textContent = 'Repartidos: ' + (a[label] || 0) + ' ' + statusLabel + '.';
+        status.style.display = 'block';
+        await loadLeads();
+      }catch(err){
+        status.className = 'error-note';
+        status.textContent = err.message || 'Error repartiendo los leads.';
+        status.style.display = 'block';
+      }finally{
+        btn.disabled = false;
+        btn.innerHTML = original;
+        if(window.lucide) lucide.createIcons();
+      }
+    });
+  }
+  wireRoundRobinBtn('round-robin-potencial-btn', 'cliente-potencial', 'cliente(s) potencial(es)');
+  wireRoundRobinBtn('round-robin-listo-btn', 'listo-para-asesor', 'listo(s) para asesor');
 
   document.getElementById('modal-close-x').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
