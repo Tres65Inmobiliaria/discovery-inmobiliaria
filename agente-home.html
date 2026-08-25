@@ -152,6 +152,32 @@
     color:var(--medio);
   }
   .summary-pill.warn{background:#F5E4E1; color:#C0453A;}
+  .summary-pill.clickable{cursor:pointer; border:none; font-family:'Raleway',sans-serif;}
+  .summary-pill.clickable:hover{background:#EFD3CE;}
+
+  .inactive-row{
+    border-bottom:1px solid var(--borde);
+    padding:12px 0;
+  }
+  .inactive-row:last-child{border-bottom:none;}
+  .inactive-row .inactive-name{
+    font-family:'Montserrat',sans-serif; font-weight:600; font-size:14px; color:var(--profundo);
+    text-decoration:none; display:block;
+  }
+  .inactive-row .inactive-name:hover{text-decoration:underline;}
+  .inactive-row .inactive-agent{font-size:12px; color:var(--texto-suave); margin:2px 0 8px;}
+  .inactive-row .inactive-task-row{display:flex; gap:6px;}
+  .inactive-row .inactive-task-row input{
+    flex:1; font-family:'Raleway',sans-serif; font-size:13px; padding:8px 10px;
+    border-radius:8px; border:1px solid var(--borde);
+  }
+  .inactive-row .inactive-task-row button{
+    font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600;
+    padding:0 14px; border-radius:8px; border:none; background:var(--profundo); color:#fff; cursor:pointer;
+  }
+  .inactive-row .inactive-task-row button:hover{background:var(--medio);}
+  .inactive-row .inactive-task-row button:disabled{opacity:.6; cursor:default;}
+  .inactive-row .inactive-sent{font-size:12px; color:var(--acento); margin-top:6px; display:none;}
   .summary-alert{
     font-size:12px;
     font-weight:600;
@@ -647,6 +673,14 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="inactive-modal">
+  <div class="modal-card" style="max-width:520px;">
+    <button class="modal-close" id="inactive-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Clientes sin actividad +24h</h3>
+    <div id="inactive-modal-body" style="max-height:70vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="directorio-modal">
   <div class="modal-card" style="max-width:760px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
@@ -762,6 +796,8 @@ let clientsCache = [];
 const FUNNEL_STAGES = ['Conociendo a su agente', 'En discovery', 'Esperando propiedad', 'Con propiedad'];
 const FUNNEL_COLORS = ['#1A4F5C', '#1E7A6E', '#2AA898', '#5FC3B4'];
 
+let inactiveClientsCache = [];
+
 function renderAdminSummary(session, allClients){
   const el = document.getElementById('admin-summary');
   if(!session.isAdmin){
@@ -771,12 +807,17 @@ function renderAdminSummary(session, allClients){
   }
   const active = allClients.filter(c => !c.deleted);
   const counts = {};
+  const namesByStage = {};
   active.forEach(c=>{
     const s = c.status || 'Sin estado';
     counts[s] = (counts[s] || 0) + 1;
+    (namesByStage[s] = namesByStage[s] || []).push(c.client_name || 'Sin nombre');
   });
-  const inactiveCount = active.filter(c => c.inactive).length;
+  const inactiveClients = active.filter(c => c.inactive);
+  const inactiveCount = inactiveClients.length;
+  inactiveClientsCache = inactiveClients;
   const descartadaCount = counts['Propiedad descartada'] || 0;
+  const descartadaNames = (namesByStage['Propiedad descartada'] || []).join(', ');
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const deletedClients = allClients.filter(c => c.deleted);
@@ -795,16 +836,18 @@ function renderAdminSummary(session, allClients){
     const n = counts[stage] || 0;
     const pct = Math.min(100, Math.round((n / FUNNEL_SCALE) * 100));
     const barStyle = pct > 0 ? 'width:' + pct + '%; background:' + FUNNEL_COLORS[i] + ';' : 'width:0;';
-    html += '<div class="funnel-row"><div class="funnel-label">' + stage + ' · ' + n + '</div><div class="funnel-bar" style="' + barStyle + '"></div></div>';
+    const names = (namesByStage[stage] || []).join(', ');
+    const titleAttr = names ? ' title="' + names.replace(/"/g, '&quot;') + '"' : '';
+    html += '<div class="funnel-row"' + titleAttr + '><div class="funnel-label">' + stage + ' · ' + n + '</div><div class="funnel-bar" style="' + barStyle + '"></div></div>';
   });
   html += '</div>';
 
   html += '<div class="summary-pills">';
   if(descartadaCount){
-    html += '<span class="summary-pill">Propiedad descartada: ' + descartadaCount + '</span>';
+    html += '<span class="summary-pill" title="' + descartadaNames.replace(/"/g, '&quot;') + '">Propiedad descartada: ' + descartadaCount + '</span>';
   }
   if(inactiveCount){
-    html += '<span class="summary-pill warn">Sin actividad +24h: ' + inactiveCount + '</span>';
+    html += '<button type="button" class="summary-pill warn clickable" id="inactive-pill-btn">Sin actividad +24h: ' + inactiveCount + '</button>';
   }
   html += '</div>';
 
@@ -820,6 +863,74 @@ function renderAdminSummary(session, allClients){
   html += '</div>';
   el.innerHTML = html;
   el.style.display = 'block';
+
+  const inactiveBtn = document.getElementById('inactive-pill-btn');
+  if(inactiveBtn){
+    inactiveBtn.addEventListener('click', ()=>{
+      renderInactiveModal();
+      document.getElementById('inactive-modal').classList.add('open');
+    });
+  }
+}
+
+function renderInactiveModal(){
+  const body = document.getElementById('inactive-modal-body');
+  body.innerHTML = '';
+  if(!inactiveClientsCache.length){
+    body.innerHTML = '<p class="empty-note">No hay clientes sin actividad ahorita.</p>';
+    return;
+  }
+  inactiveClientsCache.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'inactive-row';
+
+    const nameLink = document.createElement('a');
+    nameLink.className = 'inactive-name';
+    nameLink.href = 'cliente-detalle.html?token=' + encodeURIComponent(c.token);
+    nameLink.textContent = c.client_name || 'Sin nombre';
+    row.appendChild(nameLink);
+
+    const agentLine = document.createElement('div');
+    agentLine.className = 'inactive-agent';
+    agentLine.textContent = c.agent_name ? ('Agente: ' + c.agent_name) : 'Sin agente asignado';
+    row.appendChild(agentLine);
+
+    if(c.agent_uid){
+      const taskRow = document.createElement('div');
+      taskRow.className = 'inactive-task-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Ej. Dar seguimiento, lleva +24h sin actividad';
+      const sendBtn = document.createElement('button');
+      sendBtn.type = 'button';
+      sendBtn.textContent = 'Enviar tarea';
+      const sentNote = document.createElement('p');
+      sentNote.className = 'inactive-sent';
+      sentNote.textContent = 'Tarea enviada.';
+
+      sendBtn.addEventListener('click', async ()=>{
+        const text = input.value.trim() || ('Dar seguimiento a ' + (c.client_name || 'este cliente') + ' — lleva más de 24h sin actividad.');
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Enviando...';
+        try{
+          await window.tres65Sync.createAgentTask(c.agent_uid, text);
+          sentNote.style.display = 'block';
+          input.value = '';
+        }catch(err){
+          alert(err.message || 'Error enviando la tarea.');
+        }
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Enviar tarea';
+      });
+
+      taskRow.appendChild(input);
+      taskRow.appendChild(sendBtn);
+      row.appendChild(taskRow);
+      row.appendChild(sentNote);
+    }
+
+    body.appendChild(row);
+  });
 }
 
 async function loadClients(session){
@@ -1195,6 +1306,12 @@ function populateClientSelect(){
   if(clientsCache.some(c => c.token === prev)) select.value = prev;
 }
 
+document.getElementById('tool-search-client').addEventListener('change', ()=>{
+  searchShortlist = [];
+  renderSearchResultCards();
+  renderShortlist();
+});
+
 function buildPropertyResultCard(p){
   const card = document.createElement('div');
   card.className = 'prop-card';
@@ -1389,6 +1506,10 @@ async function boot(){
   });
   document.getElementById('directorio-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('directorio-modal').classList.remove('open');
+  });
+
+  document.getElementById('inactive-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('inactive-modal').classList.remove('open');
   });
 
   async function submitDeleteReason(reason){
