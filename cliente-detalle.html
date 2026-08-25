@@ -764,10 +764,13 @@ function buildProgressCard(progress){
     return card;
   }
 
+  const metAgent = !!progress.metAgent;
   const metWrap = document.createElement('div');
   metWrap.className = 'check-item';
-  metWrap.appendChild(buildCheckRow('Ya conoció a su agente', !!progress.metAgent));
+  metWrap.appendChild(buildCheckRow('Ya conoció a su agente', metAgent));
   card.appendChild(metWrap);
+
+  if(!metAgent) return card;
 
   const count = progress.propertyCount || 1;
   const properties = progress.properties || {};
@@ -812,6 +815,8 @@ function buildProgressCard(progress){
 
     if(extra.childNodes.length) itemWrap.appendChild(extra);
     card.appendChild(itemWrap);
+
+    if(!done) break;
   }
 
   return card;
