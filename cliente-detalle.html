@@ -856,6 +856,23 @@ function renderNotes(notes, token){
     body.appendChild(meta);
     item.appendChild(body);
 
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'shortlist-remove';
+    removeBtn.textContent = '×';
+    removeBtn.setAttribute('aria-label', 'Borrar tarea');
+    removeBtn.addEventListener('click', async ()=>{
+      removeBtn.disabled = true;
+      try{
+        const result = await window.tres65Sync.deleteClientNote(token, n.created_at);
+        renderNotes(result.notes, token);
+      }catch(err){
+        alert(err.message || 'Error borrando la tarea.');
+        removeBtn.disabled = false;
+      }
+    });
+    item.appendChild(removeBtn);
+
     list.appendChild(item);
   });
 }
