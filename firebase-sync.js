@@ -241,6 +241,10 @@ async function toggleAgentTask(task_id){
   return data.task;
 }
 
+async function deleteAgentTask(task_id){
+  return _authedPost("/portal/tareas-agente/" + encodeURIComponent(task_id) + "/eliminar", {});
+}
+
 async function getLeadsPotenciales(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -359,6 +363,6 @@ window.tres65Sync = {
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo, logLeadContact,
   getClientDetail, addClientNote, toggleClientNote, deleteClient, addClientEmail,
-  getAgentTasks, createAgentTask, toggleAgentTask
+  getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));

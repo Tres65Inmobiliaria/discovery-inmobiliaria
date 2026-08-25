@@ -892,6 +892,23 @@ function renderAgentTasksList(tasks, session){
     body.appendChild(meta);
     item.appendChild(body);
 
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'shortlist-remove';
+    removeBtn.textContent = '×';
+    removeBtn.setAttribute('aria-label', 'Borrar tarea');
+    removeBtn.addEventListener('click', async ()=>{
+      removeBtn.disabled = true;
+      try{
+        await window.tres65Sync.deleteAgentTask(t.id);
+        await renderAgentTasks(session);
+      }catch(err){
+        alert(err.message || 'Error borrando la tarea.');
+        removeBtn.disabled = false;
+      }
+    });
+    item.appendChild(removeBtn);
+
     listEl.appendChild(item);
   });
 }
