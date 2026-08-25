@@ -219,6 +219,18 @@ async function getLeadsPerdidos(){
   return data.leads;
 }
 
+async function getLeadsPerdidosCount(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/leads-perdidos-count", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando leads perdidos");
+  return data.count;
+}
+
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -381,7 +393,7 @@ window.tres65Sync = {
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos,
+  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos, getLeadsPerdidosCount,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask
 };

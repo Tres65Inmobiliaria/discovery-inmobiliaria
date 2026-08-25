@@ -478,6 +478,7 @@
     </button>
     <a href="leads.html?view=perdidos" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 14px; text-decoration:none;">
       <i data-lucide="archive"></i> Leads perdidos
+      <span id="leads-perdidos-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
     </a>
   </div>
 
@@ -1129,6 +1130,14 @@ async function boot(){
     badge.style.color = count > 0 ? '#C0453A' : 'var(--medio)';
     badge.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando leads:', err));
+
+  window.tres65Sync.getLeadsPerdidosCount().then(count=>{
+    const badge = document.getElementById('leads-perdidos-badge');
+    if(count > 0){
+      badge.textContent = String(count);
+      badge.style.display = 'inline-block';
+    }
+  }).catch(err=> console.error('[Dashboard] error contando leads perdidos:', err));
 
   renderAgentTasks(session);
   document.getElementById('agent-task-assign-btn').addEventListener('click', async ()=>{
