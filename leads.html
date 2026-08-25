@@ -536,6 +536,14 @@ function buildLeadCard(lead){
   });
   contactRow.appendChild(answeredBtn);
 
+  document.addEventListener('click', (e)=>{
+    if(card.contains(e.target)) return;
+    selectedMethod = null;
+    methodBtns.forEach(b => b.classList.remove('selected'));
+    noAnswerBtn.disabled = true;
+    answeredBtn.disabled = true;
+  });
+
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'btn danger';
   deleteBtn.type = 'button';
