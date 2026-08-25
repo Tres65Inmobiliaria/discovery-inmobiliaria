@@ -188,7 +188,13 @@ async function agentInit(){
     const unsub = onAuthStateChanged(auth, async (user) => {
       unsub();
       if(!user){ resolve(null); return; }
-      const tokenResult = await user.getIdTokenResult();
+      // forceRefresh:true — si no, un token en caché de antes de que se le
+      // asignara el claim "admin" hace que is_admin salga false en el
+      // backend aunque la cuenta ya sea admin (bug real que pasó con una
+      // propiedad sugerida que nunca se guardó). Con "recordar contraseña"
+      // las sesiones duran más sin volver a iniciar sesión, así que este
+      // refresh forzado es más importante todavía.
+      const tokenResult = await user.getIdTokenResult(true);
       resolve({uid: user.uid, isAdmin: tokenResult.claims.admin === true, email: user.email});
     });
   });
