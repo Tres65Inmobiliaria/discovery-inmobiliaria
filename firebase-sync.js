@@ -204,6 +204,10 @@ async function runLeadsRoundRobin(label){
   return _authedPost("/portal/leads-round-robin", label ? {label} : {});
 }
 
+async function crearLeadManual(datos){
+  return _authedPost("/portal/leads/crear-manual", datos);
+}
+
 async function convertLeadToListo(conv_id){
   return _authedPost("/portal/lead-a-listo/" + encodeURIComponent(conv_id), {});
 }
@@ -452,7 +456,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getDirectorio,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getDirectorio,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

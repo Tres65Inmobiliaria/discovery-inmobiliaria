@@ -230,6 +230,7 @@
       <p id="page-subtitle">Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"</p>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="refresh-btn" id="add-manual-lead-btn" type="button" style="display:none;"><i data-lucide="user-plus"></i> Agregar lead manual</button>
       <button class="refresh-btn" id="round-robin-potencial-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin Potencial</button>
       <button class="refresh-btn" id="round-robin-listo-btn" type="button" style="display:none;"><i data-lucide="shuffle"></i> Round Robin Listos</button>
       <button class="refresh-btn" id="view-toggle-btn" type="button"><i data-lucide="archive"></i> <span id="view-toggle-label">Ver leads perdidos</span></button>
@@ -305,6 +306,32 @@
     </div>
     <div class="modal-buttons" id="modal-buttons-success" style="display:none;">
       <button class="modal-save" id="modal-close-success" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="manual-lead-modal">
+  <div class="modal-card">
+    <button class="modal-close" id="manual-lead-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Agregar lead manual</h3>
+    <p class="tool-hint" style="margin:-8px 0 14px; font-size:12px; color:var(--texto-suave);">Para gente que marca por teléfono directo a la oficina (no viene de WhatsApp).</p>
+    <label for="manual-lead-name">Nombre completo</label>
+    <input type="text" id="manual-lead-name" placeholder="Nombre del lead">
+    <label for="manual-lead-phone">Teléfono</label>
+    <input type="text" id="manual-lead-phone" placeholder="9991234567">
+    <label for="manual-lead-email">Correo (opcional)</label>
+    <input type="email" id="manual-lead-email" placeholder="lead@correo.com">
+    <label for="manual-lead-property">Link de la propiedad (opcional)</label>
+    <input type="text" id="manual-lead-property" placeholder="https://...">
+    <label for="manual-lead-agent">Asignar a</label>
+    <select id="manual-lead-agent"></select>
+    <label for="manual-lead-notes">Notas (opcional)</label>
+    <textarea id="manual-lead-notes" placeholder="Cualquier detalle que le sirva al agente..." style="width:100%; font-family:'Raleway',sans-serif; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid var(--borde); background:#fff; color:var(--texto); margin-bottom:14px; min-height:70px; resize:vertical;"></textarea>
+    <p class="modal-error" id="manual-lead-error"></p>
+    <p class="modal-success" id="manual-lead-success" style="display:none;">Lead creado y asignado.</p>
+    <div class="modal-buttons">
+      <button class="modal-cancel" id="manual-lead-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="manual-lead-save" type="button">Crear lead</button>
     </div>
   </div>
 </div>
@@ -824,6 +851,7 @@ function setView(view){
     subtitle.textContent = 'Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"';
     label.textContent = 'Ver leads perdidos';
   }
+  document.getElementById('add-manual-lead-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('round-robin-potencial-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('round-robin-listo-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('perdidos-search-wrap').style.display = (view === 'perdidos') ? 'block' : 'none';
@@ -880,6 +908,14 @@ async function boot(){
       opt.textContent = a.name;
       select.appendChild(opt);
     });
+
+    const manualAgentSelect = document.getElementById('manual-lead-agent');
+    AGENTS.forEach(a=>{
+      const opt = document.createElement('option');
+      opt.value = a.uid;
+      opt.textContent = a.name;
+      manualAgentSelect.appendChild(opt);
+    });
   }
 
   const initialView = new URLSearchParams(window.location.search).get('view') === 'perdidos' ? 'perdidos' : 'activos';
@@ -928,6 +964,62 @@ async function boot(){
   }
   wireRoundRobinBtn('round-robin-potencial-btn', 'cliente-potencial', 'cliente(s) potencial(es)');
   wireRoundRobinBtn('round-robin-listo-btn', 'listo-para-asesor', 'listo(s) para asesor');
+
+  function closeManualLeadModal(){
+    document.getElementById('manual-lead-modal').classList.remove('open');
+    document.getElementById('manual-lead-error').textContent = '';
+    document.getElementById('manual-lead-success').style.display = 'none';
+    ['manual-lead-name','manual-lead-phone','manual-lead-email','manual-lead-property','manual-lead-notes'].forEach(id=>{
+      document.getElementById(id).value = '';
+    });
+  }
+
+  document.getElementById('add-manual-lead-btn').addEventListener('click', ()=>{
+    document.getElementById('manual-lead-modal').classList.add('open');
+  });
+  document.getElementById('manual-lead-modal-close-x').addEventListener('click', closeManualLeadModal);
+  document.getElementById('manual-lead-cancel').addEventListener('click', closeManualLeadModal);
+
+  document.getElementById('manual-lead-save').addEventListener('click', async ()=>{
+    const btn = document.getElementById('manual-lead-save');
+    const errorEl = document.getElementById('manual-lead-error');
+    const successEl = document.getElementById('manual-lead-success');
+    errorEl.textContent = '';
+    successEl.style.display = 'none';
+
+    const name = document.getElementById('manual-lead-name').value.trim();
+    const phone = document.getElementById('manual-lead-phone').value.trim();
+    const email = document.getElementById('manual-lead-email').value.trim();
+    const property_url = document.getElementById('manual-lead-property').value.trim();
+    const notes = document.getElementById('manual-lead-notes').value.trim();
+    const agent_uid = document.getElementById('manual-lead-agent').value;
+
+    if(!name || !phone){
+      errorEl.textContent = 'Falta el nombre o el teléfono.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creando...';
+    try{
+      await window.tres65Sync.crearLeadManual({name, phone, email, property_url, notes, agent_uid});
+      successEl.style.display = 'block';
+      setTimeout(async ()=>{
+        closeManualLeadModal();
+        await loadLeads();
+      }, 900);
+    }catch(err){
+      errorEl.textContent = err.message || 'Error creando el lead.';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Crear lead';
+    }
+  });
+
+  submitOnEnter('manual-lead-name', 'manual-lead-save');
+  submitOnEnter('manual-lead-phone', 'manual-lead-save');
+  submitOnEnter('manual-lead-email', 'manual-lead-save');
+  submitOnEnter('manual-lead-property', 'manual-lead-save');
 
   document.getElementById('modal-close-x').addEventListener('click', ()=>{
     document.getElementById('modal').classList.remove('open');
