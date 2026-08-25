@@ -467,19 +467,22 @@
     </div>
   </header>
 
-  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
-    <a href="leads.html" id="leads-link" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); text-decoration:none;">
+  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+    <a href="leads.html" id="leads-link" style="display:inline-flex; align-items:center; gap:5px; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; color:var(--profundo); text-decoration:none; background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 12px;">
       <i data-lucide="inbox"></i> Leads del día
       <span id="leads-count-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
     </a>
-    <button id="agents-toggle-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 14px; cursor:pointer;">
+    <button id="agents-toggle-btn" type="button" style="display:inline-flex; align-items:center; gap:5px; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 12px; cursor:pointer;">
       <i data-lucide="users"></i> <span id="agents-toggle-label">Agentes</span>
       <span id="agents-toggle-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
     </button>
-    <a href="leads.html?view=perdidos" style="display:inline-flex; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 14px; text-decoration:none;">
+    <a href="leads.html?view=perdidos" style="display:inline-flex; align-items:center; gap:5px; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 12px; text-decoration:none;">
       <i data-lucide="archive"></i> Leads perdidos
       <span id="leads-perdidos-badge" style="display:none; font-size:11px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 8px; border-radius:20px;"></span>
     </a>
+    <button id="directorio-toggle-btn" type="button" style="display:inline-flex; align-items:center; gap:5px; font-family:'Montserrat',sans-serif; font-size:12.5px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:6px 12px; cursor:pointer;">
+      <i data-lucide="table-2"></i> Directorio
+    </button>
   </div>
 
   <div id="admin-summary" style="display:none;"></div>
@@ -626,6 +629,14 @@
       <div class="tool-select-label" style="margin-bottom:8px;">Tareas por cliente</div>
       <div id="client-tasks-list" style="max-height:300px; overflow-y:auto;"></div>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="directorio-modal">
+  <div class="modal-card" style="max-width:640px;">
+    <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Directorio</h3>
+    <div id="directorio-body" style="max-height:70vh; overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -860,6 +871,38 @@ async function renderAgentTasks(session){
   } else {
     badge.style.display = 'none';
   }
+}
+
+async function renderDirectorio(){
+  const body = document.getElementById('directorio-body');
+  body.innerHTML = '<p class="empty-note">Cargando...</p>';
+  let entries = [];
+  try{
+    entries = await window.tres65Sync.getDirectorio();
+  }catch(err){
+    body.innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando el directorio.') + '</p>';
+    return;
+  }
+  if(!entries.length){
+    body.innerHTML = '<p class="empty-note">Todavía no hay leads registrados.</p>';
+    return;
+  }
+  const table = document.createElement('table');
+  table.className = 'roster-table';
+  table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Agente</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+  entries.forEach(e=>{
+    const tr = document.createElement('tr');
+    [e.name, e.phone, e.status, e.assignee_name || 'Sin asignar'].forEach(val=>{
+      const td = document.createElement('td');
+      td.textContent = val || '—';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  body.innerHTML = '';
+  body.appendChild(table);
 }
 
 async function renderClientTasks(session){
@@ -1301,6 +1344,14 @@ async function boot(){
   });
   document.getElementById('agents-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('agents-modal').classList.remove('open');
+  });
+
+  document.getElementById('directorio-toggle-btn').addEventListener('click', ()=>{
+    document.getElementById('directorio-modal').classList.add('open');
+    renderDirectorio();
+  });
+  document.getElementById('directorio-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('directorio-modal').classList.remove('open');
   });
 
   async function submitDeleteReason(reason){

@@ -231,6 +231,18 @@ async function getLeadsPerdidosCount(){
   return data.count;
 }
 
+async function getDirectorio(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/directorio", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando el directorio");
+  return data.entries;
+}
+
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -405,7 +417,7 @@ window.tres65Sync = {
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos, getLeadsPerdidosCount,
+  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos, getLeadsPerdidosCount, getDirectorio,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
