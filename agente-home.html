@@ -70,6 +70,13 @@
   .new-client-btn:hover{background:var(--medio);}
   .new-client-btn svg{width:18px; height:18px;}
   .topnav-icon{width:13px; height:13px;}
+  .topnav-btn{
+    display:inline-flex; align-items:center; gap:4px; box-sizing:border-box;
+    height:26px; line-height:1;
+    font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600;
+    color:var(--profundo); background:#fff; border:1px solid var(--borde);
+    border-radius:20px; padding:0 10px; text-decoration:none; cursor:pointer;
+  }
 
   .client-card{
     display:flex;
@@ -476,19 +483,19 @@
   </header>
 
   <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:20px;">
-    <a href="leads.html" id="leads-link" style="display:inline-flex; align-items:center; gap:4px; font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600; color:var(--profundo); text-decoration:none; background:#fff; border:1px solid var(--borde); border-radius:20px; padding:4px 10px;">
+    <a href="leads.html" id="leads-link" class="topnav-btn">
       <i data-lucide="inbox" class="topnav-icon"></i> Leads del día
       <span id="leads-count-badge" style="display:none; font-size:10px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 7px; border-radius:20px;"></span>
     </a>
-    <button id="agents-toggle-btn" type="button" style="display:inline-flex; align-items:center; gap:4px; font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:4px 10px; cursor:pointer;">
+    <button id="agents-toggle-btn" type="button" class="topnav-btn">
       <i data-lucide="users" class="topnav-icon"></i> <span id="agents-toggle-label">Agentes</span>
       <span id="agents-toggle-badge" style="display:none; font-size:10px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 7px; border-radius:20px;"></span>
     </button>
-    <a href="leads.html?view=perdidos" style="display:inline-flex; align-items:center; gap:4px; font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:4px 10px; text-decoration:none;">
+    <a href="leads.html?view=perdidos" class="topnav-btn">
       <i data-lucide="archive" class="topnav-icon"></i> Leads perdidos
       <span id="leads-perdidos-badge" style="display:none; font-size:10px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 7px; border-radius:20px;"></span>
     </a>
-    <button id="directorio-toggle-btn" type="button" style="display:inline-flex; align-items:center; gap:4px; font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600; color:var(--profundo); background:#fff; border:1px solid var(--borde); border-radius:20px; padding:4px 10px; cursor:pointer;">
+    <button id="directorio-toggle-btn" type="button" class="topnav-btn">
       <i data-lucide="table-2" class="topnav-icon"></i> Directorio
     </button>
   </div>

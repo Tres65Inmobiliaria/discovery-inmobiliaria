@@ -164,6 +164,15 @@
 
   .btn.danger{background:#F5E4E1; border-color:#F5E4E1; color:#C0453A; flex:1 1 100%; margin-top:8px;}
   .btn.danger:hover{background:#EFD3CE;}
+  .btn.reactivar{background:var(--acento); border-color:var(--acento); color:#fff;}
+  .btn.reactivar:hover{opacity:.9;}
+  .btn.reactivar:disabled{opacity:.6; cursor:default;}
+
+  .perdidos-search-wrap{margin-bottom:16px;}
+  .perdidos-search-wrap input{
+    width:100%; box-sizing:border-box; font-family:'Raleway',sans-serif; font-size:14px;
+    padding:10px 12px; border-radius:8px; border:1px solid var(--borde); background:#fff; color:var(--texto);
+  }
 
   .delete-reason-options{display:flex; flex-direction:column; gap:8px; margin-bottom:6px;}
   .delete-reason-btn{
@@ -240,6 +249,9 @@
     </section>
   </div>
 
+  <div class="perdidos-search-wrap" id="perdidos-search-wrap" style="display:none;">
+    <input type="text" id="perdidos-search-input" placeholder="Buscar por nombre...">
+  </div>
   <div id="perdidos-list" style="display:none;"></div>
 </div>
 
@@ -670,9 +682,38 @@ function buildLostLeadCard(lead){
   chatBtn.rel = 'noopener';
   chatBtn.innerHTML = '<i data-lucide="message-square"></i> Chatwoot';
   actions.appendChild(chatBtn);
+
+  const reactivarBtn = document.createElement('button');
+  reactivarBtn.type = 'button';
+  reactivarBtn.className = 'btn reactivar';
+  reactivarBtn.innerHTML = '<i data-lucide="rotate-ccw"></i> Reactivar';
+  reactivarBtn.onclick = async ()=>{
+    reactivarBtn.disabled = true;
+    reactivarBtn.innerHTML = 'Reactivando...';
+    try{
+      await window.tres65Sync.reactivarLead(lead.conv_id);
+      perdidosCache = perdidosCache.filter(l => l.conv_id !== lead.conv_id);
+      renderPerdidos(filterPerdidos(perdidosCache));
+    }catch(err){
+      alert(err.message || 'Error reactivando el lead.');
+      reactivarBtn.disabled = false;
+      reactivarBtn.innerHTML = '<i data-lucide="rotate-ccw"></i> Reactivar';
+      if(window.lucide) lucide.createIcons();
+    }
+  };
+  actions.appendChild(reactivarBtn);
+
   card.appendChild(actions);
 
   return card;
+}
+
+let perdidosCache = [];
+
+function filterPerdidos(leads){
+  const q = (document.getElementById('perdidos-search-input').value || '').trim().toLowerCase();
+  if(!q) return leads;
+  return leads.filter(l => (l.name || '').toLowerCase().includes(q));
 }
 
 function renderPerdidos(leads){
@@ -703,6 +744,7 @@ function setView(view){
   }
   document.getElementById('round-robin-potencial-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('round-robin-listo-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
+  document.getElementById('perdidos-search-wrap').style.display = (view === 'perdidos') ? 'block' : 'none';
 }
 
 async function loadLeads(){
@@ -721,9 +763,9 @@ async function loadLeads(){
 
   try{
     if(currentView === 'perdidos'){
-      const leads = await window.tres65Sync.getLeadsPerdidos();
+      perdidosCache = await window.tres65Sync.getLeadsPerdidos();
       statusEl.innerHTML = '';
-      renderPerdidos(leads);
+      renderPerdidos(filterPerdidos(perdidosCache));
     } else {
       allLeads = await window.tres65Sync.getLeadsPotenciales();
       statusEl.innerHTML = '';
@@ -770,6 +812,10 @@ async function boot(){
     setView(currentView === 'perdidos' ? 'activos' : 'perdidos');
     await loadLeads();
     if(window.lucide) lucide.createIcons();
+  });
+
+  document.getElementById('perdidos-search-input').addEventListener('input', ()=>{
+    renderPerdidos(filterPerdidos(perdidosCache));
   });
 
   function wireRoundRobinBtn(btnId, label, statusLabel){
