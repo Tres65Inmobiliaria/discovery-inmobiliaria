@@ -842,6 +842,8 @@ function renderAdminSummary(session, allClients){
   });
   html += '</div>';
 
+  const deletedTodayNames = deletedToday.map(c => c.client_name || 'Sin nombre').join(', ');
+
   html += '<div class="summary-pills">';
   if(descartadaCount){
     html += '<span class="summary-pill" title="' + descartadaNames.replace(/"/g, '&quot;') + '">Propiedad descartada: ' + descartadaCount + '</span>';
@@ -849,6 +851,10 @@ function renderAdminSummary(session, allClients){
   if(inactiveCount){
     html += '<button type="button" class="summary-pill warn clickable" id="inactive-pill-btn">Sin actividad +24h: ' + inactiveCount + '</button>';
   }
+  if(deletedToday.length){
+    html += '<span class="summary-pill warn" title="' + deletedTodayNames.replace(/"/g, '&quot;') + '">Clientes eliminados hoy: ' + deletedToday.length + '</span>';
+  }
+  html += '<span class="summary-pill warn" id="leads-perdidos-pill" style="display:none;"></span>';
   html += '</div>';
 
   if(deletedToday.length){
@@ -871,6 +877,14 @@ function renderAdminSummary(session, allClients){
       document.getElementById('inactive-modal').classList.add('open');
     });
   }
+
+  window.tres65Sync.getLeadsPerdidosCount().then(({count, names})=>{
+    const pill = document.getElementById('leads-perdidos-pill');
+    if(!pill || !count) return;
+    pill.textContent = 'Leads perdidos: ' + count;
+    pill.title = names.join(', ');
+    pill.style.display = 'inline-block';
+  }).catch(err=> console.error('[Dashboard] error contando leads perdidos en resumen:', err));
 }
 
 function renderInactiveModal(){
@@ -1423,7 +1437,7 @@ async function boot(){
     badge.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando leads:', err));
 
-  window.tres65Sync.getLeadsPerdidosCount().then(count=>{
+  window.tres65Sync.getLeadsPerdidosCount().then(({count})=>{
     const badge = document.getElementById('leads-perdidos-badge');
     if(count > 0){
       badge.textContent = String(count);

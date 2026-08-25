@@ -236,7 +236,7 @@ async function getLeadsPerdidosCount(){
   });
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || "Error consultando leads perdidos");
-  return data.count;
+  return {count: data.count, names: data.names || []};
 }
 
 async function getDirectorio(){
