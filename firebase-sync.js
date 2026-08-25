@@ -366,6 +366,14 @@ async function removeProperty(client_token, url){
   return _authedPost("/portal/quitar-propiedad/" + encodeURIComponent(client_token), {url});
 }
 
+async function aceptarPropiedadSugerida(client_token, url){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(client_token) + "/sugerida/aceptar", {url});
+}
+
+async function descartarPropiedadSugerida(client_token, url){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(client_token) + "/sugerida/descartar", {url});
+}
+
 async function runAnalysis(client_token){
   return _authedPost("/portal/analisis-cliente/" + encodeURIComponent(client_token), {});
 }
@@ -416,6 +424,7 @@ window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
+  aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, getLeadsPerdidos, getLeadsPerdidosCount, getDirectorio,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
