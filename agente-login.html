@@ -113,6 +113,18 @@
   }
   .forgot-link:hover{color:var(--profundo);}
   .forgot-link:disabled{opacity:.6; cursor:default;}
+
+  .remember-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--texto-suave);
+  }
+  .remember-row input[type="checkbox"]{
+    width:auto;
+    margin:0;
+  }
 </style>
 </head>
 <body>
@@ -132,6 +144,10 @@
       <label for="password">Contraseña</label>
       <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
     </div>
+    <label class="remember-row">
+      <input type="checkbox" id="remember-check">
+      Recordar mi correo y contraseña en este dispositivo
+    </label>
     <p class="error-note" id="error-note">Correo o contraseña incorrectos.</p>
     <p class="success-note" id="success-note">Te mandamos un correo para poner una contraseña nueva.</p>
     <button class="submit-btn" id="submit-btn" type="submit">Entrar</button>
@@ -147,6 +163,19 @@ function waitForSync(){
   });
 }
 
+const REMEMBER_KEY = 'tres65_agent_remember';
+
+(function preloadRemembered(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null');
+    if(saved && saved.email){
+      document.getElementById('email').value = saved.email;
+      document.getElementById('password').value = saved.password || '';
+      document.getElementById('remember-check').checked = true;
+    }
+  }catch(err){ /* localStorage corrupto o bloqueado, se ignora */ }
+})();
+
 document.getElementById('login-form').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const btn = document.getElementById('submit-btn');
@@ -158,9 +187,15 @@ document.getElementById('login-form').addEventListener('submit', async (e)=>{
   await waitForSync();
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
+  const remember = document.getElementById('remember-check').checked;
 
   try{
     await window.tres65Sync.signInAgent(email, password);
+    if(remember){
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify({email, password}));
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
     window.location.href = 'agente-home.html';
   }catch(err){
     console.error('[Login] error:', err);
