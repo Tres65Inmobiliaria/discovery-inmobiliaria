@@ -681,6 +681,14 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="deleted-summary-modal">
+  <div class="modal-card" style="max-width:520px;">
+    <button class="modal-close" id="deleted-summary-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Clientes/leads perdidos (últimas 24h)</h3>
+    <div id="deleted-summary-modal-body" style="max-height:70vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="directorio-modal">
   <div class="modal-card" style="max-width:760px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
@@ -797,6 +805,7 @@ const FUNNEL_STAGES = ['Conociendo a su agente', 'En discovery', 'Esperando prop
 const FUNNEL_COLORS = ['#1A4F5C', '#1E7A6E', '#2AA898', '#5FC3B4'];
 
 let inactiveClientsCache = [];
+let deletedSummaryCache = [];
 
 function renderAdminSummary(session, allClients){
   const el = document.getElementById('admin-summary');
@@ -837,8 +846,6 @@ function renderAdminSummary(session, allClients){
   });
   html += '</div>';
 
-  const deletedRecentNames = deletedRecent.map(c => c.client_name || 'Sin nombre').join(', ');
-
   html += '<div class="summary-pills">';
   if(descartadaCount){
     html += '<span class="summary-pill" title="' + descartadaNames.replace(/"/g, '&quot;') + '">Propiedad descartada: ' + descartadaCount + '</span>';
@@ -846,12 +853,14 @@ function renderAdminSummary(session, allClients){
   if(inactiveCount){
     html += '<button type="button" class="summary-pill warn clickable" id="inactive-pill-btn">Sin actividad +24h: ' + inactiveCount + '</button>';
   }
-  html += '<span class="summary-pill warn" id="deleted-summary-pill" title="' + deletedRecentNames.replace(/"/g, '&quot;') + '" style="' + (deletedRecent.length ? '' : 'display:none;') + '">Clientes/leads perdidos: ' + deletedRecent.length + '</span>';
+  html += '<button type="button" class="summary-pill warn clickable" id="deleted-summary-pill-btn" style="display:none;">Clientes/leads perdidos: 0</button>';
   html += '</div>';
 
   html += '</div>';
   el.innerHTML = html;
   el.style.display = 'block';
+
+  deletedSummaryCache = deletedRecent.map(c => ({name: c.client_name || 'Sin nombre', reason: c.delete_reason || 'Sin razón registrada', type: 'Cliente eliminado', token: c.token}));
 
   const inactiveBtn = document.getElementById('inactive-pill-btn');
   if(inactiveBtn){
@@ -861,18 +870,51 @@ function renderAdminSummary(session, allClients){
     });
   }
 
+  const deletedBtn = document.getElementById('deleted-summary-pill-btn');
+  if(deletedRecent.length){
+    deletedBtn.textContent = 'Clientes/leads perdidos: ' + deletedRecent.length;
+    deletedBtn.style.display = 'inline-block';
+  }
+  deletedBtn.addEventListener('click', ()=>{
+    renderDeletedSummaryModal();
+    document.getElementById('deleted-summary-modal').classList.add('open');
+  });
+
   window.tres65Sync.getLeadsPerdidosCount().then(({items})=>{
-    const pill = document.getElementById('deleted-summary-pill');
-    if(!pill) return;
-    const leadItems = items || [];
-    const total = deletedRecent.length + leadItems.length;
-    if(!total) return;
-    const allNames = deletedRecent.map(c => c.client_name || 'Sin nombre')
-      .concat(leadItems.map(i => i.name || 'Sin nombre')).join(', ');
-    pill.textContent = 'Clientes/leads perdidos: ' + total;
-    pill.title = allNames;
-    pill.style.display = 'inline-block';
+    const leadItems = (items || []).map(i => ({name: i.name || 'Sin nombre', reason: i.reason || 'Sin razón registrada', type: 'Lead perdido'}));
+    deletedSummaryCache = deletedSummaryCache.concat(leadItems);
+    if(!deletedSummaryCache.length) return;
+    deletedBtn.textContent = 'Clientes/leads perdidos: ' + deletedSummaryCache.length;
+    deletedBtn.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando leads perdidos en resumen:', err));
+}
+
+function renderDeletedSummaryModal(){
+  const body = document.getElementById('deleted-summary-modal-body');
+  body.innerHTML = '';
+  if(!deletedSummaryCache.length){
+    body.innerHTML = '<p class="empty-note">No hay clientes ni leads perdidos en las últimas 24 horas.</p>';
+    return;
+  }
+  deletedSummaryCache.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'inactive-row';
+
+    const nameEl = item.token ? document.createElement('a') : document.createElement('div');
+    nameEl.className = 'inactive-name';
+    if(item.token){
+      nameEl.href = 'cliente-detalle.html?token=' + encodeURIComponent(item.token);
+    }
+    nameEl.textContent = item.name;
+    row.appendChild(nameEl);
+
+    const meta = document.createElement('div');
+    meta.className = 'inactive-agent';
+    meta.textContent = item.type + ' — ' + item.reason;
+    row.appendChild(meta);
+
+    body.appendChild(row);
+  });
 }
 
 function renderInactiveModal(){
@@ -1512,6 +1554,10 @@ async function boot(){
 
   document.getElementById('inactive-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('inactive-modal').classList.remove('open');
+  });
+
+  document.getElementById('deleted-summary-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('deleted-summary-modal').classList.remove('open');
   });
 
   async function submitDeleteReason(reason){
