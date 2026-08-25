@@ -394,6 +394,9 @@ function buildLeadCard(lead){
   }
 
   const nextAttemptNum = attempts.length + 1;
+  const contactRow = document.createElement('div');
+  contactRow.className = 'actions';
+  contactRow.style.marginTop = '8px';
 
   const noAnswerBtn = document.createElement('button');
   noAnswerBtn.className = 'btn';
@@ -409,7 +412,7 @@ function buildLeadCard(lead){
       noAnswerBtn.disabled = false;
     }
   });
-  actions.appendChild(noAnswerBtn);
+  contactRow.appendChild(noAnswerBtn);
 
   const answeredBtn = document.createElement('button');
   answeredBtn.className = 'btn';
@@ -427,9 +430,10 @@ function buildLeadCard(lead){
       answeredBtn.disabled = false;
     }
   });
-  actions.appendChild(answeredBtn);
+  contactRow.appendChild(answeredBtn);
 
   card.appendChild(actions);
+  card.appendChild(contactRow);
   return card;
 }
 
