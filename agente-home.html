@@ -634,10 +634,10 @@
 </div>
 
 <div class="modal-overlay" id="directorio-modal">
-  <div class="modal-card" style="max-width:640px;">
+  <div class="modal-card" style="max-width:760px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
     <h3>Directorio</h3>
-    <div id="directorio-body" style="max-height:70vh; overflow-y:auto;"></div>
+    <div id="directorio-body" style="max-height:70vh; overflow:auto;"></div>
   </div>
 </div>
 
@@ -890,11 +890,11 @@ async function renderDirectorio(){
   }
   const table = document.createElement('table');
   table.className = 'roster-table';
-  table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Agente</th></tr></thead>';
+  table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>Agente</th></tr></thead>';
   const tbody = document.createElement('tbody');
   entries.forEach(e=>{
     const tr = document.createElement('tr');
-    [e.name, e.phone, e.status, e.assignee_name || 'Sin asignar'].forEach(val=>{
+    [e.name, e.phone, e.email, e.status, e.assignee_name || 'Sin asignar'].forEach(val=>{
       const td = document.createElement('td');
       td.textContent = val || '—';
       tr.appendChild(td);
