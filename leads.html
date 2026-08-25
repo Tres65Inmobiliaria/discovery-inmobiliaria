@@ -330,6 +330,22 @@ function buildLeadCard(lead){
     card.appendChild(resumen);
   }
 
+  const attempts = lead.contact_attempts || [];
+  if(attempts.length){
+    const last = attempts[attempts.length - 1];
+    const statusRow = document.createElement('div');
+    statusRow.className = 'status-row';
+    const statusLabel = document.createElement('span');
+    statusLabel.className = 'label';
+    statusLabel.textContent = 'Contacto ' + last.attempt_number + ':';
+    statusRow.appendChild(statusLabel);
+    const badge = document.createElement('span');
+    badge.className = 'answer-badge ' + (last.contacted ? 'yes' : 'no');
+    badge.textContent = last.contacted ? (last.result || 'Contestó') : 'Sin respuesta';
+    statusRow.appendChild(badge);
+    card.appendChild(statusRow);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'actions';
 
@@ -376,6 +392,42 @@ function buildLeadCard(lead){
     profileBtn.addEventListener('click', ()=> openCreateModal(lead));
     actions.appendChild(profileBtn);
   }
+
+  const nextAttemptNum = attempts.length + 1;
+
+  const noAnswerBtn = document.createElement('button');
+  noAnswerBtn.className = 'btn';
+  noAnswerBtn.type = 'button';
+  noAnswerBtn.innerHTML = '<i data-lucide="phone-missed"></i> Contacto ' + nextAttemptNum + ': No contestó';
+  noAnswerBtn.addEventListener('click', async ()=>{
+    noAnswerBtn.disabled = true;
+    try{
+      await window.tres65Sync.logLeadContact(lead.conv_id, false, '');
+      await loadLeads();
+    }catch(err){
+      alert(err.message || 'Error registrando el contacto.');
+      noAnswerBtn.disabled = false;
+    }
+  });
+  actions.appendChild(noAnswerBtn);
+
+  const answeredBtn = document.createElement('button');
+  answeredBtn.className = 'btn';
+  answeredBtn.type = 'button';
+  answeredBtn.innerHTML = '<i data-lucide="phone-call"></i> Contacto ' + nextAttemptNum + ': Sí contestó';
+  answeredBtn.addEventListener('click', async ()=>{
+    const result = prompt('¿Qué resultó del contacto?', '');
+    if(result === null) return;
+    answeredBtn.disabled = true;
+    try{
+      await window.tres65Sync.logLeadContact(lead.conv_id, true, result.trim());
+      await loadLeads();
+    }catch(err){
+      alert(err.message || 'Error registrando el contacto.');
+      answeredBtn.disabled = false;
+    }
+  });
+  actions.appendChild(answeredBtn);
 
   card.appendChild(actions);
   return card;

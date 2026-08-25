@@ -198,6 +198,11 @@ async function convertLeadToListo(conv_id){
   return _authedPost("/portal/lead-a-listo/" + encodeURIComponent(conv_id), {});
 }
 
+async function logLeadContact(conv_id, contacted, result){
+  const data = await _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/contacto", {contacted, result});
+  return data.attempts;
+}
+
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -352,7 +357,7 @@ window.tres65Sync = {
   signInAgent, signOutAgent, agentInit, listClients, createClient,
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, convertLeadToListo,
+  runLeadsRoundRobin, convertLeadToListo, logLeadContact,
   getClientDetail, addClientNote, toggleClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask
 };
