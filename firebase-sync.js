@@ -227,6 +227,18 @@ async function getLeadsPerdidos(){
   return data.leads;
 }
 
+async function getLeadsSinContactarCount(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/leads-sin-contactar-count", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando leads sin contactar");
+  return {count: data.count, items: data.items || []};
+}
+
 async function getLeadsPerdidosCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -434,7 +446,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getDirectorio,
+  runLeadsRoundRobin, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getDirectorio,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

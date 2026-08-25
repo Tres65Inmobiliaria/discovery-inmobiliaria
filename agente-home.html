@@ -689,6 +689,14 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="sin-contactar-modal">
+  <div class="modal-card" style="max-width:520px;">
+    <button class="modal-close" id="sin-contactar-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Leads sin contactar</h3>
+    <div id="sin-contactar-modal-body" style="max-height:70vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="directorio-modal">
   <div class="modal-card" style="max-width:760px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
@@ -806,6 +814,7 @@ const FUNNEL_COLORS = ['#1A4F5C', '#1E7A6E', '#2AA898', '#5FC3B4'];
 
 let inactiveClientsCache = [];
 let deletedSummaryCache = [];
+let sinContactarCache = [];
 
 function renderAdminSummary(session, allClients){
   const el = document.getElementById('admin-summary');
@@ -850,6 +859,7 @@ function renderAdminSummary(session, allClients){
   if(descartadaCount){
     html += '<span class="summary-pill" title="' + descartadaNames.replace(/"/g, '&quot;') + '">Propiedad descartada: ' + descartadaCount + '</span>';
   }
+  html += '<button type="button" class="summary-pill warn clickable" id="sin-contactar-pill-btn" style="display:none;">Leads sin contactar: 0</button>';
   if(inactiveCount){
     html += '<button type="button" class="summary-pill warn clickable" id="inactive-pill-btn">Sin actividad +24h: ' + inactiveCount + '</button>';
   }
@@ -887,6 +897,40 @@ function renderAdminSummary(session, allClients){
     deletedBtn.textContent = 'Clientes/leads perdidos: ' + deletedSummaryCache.length;
     deletedBtn.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando leads perdidos en resumen:', err));
+
+  const sinContactarBtn = document.getElementById('sin-contactar-pill-btn');
+  sinContactarBtn.addEventListener('click', ()=>{
+    renderSinContactarModal();
+    document.getElementById('sin-contactar-modal').classList.add('open');
+  });
+  window.tres65Sync.getLeadsSinContactarCount().then(({count, items})=>{
+    sinContactarCache = items || [];
+    if(!count) return;
+    sinContactarBtn.textContent = 'Leads sin contactar: ' + count;
+    sinContactarBtn.style.display = 'inline-block';
+  }).catch(err=> console.error('[Dashboard] error contando leads sin contactar:', err));
+}
+
+function renderSinContactarModal(){
+  const body = document.getElementById('sin-contactar-modal-body');
+  body.innerHTML = '';
+  if(!sinContactarCache.length){
+    body.innerHTML = '<p class="empty-note">No hay leads sin contactar ahorita.</p>';
+    return;
+  }
+  sinContactarCache.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'inactive-row';
+    const name = document.createElement('div');
+    name.className = 'inactive-name';
+    name.textContent = item.name;
+    row.appendChild(name);
+    const meta = document.createElement('div');
+    meta.className = 'inactive-agent';
+    meta.textContent = 'Agente: ' + item.assignee_name;
+    row.appendChild(meta);
+    body.appendChild(row);
+  });
 }
 
 function renderDeletedSummaryModal(){
@@ -1558,6 +1602,10 @@ async function boot(){
 
   document.getElementById('deleted-summary-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('deleted-summary-modal').classList.remove('open');
+  });
+
+  document.getElementById('sin-contactar-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('sin-contactar-modal').classList.remove('open');
   });
 
   async function submitDeleteReason(reason){

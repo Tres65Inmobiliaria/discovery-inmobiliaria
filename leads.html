@@ -118,6 +118,12 @@
   .status-row{display:flex; align-items:center; gap:8px; margin-top:12px;}
   .status-row .label{font-size:11.5px; color:var(--texto-suave); font-family:'Montserrat',sans-serif; font-weight:600;}
   .answer-badge{font-size:11px; font-weight:700; font-family:'Montserrat',sans-serif; padding:3px 10px; border-radius:20px;}
+  .contact-timer{
+    display:flex; align-items:center; gap:6px; margin-top:8px; padding:6px 10px;
+    background:#F5E4E1; color:#C0453A; border-radius:8px;
+    font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600;
+  }
+  .contact-timer svg{width:14px; height:14px;}
   .answer-badge.yes{background:var(--menta); color:var(--medio);}
   .answer-badge.no{background:var(--alerta-bg); color:var(--alerta);}
   .answer-badge.unknown{background:var(--menta); color:var(--texto-suave);}
@@ -410,6 +416,35 @@ function buildLeadCard(lead){
   }
 
   const attempts = lead.contact_attempts || [];
+
+  if(lead.assigned_at && !attempts.length){
+    const assignedTime = new Date(lead.assigned_at).getTime();
+    const graceEnd = assignedTime + 3 * 3600 * 1000;
+    const deadline = assignedTime + 24 * 3600 * 1000;
+    if(Date.now() >= graceEnd){
+      const timerEl = document.createElement('div');
+      timerEl.className = 'contact-timer';
+      timerEl.innerHTML = '<i data-lucide="timer"></i> <span class="timer-text"></span>';
+      card.appendChild(timerEl);
+      const textEl = timerEl.querySelector('.timer-text');
+      let intervalId = null;
+      const updateTimer = ()=>{
+        const remaining = deadline - Date.now();
+        if(remaining <= 0){
+          textEl.textContent = 'Venció el plazo, se está reasignando...';
+          if(intervalId) clearInterval(intervalId);
+          return;
+        }
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        textEl.textContent = 'Se reasigna en ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      };
+      updateTimer();
+      intervalId = setInterval(updateTimer, 1000);
+    }
+  }
+
   attempts.forEach(att=>{
     const statusRow = document.createElement('div');
     statusRow.className = 'status-row';
