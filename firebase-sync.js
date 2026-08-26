@@ -249,6 +249,22 @@ async function getLeadsSinContactarCount(){
   return {count: data.count, items: data.items || []};
 }
 
+async function getMensajesEasyBroker(){
+  const user = auth.currentUser;
+  if(!user) throw new Error("No autenticado");
+  const idToken = await user.getIdToken();
+  const res = await fetch(API_BASE + "/portal/mensajes-easybroker", {
+    headers: {"Authorization": "Bearer " + idToken}
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Error consultando mensajes de EasyBroker");
+  return data.items;
+}
+
+async function atenderMensajeEasyBroker(id){
+  return _authedPost("/portal/mensajes-easybroker/" + encodeURIComponent(id) + "/atender", {});
+}
+
 async function getLeadsPerdidosCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -465,7 +481,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getDirectorio,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

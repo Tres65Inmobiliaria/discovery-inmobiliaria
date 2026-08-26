@@ -553,6 +553,10 @@
     <button id="directorio-toggle-btn" type="button" class="topnav-btn">
       <i data-lucide="table-2" class="topnav-icon"></i> Directorio
     </button>
+    <button id="eb-mensajes-toggle-btn" type="button" class="topnav-btn">
+      <i data-lucide="mail" class="topnav-icon"></i> Mensajes EasyBroker
+      <span id="eb-mensajes-badge" style="display:none; font-size:10px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 7px; border-radius:20px;"></span>
+    </button>
   </div>
 
   <div id="admin-summary" style="display:none;"></div>
@@ -737,6 +741,14 @@
     <button class="modal-close" id="sin-contactar-modal-close-x" type="button" aria-label="Cerrar">×</button>
     <h3>Leads sin contactar</h3>
     <div id="sin-contactar-modal-body" style="max-height:70vh; overflow-y:auto;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="eb-mensajes-modal">
+  <div class="modal-card" style="max-width:560px;">
+    <button class="modal-close" id="eb-mensajes-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Mensajes de EasyBroker</h3>
+    <div id="eb-mensajes-modal-body" style="max-height:70vh; overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -1002,6 +1014,101 @@ function renderDeletedSummaryModal(){
 
     body.appendChild(row);
   });
+}
+
+async function renderMensajesEasyBroker(){
+  const body = document.getElementById('eb-mensajes-modal-body');
+  body.innerHTML = '<p class="empty-note">Cargando...</p>';
+  let items = [];
+  try{
+    items = await window.tres65Sync.getMensajesEasyBroker();
+  }catch(err){
+    body.innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando los mensajes.') + '</p>';
+    return;
+  }
+  body.innerHTML = '';
+  if(!items.length){
+    body.innerHTML = '<p class="empty-note">No hay mensajes pendientes de EasyBroker.</p>';
+    return;
+  }
+  items.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'inactive-row';
+
+    const name = document.createElement('div');
+    name.className = 'inactive-name';
+    name.textContent = item.name || 'Sin nombre';
+    row.appendChild(name);
+
+    if(item.property_title){
+      const prop = document.createElement('a');
+      prop.className = 'inactive-agent';
+      prop.style.display = 'block';
+      prop.href = item.property_url || '#';
+      prop.target = '_blank';
+      prop.rel = 'noopener';
+      prop.textContent = item.property_title;
+      row.appendChild(prop);
+    }
+
+    if(item.message){
+      const msg = document.createElement('div');
+      msg.style.cssText = 'font-size:12px; color:var(--texto); background:var(--menta); border-radius:6px; padding:6px 8px; margin:4px 0;';
+      msg.textContent = item.message;
+      row.appendChild(msg);
+    }
+
+    if(item.phone){
+      const digits = item.phone.replace(/\D/g, '');
+      const confirmRow = document.createElement('div');
+      confirmRow.className = 'prop-confirm-row';
+      const callBtn = document.createElement('a');
+      callBtn.className = 'prop-confirm-btn';
+      callBtn.href = 'tel:' + digits;
+      callBtn.innerHTML = '<i data-lucide="phone"></i> Llamar';
+      confirmRow.appendChild(callBtn);
+      const waBtn = document.createElement('a');
+      waBtn.className = 'prop-confirm-btn';
+      waBtn.href = 'https://wa.me/' + digits;
+      waBtn.target = '_blank';
+      waBtn.rel = 'noopener';
+      waBtn.innerHTML = '<i data-lucide="message-circle"></i> WhatsApp';
+      confirmRow.appendChild(waBtn);
+      row.appendChild(confirmRow);
+    }
+
+    const atenderBtn = document.createElement('button');
+    atenderBtn.type = 'button';
+    atenderBtn.className = 'prop-confirm-btn';
+    atenderBtn.style.marginTop = '6px';
+    atenderBtn.style.width = '100%';
+    atenderBtn.textContent = 'Marcar como atendido';
+    atenderBtn.addEventListener('click', async ()=>{
+      atenderBtn.disabled = true;
+      atenderBtn.textContent = 'Marcando...';
+      try{
+        await window.tres65Sync.atenderMensajeEasyBroker(item.id);
+        renderMensajesEasyBroker();
+        window.tres65Sync.getMensajesEasyBroker().then(items2=>{
+          const badge = document.getElementById('eb-mensajes-badge');
+          if(items2.length){
+            badge.textContent = String(items2.length);
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        });
+      }catch(err){
+        alert(err.message || 'Error marcando el mensaje.');
+        atenderBtn.disabled = false;
+        atenderBtn.textContent = 'Marcar como atendido';
+      }
+    });
+    row.appendChild(atenderBtn);
+
+    body.appendChild(row);
+  });
+  if(window.lucide) lucide.createIcons();
 }
 
 function renderInactiveModal(){
@@ -1698,6 +1805,21 @@ async function boot(){
   document.getElementById('directorio-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('directorio-modal').classList.remove('open');
   });
+
+  document.getElementById('eb-mensajes-toggle-btn').addEventListener('click', ()=>{
+    document.getElementById('eb-mensajes-modal').classList.add('open');
+    renderMensajesEasyBroker();
+  });
+  document.getElementById('eb-mensajes-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('eb-mensajes-modal').classList.remove('open');
+  });
+
+  window.tres65Sync.getMensajesEasyBroker().then(items=>{
+    const badge = document.getElementById('eb-mensajes-badge');
+    if(!items.length) return;
+    badge.textContent = String(items.length);
+    badge.style.display = 'inline-block';
+  }).catch(err=> console.error('[Dashboard] error contando mensajes de EasyBroker:', err));
 
   document.getElementById('inactive-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('inactive-modal').classList.remove('open');
