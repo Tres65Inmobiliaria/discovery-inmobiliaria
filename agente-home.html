@@ -752,6 +752,29 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="eb-lead-manual-modal">
+  <div class="modal-card" style="max-width:420px;">
+    <button class="modal-close" id="eb-lead-manual-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Crear lead</h3>
+    <label for="eb-lead-manual-name">Nombre completo</label>
+    <input type="text" id="eb-lead-manual-name" placeholder="Nombre del lead">
+    <label for="eb-lead-manual-phone">Teléfono</label>
+    <input type="text" id="eb-lead-manual-phone" placeholder="9991234567">
+    <label for="eb-lead-manual-email">Correo (opcional)</label>
+    <input type="email" id="eb-lead-manual-email" placeholder="lead@correo.com">
+    <label for="eb-lead-manual-property">Link de la propiedad (opcional)</label>
+    <input type="text" id="eb-lead-manual-property" placeholder="https://...">
+    <label for="eb-lead-manual-agent">Asignar a</label>
+    <select id="eb-lead-manual-agent"></select>
+    <p class="modal-error" id="eb-lead-manual-error"></p>
+    <p class="modal-success" id="eb-lead-manual-success" style="display:none;">Lead creado y asignado.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="eb-lead-manual-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="eb-lead-manual-save" type="button">Crear lead</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="directorio-modal">
   <div class="modal-card" style="max-width:760px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
@@ -1075,6 +1098,27 @@ async function renderMensajesEasyBroker(){
       waBtn.innerHTML = '<i data-lucide="message-circle"></i> WhatsApp';
       confirmRow.appendChild(waBtn);
       row.appendChild(confirmRow);
+    }
+
+    if(!item.lead_conv_id && currentSession && currentSession.isAdmin){
+      const leadBtn = document.createElement('button');
+      leadBtn.type = 'button';
+      leadBtn.className = 'prop-confirm-btn';
+      leadBtn.style.marginTop = '6px';
+      leadBtn.style.width = '100%';
+      leadBtn.textContent = 'Crear lead';
+      leadBtn.addEventListener('click', ()=>{
+        document.getElementById('eb-lead-manual-name').value = item.name || '';
+        document.getElementById('eb-lead-manual-phone').value = item.phone || '';
+        document.getElementById('eb-lead-manual-email').value = item.email || '';
+        document.getElementById('eb-lead-manual-property').value = item.property_url || '';
+        if(item.agent_uid){
+          document.getElementById('eb-lead-manual-agent').value = item.agent_uid;
+        }
+        ebLeadManualMensajeId = item.id;
+        document.getElementById('eb-lead-manual-modal').classList.add('open');
+      });
+      row.appendChild(leadBtn);
     }
 
     const atenderBtn = document.createElement('button');
@@ -1520,6 +1564,7 @@ function openDeleteReasonModal(clientName, onConfirm){
 let lastSearchResults = [];
 let searchShortlist = [];
 let currentSession = null;
+let ebLeadManualMensajeId = null;
 
 function isInShortlist(url){
   return searchShortlist.some(p => p.url === url);
@@ -1820,6 +1865,61 @@ async function boot(){
     badge.textContent = String(items.length);
     badge.style.display = 'inline-block';
   }).catch(err=> console.error('[Dashboard] error contando mensajes de EasyBroker:', err));
+
+  if(session.isAdmin){
+    const ebAgentSelect = document.getElementById('eb-lead-manual-agent');
+    AGENTS.forEach(a=>{
+      const opt = document.createElement('option');
+      opt.value = a.uid;
+      opt.textContent = a.name;
+      ebAgentSelect.appendChild(opt);
+    });
+  }
+
+  function closeEbLeadManualModal(){
+    document.getElementById('eb-lead-manual-modal').classList.remove('open');
+    document.getElementById('eb-lead-manual-error').style.display = 'none';
+    document.getElementById('eb-lead-manual-success').style.display = 'none';
+    ['eb-lead-manual-name','eb-lead-manual-phone','eb-lead-manual-email','eb-lead-manual-property'].forEach(id=>{
+      document.getElementById(id).value = '';
+    });
+    ebLeadManualMensajeId = null;
+  }
+  document.getElementById('eb-lead-manual-modal-close-x').addEventListener('click', closeEbLeadManualModal);
+  document.getElementById('eb-lead-manual-cancel').addEventListener('click', closeEbLeadManualModal);
+  document.getElementById('eb-lead-manual-save').addEventListener('click', async ()=>{
+    const btn = document.getElementById('eb-lead-manual-save');
+    const errorEl = document.getElementById('eb-lead-manual-error');
+    const successEl = document.getElementById('eb-lead-manual-success');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    const name = document.getElementById('eb-lead-manual-name').value.trim();
+    const phone = document.getElementById('eb-lead-manual-phone').value.trim();
+    const email = document.getElementById('eb-lead-manual-email').value.trim();
+    const property_url = document.getElementById('eb-lead-manual-property').value.trim();
+    const agent_uid = document.getElementById('eb-lead-manual-agent').value;
+
+    if(!name || !phone){
+      errorEl.textContent = 'Falta el nombre o el teléfono.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Creando...';
+    try{
+      await window.tres65Sync.crearLeadManual({name, phone, email, property_url, agent_uid, mensaje_id: ebLeadManualMensajeId});
+      successEl.style.display = 'block';
+      renderMensajesEasyBroker();
+      setTimeout(closeEbLeadManualModal, 900);
+    }catch(err){
+      errorEl.textContent = err.message || 'Error creando el lead.';
+      errorEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Crear lead';
+    }
+  });
 
   document.getElementById('inactive-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('inactive-modal').classList.remove('open');
