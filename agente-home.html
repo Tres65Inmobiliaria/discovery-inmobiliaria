@@ -363,6 +363,32 @@
   .prop-assign-status.ok{color:var(--medio);}
   .prop-assign-status.err{color:#C0453A;}
 
+  .prop-badges{display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 8px;}
+  .prop-badge{
+    font-size:10.5px; font-weight:700; font-family:'Montserrat',sans-serif;
+    padding:3px 9px; border-radius:20px; background:var(--acento); color:#fff;
+  }
+  .prop-confirm-row{display:flex; gap:6px; margin-top:8px;}
+  .prop-confirm-btn{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:5px;
+    font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600;
+    padding:6px 8px; border-radius:8px; border:1px solid var(--borde);
+    background:#fff; color:var(--profundo); text-decoration:none; cursor:pointer;
+  }
+  .prop-confirm-btn svg{width:12px; height:12px;}
+  .prop-confirm-btn:hover{background:var(--menta);}
+
+  .shortlist-item{flex-wrap:wrap;}
+  .shortlist-item-fields{display:flex; flex-direction:column; gap:6px; width:100%; margin-top:6px;}
+  .shortlist-item-fields input, .shortlist-item-fields textarea{
+    width:100%; font-family:'Raleway',sans-serif; font-size:12px; padding:6px 8px;
+    border-radius:6px; border:1px solid var(--borde); background:#fff; color:var(--texto);
+  }
+  .shortlist-item-fields label{
+    font-family:'Montserrat',sans-serif; font-size:10px; font-weight:600; color:var(--texto-suave);
+    text-transform:uppercase; letter-spacing:.4px;
+  }
+
   .shortlist-section{
     margin-top:16px;
     padding-top:16px;
@@ -1369,6 +1395,7 @@ function openDeleteReasonModal(clientName, onConfirm){
 
 let lastSearchResults = [];
 let searchShortlist = [];
+let currentSession = null;
 
 function isInShortlist(url){
   return searchShortlist.some(p => p.url === url);
@@ -1414,6 +1441,16 @@ function buildPropertyResultCard(p){
   meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
   card.appendChild(meta);
 
+  if(p.commission){
+    const badges = document.createElement('div');
+    badges.className = 'prop-badges';
+    const badge = document.createElement('span');
+    badge.className = 'prop-badge';
+    badge.textContent = p.commission;
+    badges.appendChild(badge);
+    card.appendChild(badges);
+  }
+
   if(p.url){
     const link = document.createElement('a');
     link.className = 'prop-link';
@@ -1422,6 +1459,25 @@ function buildPropertyResultCard(p){
     link.rel = 'noopener';
     link.textContent = p.url;
     card.appendChild(link);
+  }
+
+  if(p.agent_phone){
+    const confirmRow = document.createElement('div');
+    confirmRow.className = 'prop-confirm-row';
+    const digits = p.agent_phone.replace(/\D/g, '');
+    const callBtn = document.createElement('a');
+    callBtn.className = 'prop-confirm-btn';
+    callBtn.href = 'tel:' + digits;
+    callBtn.innerHTML = '<i data-lucide="phone"></i> Llamar a ' + (p.agent_name || 'agente');
+    confirmRow.appendChild(callBtn);
+    const waBtn = document.createElement('a');
+    waBtn.className = 'prop-confirm-btn';
+    waBtn.href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent('Hola ' + (p.agent_name || '') + ', ¿sigue disponible esta propiedad? ' + p.url);
+    waBtn.target = '_blank';
+    waBtn.rel = 'noopener';
+    waBtn.innerHTML = '<i data-lucide="message-circle"></i> WhatsApp';
+    confirmRow.appendChild(waBtn);
+    card.appendChild(confirmRow);
   }
 
   const addBtn = document.createElement('button');
@@ -1445,6 +1501,7 @@ function renderSearchResultCards(){
   const list = document.getElementById('search-results-list');
   list.innerHTML = '';
   lastSearchResults.forEach(p => list.appendChild(buildPropertyResultCard(p)));
+  if(window.lucide) lucide.createIcons();
 }
 
 function renderShortlist(){
@@ -1474,6 +1531,34 @@ function renderShortlist(){
       renderShortlist();
     });
     row.appendChild(rm);
+
+    if(currentSession && currentSession.isAdmin){
+      const fields = document.createElement('div');
+      fields.className = 'shortlist-item-fields';
+
+      const urlLabel = document.createElement('label');
+      urlLabel.textContent = 'Link a guardar (editable)';
+      fields.appendChild(urlLabel);
+      const urlInput = document.createElement('input');
+      urlInput.type = 'text';
+      urlInput.value = p.customUrl || p.url;
+      urlInput.placeholder = 'Link con datos del agente, si aplica';
+      urlInput.addEventListener('input', ()=>{ p.customUrl = urlInput.value.trim(); });
+      fields.appendChild(urlInput);
+
+      const noteLabel = document.createElement('label');
+      noteLabel.textContent = 'Nota para el agente (opcional)';
+      fields.appendChild(noteLabel);
+      const noteInput = document.createElement('input');
+      noteInput.type = 'text';
+      noteInput.value = p.note || '';
+      noteInput.placeholder = 'Ej. confirmado disponible, precio negociable...';
+      noteInput.addEventListener('input', ()=>{ p.note = noteInput.value; });
+      fields.appendChild(noteInput);
+
+      row.appendChild(fields);
+    }
+
     listEl.appendChild(row);
   });
 }
@@ -1485,6 +1570,7 @@ async function boot(){
     window.location.href = 'agente-login.html';
     return;
   }
+  currentSession = session;
 
   document.getElementById('who-name').textContent = session.email;
   document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
@@ -1823,7 +1909,11 @@ async function boot(){
     btn.textContent = 'Guardando...';
     status.style.display = 'none';
     try{
-      await window.tres65Sync.addProperties(token, searchShortlist.map(p => p.url));
+      if(currentSession && currentSession.isAdmin){
+        await window.tres65Sync.addPropertiesItems(token, searchShortlist.map(p => ({url: p.customUrl || p.url, note: p.note || ''})));
+      } else {
+        await window.tres65Sync.addProperties(token, searchShortlist.map(p => p.url));
+      }
       status.className = 'prop-assign-status ok';
       status.textContent = 'Propiedades agregadas al cliente.';
       status.style.display = 'block';
@@ -1851,7 +1941,11 @@ async function boot(){
     btn.textContent = 'Generando...';
     status.style.display = 'none';
     try{
-      await window.tres65Sync.addProperties(token, searchShortlist.map(p => p.url));
+      if(currentSession && currentSession.isAdmin){
+        await window.tres65Sync.addPropertiesItems(token, searchShortlist.map(p => ({url: p.customUrl || p.url, note: p.note || ''})));
+      } else {
+        await window.tres65Sync.addProperties(token, searchShortlist.map(p => p.url));
+      }
       const result = await window.tres65Sync.runAnalysis(token);
       status.className = 'prop-assign-status ok';
       status.innerHTML = 'Análisis listo: <a href="' + result.url + '" target="_blank" rel="noopener">' + result.url + '</a>';

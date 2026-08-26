@@ -392,6 +392,10 @@ async function addProperties(client_token, urls){
   return _authedPost("/portal/agregar-propiedades", {client_token, urls});
 }
 
+async function addPropertiesItems(client_token, items){
+  return _authedPost("/portal/agregar-propiedades", {client_token, items});
+}
+
 async function removeProperty(client_token, url){
   return _authedPost("/portal/quitar-propiedad/" + encodeURIComponent(client_token), {url});
 }
@@ -453,7 +457,7 @@ async function summarizeLink(url){
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, resetAgentPassword, agentInit, listClients, createClient,
-  searchProperties, askLegal, summarizeLink, addProperties, removeProperty, runAnalysis,
+  searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getDirectorio,

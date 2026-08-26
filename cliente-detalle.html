@@ -743,6 +743,15 @@ function buildPropertiesListCard(ficha, token){
       meta.className = 'prop-meta';
       meta.textContent = [p.price, p.location].filter(Boolean).join(' — ');
       row.appendChild(meta);
+
+      if(entry.note){
+        const noteEl = document.createElement('div');
+        noteEl.style.cssText = 'font-size:12px; color:var(--profundo); background:var(--menta); border-radius:6px; padding:6px 8px; margin:4px 0;';
+        noteEl.innerHTML = '<strong>Nota de Admin:</strong> ';
+        noteEl.appendChild(document.createTextNode(entry.note));
+        row.appendChild(noteEl);
+      }
+
       const link = document.createElement('a');
       link.className = 'prop-link';
       link.href = entry.url;
