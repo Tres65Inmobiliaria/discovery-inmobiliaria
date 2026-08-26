@@ -363,6 +363,9 @@
   .prop-assign-status.ok{color:var(--medio);}
   .prop-assign-status.err{color:#C0453A;}
 
+  .link-add-section{margin-top:16px; padding-top:16px; border-top:1px solid var(--borde);}
+  .link-add-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px; color:var(--profundo); margin-bottom:4px;}
+
   .prop-badges{display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 8px;}
   .prop-badge{
     font-size:10.5px; font-weight:700; font-family:'Montserrat',sans-serif;
@@ -586,6 +589,15 @@
         <button class="tool-btn" id="shortlist-save-btn" type="button">Agregar a cliente</button>
       </div>
       <div class="prop-assign-status" id="shortlist-status" style="display:none;"></div>
+    </div>
+
+    <div class="link-add-section">
+      <div class="link-add-title">O agrega una propiedad por link</div>
+      <p class="tool-hint" style="margin-bottom:10px;">Pega un link de EasyBroker que te haya llegado de fuera (otro agente, un colega, etc.). Se agrega al cliente elegido arriba.</p>
+      <input type="text" class="tool-select" id="link-add-input" placeholder="https://www.easybroker.com/mx/listings/..." style="margin-bottom:8px;">
+      <input type="text" class="tool-select" id="link-add-note" placeholder="Nota para el agente (opcional)">
+      <button class="tool-btn" id="link-add-btn" type="button">Agregar</button>
+      <div class="prop-assign-status" id="link-add-status" style="display:none;"></div>
     </div>
   </div>
 
@@ -1965,6 +1977,40 @@ async function boot(){
 
   wireTool('tool-legal-btn', 'tool-legal-input', 'tool-legal-result', window.tres65Sync.askLegal, 'Buscando...');
   wireTool('tool-link-btn', 'tool-link-input', 'tool-link-result', window.tres65Sync.summarizeLink, 'Leyendo...');
+
+  document.getElementById('link-add-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('link-add-btn');
+    const input = document.getElementById('link-add-input');
+    const noteInput = document.getElementById('link-add-note');
+    const status = document.getElementById('link-add-status');
+    const token = currentSearchClientToken();
+    if(!token){ alert('Selecciona un cliente primero.'); return; }
+    const url = input.value.trim();
+    if(!url) return;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Agregando...';
+    status.style.display = 'none';
+    try{
+      if(currentSession && currentSession.isAdmin){
+        await window.tres65Sync.addPropertiesItems(token, [{url, note: noteInput.value.trim()}]);
+      } else {
+        await window.tres65Sync.addProperties(token, [url]);
+      }
+      input.value = '';
+      noteInput.value = '';
+      status.className = 'prop-assign-status ok';
+      status.textContent = 'Propiedad agregada.';
+      status.style.display = 'block';
+    }catch(err){
+      status.className = 'prop-assign-status err';
+      status.textContent = err.message || 'Error agregando la propiedad.';
+      status.style.display = 'block';
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 }
 
 boot();
