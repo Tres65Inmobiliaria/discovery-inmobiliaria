@@ -2009,7 +2009,13 @@ async function boot(){
       }
       const title = document.createElement('div');
       title.className = 'prop-title';
-      title.textContent = resolvedLinkProperty.title || url;
+      const titleLink = document.createElement('a');
+      titleLink.href = resolvedLinkProperty.url;
+      titleLink.target = '_blank';
+      titleLink.rel = 'noopener';
+      titleLink.style.color = 'inherit';
+      titleLink.textContent = resolvedLinkProperty.title || resolvedLinkProperty.url;
+      title.appendChild(titleLink);
       previewCard.appendChild(title);
       const meta = document.createElement('div');
       meta.className = 'prop-meta';
