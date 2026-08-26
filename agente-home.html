@@ -598,6 +598,7 @@
       <button class="tool-btn secondary" id="link-process-btn" type="button">Procesar propiedad</button>
       <div id="link-add-preview" style="display:none; margin-top:10px;">
         <div class="prop-card" id="link-add-preview-card"></div>
+        <input type="text" class="tool-select" id="link-add-commission" placeholder="Comisión (ej. 4% o $50,000) — no viene pública en esta ficha" style="display:none;">
         <input type="text" class="tool-select" id="link-add-note" placeholder="Nota para el agente (opcional)" style="margin-top:8px;">
         <button class="tool-btn" id="link-add-btn" type="button">Agregar a cliente</button>
       </div>
@@ -2000,6 +2001,12 @@ async function boot(){
     try{
       resolvedLinkProperty = await window.tres65Sync.resolverPropiedad(url);
       previewCard.innerHTML = '';
+      if(resolvedLinkProperty.image){
+        const img = document.createElement('img');
+        img.src = resolvedLinkProperty.image;
+        img.style.cssText = 'width:100%; max-height:160px; object-fit:cover; border-radius:6px; margin-bottom:8px;';
+        previewCard.appendChild(img);
+      }
       const title = document.createElement('div');
       title.className = 'prop-title';
       title.textContent = resolvedLinkProperty.title || url;
@@ -2016,6 +2023,16 @@ async function boot(){
         badge.textContent = resolvedLinkProperty.commission;
         badges.appendChild(badge);
         previewCard.appendChild(badges);
+      }
+      const commissionInput = document.getElementById('link-add-commission');
+      commissionInput.value = '';
+      commissionInput.style.display = resolvedLinkProperty.needs_manual_commission ? 'block' : 'none';
+      if(resolvedLinkProperty.needs_manual_commission){
+        const hint = document.createElement('p');
+        hint.className = 'tool-hint';
+        hint.style.cssText = 'color:#C0453A; margin:4px 0 0;';
+        hint.textContent = 'Esta propiedad es de otra cuenta de EasyBroker — no trae comisión pública. Captúrala abajo si la sabes.';
+        previewCard.appendChild(hint);
       }
       preview.style.display = 'block';
     }catch(err){
@@ -2044,13 +2061,11 @@ async function boot(){
     btn.textContent = 'Agregando...';
     status.style.display = 'none';
     try{
-      if(currentSession && currentSession.isAdmin){
-        await window.tres65Sync.addPropertiesItems(token, [{url, note: noteInput.value.trim()}]);
-      } else {
-        await window.tres65Sync.addProperties(token, [url]);
-      }
+      const commission = document.getElementById('link-add-commission').value.trim();
+      await window.tres65Sync.addPropertiesItems(token, [{url, note: noteInput.value.trim(), commission}]);
       input.value = '';
       noteInput.value = '';
+      document.getElementById('link-add-commission').value = '';
       preview.style.display = 'none';
       resolvedLinkProperty = null;
       status.className = 'prop-assign-status ok';
