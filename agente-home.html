@@ -427,8 +427,8 @@
   }
   .shortlist-actions{display:flex; gap:8px; margin-top:10px;}
   .shortlist-actions .tool-btn{flex:1;}
-  .shortlist-actions .tool-btn.secondary{background:#fff; color:var(--profundo); border:1px solid var(--borde);}
-  .shortlist-actions .tool-btn.secondary:hover{background:var(--menta);}
+  .tool-btn.secondary{background:#fff; color:var(--profundo); border:1px solid var(--borde);}
+  .tool-btn.secondary:hover{background:var(--menta);}
 
   .modal-overlay{
     display:none;
@@ -594,9 +594,13 @@
     <div class="link-add-section">
       <div class="link-add-title">O agrega una propiedad por link</div>
       <p class="tool-hint" style="margin-bottom:10px;">Pega un link de EasyBroker que te haya llegado de fuera (otro agente, un colega, etc.). Se agrega al cliente elegido arriba.</p>
-      <input type="text" class="tool-select" id="link-add-input" placeholder="https://www.easybroker.com/mx/listings/..." style="margin-bottom:8px;">
-      <input type="text" class="tool-select" id="link-add-note" placeholder="Nota para el agente (opcional)">
-      <button class="tool-btn" id="link-add-btn" type="button">Agregar</button>
+      <input type="text" class="tool-select" id="link-add-input" placeholder="https://www.easybroker.com/mx/listings/...">
+      <button class="tool-btn secondary" id="link-process-btn" type="button">Procesar propiedad</button>
+      <div id="link-add-preview" style="display:none; margin-top:10px;">
+        <div class="prop-card" id="link-add-preview-card"></div>
+        <input type="text" class="tool-select" id="link-add-note" placeholder="Nota para el agente (opcional)" style="margin-top:8px;">
+        <button class="tool-btn" id="link-add-btn" type="button">Agregar a cliente</button>
+      </div>
       <div class="prop-assign-status" id="link-add-status" style="display:none;"></div>
     </div>
   </div>
@@ -1978,15 +1982,63 @@ async function boot(){
   wireTool('tool-legal-btn', 'tool-legal-input', 'tool-legal-result', window.tres65Sync.askLegal, 'Buscando...');
   wireTool('tool-link-btn', 'tool-link-input', 'tool-link-result', window.tres65Sync.summarizeLink, 'Leyendo...');
 
+  let resolvedLinkProperty = null;
+
+  document.getElementById('link-process-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('link-process-btn');
+    const input = document.getElementById('link-add-input');
+    const status = document.getElementById('link-add-status');
+    const preview = document.getElementById('link-add-preview');
+    const previewCard = document.getElementById('link-add-preview-card');
+    const url = input.value.trim();
+    if(!url) return;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    status.style.display = 'none';
+    preview.style.display = 'none';
+    try{
+      resolvedLinkProperty = await window.tres65Sync.resolverPropiedad(url);
+      previewCard.innerHTML = '';
+      const title = document.createElement('div');
+      title.className = 'prop-title';
+      title.textContent = resolvedLinkProperty.title || url;
+      previewCard.appendChild(title);
+      const meta = document.createElement('div');
+      meta.className = 'prop-meta';
+      meta.textContent = [resolvedLinkProperty.price, resolvedLinkProperty.location].filter(Boolean).join(' — ');
+      previewCard.appendChild(meta);
+      if(resolvedLinkProperty.commission){
+        const badges = document.createElement('div');
+        badges.className = 'prop-badges';
+        const badge = document.createElement('span');
+        badge.className = 'prop-badge';
+        badge.textContent = resolvedLinkProperty.commission;
+        badges.appendChild(badge);
+        previewCard.appendChild(badges);
+      }
+      preview.style.display = 'block';
+    }catch(err){
+      status.className = 'prop-assign-status err';
+      status.textContent = err.message || 'No pude procesar ese link.';
+      status.style.display = 'block';
+      resolvedLinkProperty = null;
+    }finally{
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
   document.getElementById('link-add-btn').addEventListener('click', async ()=>{
     const btn = document.getElementById('link-add-btn');
     const input = document.getElementById('link-add-input');
     const noteInput = document.getElementById('link-add-note');
     const status = document.getElementById('link-add-status');
+    const preview = document.getElementById('link-add-preview');
     const token = currentSearchClientToken();
     if(!token){ alert('Selecciona un cliente primero.'); return; }
-    const url = input.value.trim();
-    if(!url) return;
+    if(!resolvedLinkProperty) return;
+    const url = resolvedLinkProperty.url;
     const original = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Agregando...';
@@ -1999,6 +2051,8 @@ async function boot(){
       }
       input.value = '';
       noteInput.value = '';
+      preview.style.display = 'none';
+      resolvedLinkProperty = null;
       status.className = 'prop-assign-status ok';
       status.textContent = 'Propiedad agregada.';
       status.style.display = 'block';
