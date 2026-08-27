@@ -764,6 +764,8 @@
     <input type="email" id="eb-lead-manual-email" placeholder="lead@correo.com">
     <label for="eb-lead-manual-property">Link de la propiedad (opcional)</label>
     <input type="text" id="eb-lead-manual-property" placeholder="https://...">
+    <label for="eb-lead-manual-origen">De dónde entra el lead (opcional)</label>
+    <input type="text" id="eb-lead-manual-origen" placeholder="Ej. Mensaje desde el portal de EasyBroker">
     <label for="eb-lead-manual-agent">Asignar a</label>
     <select id="eb-lead-manual-agent"></select>
     <p class="modal-error" id="eb-lead-manual-error"></p>
@@ -1112,6 +1114,7 @@ async function renderMensajesEasyBroker(){
         document.getElementById('eb-lead-manual-phone').value = item.phone || '';
         document.getElementById('eb-lead-manual-email').value = item.email || '';
         document.getElementById('eb-lead-manual-property').value = item.property_url || '';
+        document.getElementById('eb-lead-manual-origen').value = 'Mensaje desde el portal de EasyBroker';
         if(item.agent_uid){
           document.getElementById('eb-lead-manual-agent').value = item.agent_uid;
         }
@@ -1880,7 +1883,7 @@ async function boot(){
     document.getElementById('eb-lead-manual-modal').classList.remove('open');
     document.getElementById('eb-lead-manual-error').style.display = 'none';
     document.getElementById('eb-lead-manual-success').style.display = 'none';
-    ['eb-lead-manual-name','eb-lead-manual-phone','eb-lead-manual-email','eb-lead-manual-property'].forEach(id=>{
+    ['eb-lead-manual-name','eb-lead-manual-phone','eb-lead-manual-email','eb-lead-manual-property','eb-lead-manual-origen'].forEach(id=>{
       document.getElementById(id).value = '';
     });
     ebLeadManualMensajeId = null;
@@ -1898,6 +1901,7 @@ async function boot(){
     const phone = document.getElementById('eb-lead-manual-phone').value.trim();
     const email = document.getElementById('eb-lead-manual-email').value.trim();
     const property_url = document.getElementById('eb-lead-manual-property').value.trim();
+    const origen = document.getElementById('eb-lead-manual-origen').value.trim();
     const agent_uid = document.getElementById('eb-lead-manual-agent').value;
 
     if(!name || !phone){
@@ -1908,7 +1912,7 @@ async function boot(){
     btn.disabled = true;
     btn.textContent = 'Creando...';
     try{
-      await window.tres65Sync.crearLeadManual({name, phone, email, property_url, agent_uid, mensaje_id: ebLeadManualMensajeId});
+      await window.tres65Sync.crearLeadManual({name, phone, email, property_url, origen, agent_uid, mensaje_id: ebLeadManualMensajeId});
       successEl.style.display = 'block';
       renderMensajesEasyBroker();
       setTimeout(closeEbLeadManualModal, 900);

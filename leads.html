@@ -323,6 +323,8 @@
     <input type="email" id="manual-lead-email" placeholder="lead@correo.com">
     <label for="manual-lead-property">Link de la propiedad (opcional)</label>
     <input type="text" id="manual-lead-property" placeholder="https://...">
+    <label for="manual-lead-origen">De dónde entra el lead (opcional)</label>
+    <input type="text" id="manual-lead-origen" placeholder="Ej. Referido de cliente, feria, redes sociales...">
     <label for="manual-lead-agent">Asignar a</label>
     <select id="manual-lead-agent"></select>
     <label for="manual-lead-notes">Notas (opcional)</label>
@@ -440,6 +442,14 @@ function buildLeadCard(lead){
     resumen.className = 'resumen-text';
     resumen.textContent = lead.resumen;
     card.appendChild(resumen);
+  }
+
+  if(lead.nota_manual){
+    const nota = document.createElement('p');
+    nota.className = 'resumen-text';
+    nota.style.whiteSpace = 'pre-line';
+    nota.textContent = lead.nota_manual;
+    card.appendChild(nota);
   }
 
   const attempts = lead.contact_attempts || [];
@@ -969,7 +979,7 @@ async function boot(){
     document.getElementById('manual-lead-modal').classList.remove('open');
     document.getElementById('manual-lead-error').textContent = '';
     document.getElementById('manual-lead-success').style.display = 'none';
-    ['manual-lead-name','manual-lead-phone','manual-lead-email','manual-lead-property','manual-lead-notes'].forEach(id=>{
+    ['manual-lead-name','manual-lead-phone','manual-lead-email','manual-lead-property','manual-lead-origen','manual-lead-notes'].forEach(id=>{
       document.getElementById(id).value = '';
     });
   }
@@ -991,6 +1001,7 @@ async function boot(){
     const phone = document.getElementById('manual-lead-phone').value.trim();
     const email = document.getElementById('manual-lead-email').value.trim();
     const property_url = document.getElementById('manual-lead-property').value.trim();
+    const origen = document.getElementById('manual-lead-origen').value.trim();
     const notes = document.getElementById('manual-lead-notes').value.trim();
     const agent_uid = document.getElementById('manual-lead-agent').value;
 
@@ -1002,7 +1013,7 @@ async function boot(){
     btn.disabled = true;
     btn.textContent = 'Creando...';
     try{
-      await window.tres65Sync.crearLeadManual({name, phone, email, property_url, notes, agent_uid});
+      await window.tres65Sync.crearLeadManual({name, phone, email, property_url, origen, notes, agent_uid});
       successEl.style.display = 'block';
       setTimeout(async ()=>{
         closeManualLeadModal();
