@@ -228,7 +228,7 @@ async function reactivarLead(conv_id){
 async function getLeadsPerdidos(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/leads-perdidos", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -240,7 +240,7 @@ async function getLeadsPerdidos(){
 async function getLeadsSinContactarCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/leads-sin-contactar-count", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -268,7 +268,7 @@ async function atenderMensajeEasyBroker(id){
 async function getLeadsPerdidosCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/leads-perdidos-count", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -280,7 +280,7 @@ async function getLeadsPerdidosCount(){
 async function getDirectorio(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/directorio", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -292,7 +292,7 @@ async function getDirectorio(){
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/leads-count", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -308,7 +308,7 @@ async function sendWelcomeMessage(token){
 async function getAgentTasks(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/tareas-agente", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -320,7 +320,7 @@ async function getAgentTasks(){
 async function getTareasPorCliente(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/tareas-por-cliente", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -346,7 +346,7 @@ async function deleteAgentTask(task_id){
 async function getLeadsPotenciales(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/leads-potenciales", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -358,7 +358,7 @@ async function getLeadsPotenciales(){
 async function listClients(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/mis-clientes", {
     headers: {"Authorization": "Bearer " + idToken}
   });
@@ -374,7 +374,7 @@ async function deleteClient(token, reason){
 async function createClient({client_name, client_phone, client_email, property_raw, agent_uid, confirm_duplicate}){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/crear-cliente", {
     method: "POST",
     headers: {"Content-Type": "application/json", "Authorization": "Bearer " + idToken},
@@ -388,7 +388,7 @@ async function createClient({client_name, client_phone, client_email, property_r
 async function _authedPost(path, payload){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + path, {
     method: "POST",
     headers: {"Content-Type": "application/json", "Authorization": "Bearer " + idToken},
@@ -444,7 +444,7 @@ async function shareAnalysis(client_token, url){
 async function getClientDetail(token){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/cliente-detalle/" + encodeURIComponent(token), {
     headers: {"Authorization": "Bearer " + idToken}
   });
