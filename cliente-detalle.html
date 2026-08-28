@@ -692,6 +692,15 @@ function buildPropertiesListCard(ficha, token){
     const row = document.createElement('div');
     row.className = 'property-list-item';
 
+    if(p.images && p.images[0]){
+      const img = document.createElement('img');
+      img.className = 'prop-thumb';
+      img.src = p.images[0];
+      img.alt = p.title || 'Propiedad';
+      img.loading = 'lazy';
+      row.appendChild(img);
+    }
+
     const headRow = document.createElement('div');
     headRow.style.display = 'flex';
     headRow.style.justifyContent = 'space-between';
@@ -752,6 +761,15 @@ function buildPropertiesListCard(ficha, token){
       const p = entry.data || {};
       const row = document.createElement('div');
       row.className = 'property-list-item';
+
+      if(p.images && p.images[0]){
+        const img = document.createElement('img');
+        img.className = 'prop-thumb';
+        img.src = p.images[0];
+        img.alt = p.title || 'Propiedad';
+        img.loading = 'lazy';
+        row.appendChild(img);
+      }
 
       const headRow = document.createElement('div');
       headRow.style.display = 'flex';
