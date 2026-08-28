@@ -148,13 +148,13 @@ if(window.lucide) lucide.createIcons();
 
 const API_BASE = 'https://agente-tres65-production.up.railway.app';
 const ROLE_BY_PHONE = {
-  '5219992786153': 'Asesora certificada',
-  '5219992399890': 'Asesor certificado',
-  '5219992413657': 'Asesor certificado'
+  '9992786153': 'Asesora certificada',
+  '9992399890': 'Asesor certificado',
+  '9992413657': 'Asesor certificado'
 };
 
 const BIO_BY_PHONE = {
-  '5219992413657': {
+  '9992413657': {
     years: '5+',
     photo: 'agente-guillermo.png',
     paragraphs: [
@@ -177,12 +177,13 @@ if(activeToken){
       if(!data.ok) return;
       const f = data.ficha;
       const digits = (f.agent_phone || '').replace(/\D/g, '');
+      const last10 = digits.slice(-10);
       document.getElementById('agent-name').textContent = f.agent_name || 'Tu agente';
-      document.getElementById('agent-role').textContent = ROLE_BY_PHONE[digits] || 'Asesor certificado';
+      document.getElementById('agent-role').textContent = ROLE_BY_PHONE[last10] || 'Asesor certificado';
       const waBtn = document.getElementById('agent-wa-btn');
       waBtn.href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
 
-      const bioInfo = BIO_BY_PHONE[digits];
+      const bioInfo = BIO_BY_PHONE[last10];
       if(bioInfo){
         const bioEl = document.querySelector('.bio');
         bioEl.innerHTML = bioInfo.paragraphs.map(p => '<p></p>').join('');
