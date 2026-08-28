@@ -1748,6 +1748,7 @@ async function boot(){
   document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
   document.getElementById('agents-toggle-label').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('agents-modal-title').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
+  document.getElementById('eb-mensajes-toggle-btn').style.display = session.isAdmin ? 'inline-flex' : 'none';
 
   if(session.isAdmin){
     const wrap = document.getElementById('agent-select-wrap');
@@ -2023,7 +2024,21 @@ async function boot(){
     btn.disabled = true;
     btn.textContent = 'Creando...';
     try{
-      const result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid});
+      let result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid});
+      if(!result.ok && result.duplicate){
+        const existing = result.existing || {};
+        const proceed = confirm(
+          'Ya existe un cliente con este teléfono: ' + (existing.client_name || 'sin nombre') +
+          (existing.agent_name ? ' (agente: ' + existing.agent_name + ')' : '') +
+          '.\n\n¿Quieres crear uno nuevo de todas formas?'
+        );
+        if(!proceed){
+          btn.disabled = false;
+          btn.textContent = 'Crear';
+          return;
+        }
+        result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid, confirm_duplicate: true});
+      }
       const linkEl = document.getElementById('modal-success-link');
       linkEl.href = result.link;
       linkEl.textContent = result.link;
