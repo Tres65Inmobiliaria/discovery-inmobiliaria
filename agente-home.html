@@ -319,6 +319,7 @@
     padding:14px;
     margin-bottom:10px;
   }
+  .prop-thumb{width:100%; height:130px; object-fit:cover; border-radius:6px; margin-bottom:8px; display:block;}
   .prop-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px; color:var(--profundo);}
   .prop-meta{font-size:12px; color:var(--texto-suave); margin:2px 0 6px;}
   .prop-link{display:block; font-size:12px; color:var(--acento); word-break:break-all;}
@@ -1602,6 +1603,15 @@ document.getElementById('tool-search-client').addEventListener('change', ()=>{
 function buildPropertyResultCard(p){
   const card = document.createElement('div');
   card.className = 'prop-card';
+
+  if(p.image){
+    const img = document.createElement('img');
+    img.className = 'prop-thumb';
+    img.src = p.image;
+    img.alt = p.title || 'Propiedad';
+    img.loading = 'lazy';
+    card.appendChild(img);
+  }
 
   const title = document.createElement('div');
   title.className = 'prop-title';
