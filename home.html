@@ -58,6 +58,11 @@
     margin:0 0 8px;
   }
   header p{color:var(--texto-suave); font-size:14px; margin:0;}
+  #client-info-banner{
+    display:none; font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600;
+    color:var(--acento); background:var(--menta); border-radius:20px; padding:4px 12px;
+    margin:0 0 10px;
+  }
 
   .email-widget{
     background:#F5E4E1;
@@ -297,6 +302,7 @@
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
     <h1>Tu progreso</h1>
+    <div id="client-info-banner"></div>
     <div id="email-widget-wrap"></div>
     <p>Aquí puedes ver en qué paso vas de tu proceso con nosotros.</p>
   </header>
@@ -661,6 +667,12 @@ async function init(){
   }
 
   renderEmailWidget(ficha);
+
+  if(ficha && ficha.client_name){
+    const banner = document.getElementById('client-info-banner');
+    banner.textContent = ficha.client_name + (ficha.client_phone ? ' · ' + ficha.client_phone : '');
+    banner.style.display = 'inline-block';
+  }
 
   const propertiesRow = document.getElementById('properties-row');
   if(propertyCount > 1) document.getElementById('wrap').classList.add('multi');
