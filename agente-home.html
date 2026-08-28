@@ -526,7 +526,7 @@
   .modal-success{color:var(--acento); font-size:12px; margin:-6px 0 12px; display:none;}
 </style>
 </head>
-<body>
+<body style="display:none;">
 <div class="wrap">
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
@@ -1742,6 +1742,7 @@ async function boot(){
     window.location.href = 'agente-login.html';
     return;
   }
+  document.body.style.display = '';
   currentSession = session;
 
   document.getElementById('who-name').textContent = session.email;

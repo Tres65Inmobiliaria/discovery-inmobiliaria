@@ -210,7 +210,7 @@
   .lost-reason strong{color:#C0453A;}
 </style>
 </head>
-<body>
+<body style="display:none;">
 <div class="wrap">
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
@@ -905,6 +905,7 @@ async function boot(){
     window.location.href = 'agente-login.html';
     return;
   }
+  document.body.style.display = '';
   document.getElementById('who-name').textContent = session.email;
   document.getElementById('who-role').textContent = session.isAdmin ? 'Admin' : 'Agente';
 
