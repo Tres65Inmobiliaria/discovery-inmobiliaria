@@ -739,6 +739,22 @@ function buildPropertiesListCard(ficha, token){
       row.appendChild(badge);
     }
 
+    if(entry.tour_interest === 'si' || entry.tour_interest === 'no'){
+      const tourBadge = document.createElement('span');
+      tourBadge.className = 'prop-badge';
+      tourBadge.style.marginLeft = '6px';
+      if(entry.tour_interest === 'si'){
+        tourBadge.style.background = 'var(--acento)';
+        tourBadge.style.color = '#fff';
+        tourBadge.textContent = 'Cliente: quiere visitarla';
+      } else {
+        tourBadge.style.background = '#F5E4E1';
+        tourBadge.style.color = '#C0453A';
+        tourBadge.textContent = 'Cliente: no le interesa';
+      }
+      row.appendChild(tourBadge);
+    }
+
     const link = document.createElement('a');
     link.className = 'prop-link';
     link.href = entry.url;
