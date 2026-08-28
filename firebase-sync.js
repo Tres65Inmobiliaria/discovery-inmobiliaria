@@ -252,7 +252,7 @@ async function getLeadsSinContactarCount(){
 async function getMensajesEasyBroker(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
-  const idToken = await user.getIdToken();
+  const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/mensajes-easybroker", {
     headers: {"Authorization": "Bearer " + idToken}
   });
