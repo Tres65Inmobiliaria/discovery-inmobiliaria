@@ -598,7 +598,7 @@ function buildBuyerProfileCard(progress){
   return card;
 }
 
-function buildInfoCard(ficha){
+function buildInfoCard(ficha, token){
   const card = document.createElement('div');
   card.className = 'card';
   const title = document.createElement('div');
@@ -618,6 +618,18 @@ function buildInfoCard(ficha){
     row.querySelector('.value').textContent = value || '—';
     card.appendChild(row);
   });
+
+  const discoveryLink = document.createElement('a');
+  discoveryLink.className = 'analysis-btn';
+  discoveryLink.style.display = 'block';
+  discoveryLink.style.marginTop = '12px';
+  discoveryLink.style.textAlign = 'center';
+  discoveryLink.style.textDecoration = 'none';
+  discoveryLink.href = 'index.html?client=' + encodeURIComponent(token) + '&agent=1';
+  discoveryLink.target = '_blank';
+  discoveryLink.rel = 'noopener';
+  discoveryLink.textContent = 'Llenar Discovery (por teléfono)';
+  card.appendChild(discoveryLink);
 
   return card;
 }
@@ -1045,7 +1057,7 @@ async function refreshClientContent(token){
 
   const content = document.getElementById('content');
   content.innerHTML = '';
-  content.appendChild(buildInfoCard(ficha));
+  content.appendChild(buildInfoCard(ficha, token));
   const buyerCard = buildBuyerProfileCard(progress);
   if(buyerCard) content.appendChild(buyerCard);
   const propCard = buildPropertyCard(ficha);

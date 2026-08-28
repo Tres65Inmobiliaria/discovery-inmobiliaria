@@ -48,6 +48,16 @@
   }
   .top-back-link:hover{color:var(--acento);}
   .top-back-link svg{width:16px; height:16px;}
+  #agent-mode-banner{
+    background:var(--profundo); color:#fff;
+    font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600;
+    border-radius:8px; padding:10px 14px; margin-bottom:16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  #agent-mode-banner .tag{
+    background:rgba(255,255,255,.2); font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.5px; padding:2px 8px; border-radius:20px;
+  }
   header{text-align:center;margin-bottom:48px;}
   header .logo{
     display:block;
@@ -347,6 +357,8 @@
 <div class="wrap">
 
   <a class="top-back-link" href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg> Volver</a>
+
+  <div id="agent-mode-banner" style="display:none;"></div>
 
   <header>
     <img src="LOGO_INMOBILIARIA_3.png" alt="Tres65 Inmobiliaria" class="logo">
@@ -826,9 +838,10 @@ function renderQuestion(q, index, container){
   }
 
   if(q.text){
-    const t = document.createElement('textarea');
+    const t = document.createElement(q.numeric ? 'input' : 'textarea');
+    if(q.numeric) t.type = 'number';
     t.placeholder = displayPlaceholder(q);
-    t.style.minHeight = '64px';
+    if(!q.numeric) t.style.minHeight = '64px';
     t.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
     t.addEventListener('keydown', e=>{
       if(e.key === 'Enter' && !e.shiftKey){
@@ -908,6 +921,37 @@ const urlClientToken = new URLSearchParams(window.location.search).get('client')
 if(urlClientToken) localStorage.setItem('tres65_client_token', urlClientToken);
 const activeClientToken = urlClientToken || localStorage.getItem('tres65_client_token');
 let tres65Uid = null;
+
+const isAgentMode = new URLSearchParams(window.location.search).get('agent') === '1';
+if(isAgentMode){
+  [
+    {id:'presupuesto_compra', placeholder:'Monto exacto en pesos (MXN), ej. 3,500,000'},
+    {id:'presupuesto_renta', placeholder:'Monto exacto mensual en pesos (MXN), ej. 25,000'},
+  ].forEach(({id, placeholder})=>{
+    const q = b1.find(x => x.id === id);
+    if(q){
+      delete q.options;
+      delete q.optionIcons;
+      q.text = true;
+      q.numeric = true;
+      q.placeholder = placeholder;
+    }
+  });
+
+  if(activeClientToken){
+    fetch('https://agente-tres65-production.up.railway.app/portal/ficha/' + activeClientToken)
+      .then(r => r.json())
+      .then(data => {
+        if(!data.ok) return;
+        const f = data.ficha;
+        const banner = document.getElementById('agent-mode-banner');
+        banner.innerHTML = '<span class="tag">Modo agente</span> Llenando para: ' +
+          (f.client_name || 'Sin nombre') + (f.client_phone ? ' · ' + f.client_phone : '');
+        banner.style.display = 'flex';
+      })
+      .catch(e => console.error('[Discovery] error consultando ficha en modo agente:', e));
+  }
+}
 
 function waitForSync(){
   return new Promise(resolve=>{
@@ -1115,7 +1159,8 @@ async function finalizeProfile(){
     });
     const data = await res.json();
     if(!data.ok) throw new Error(data.error || 'error');
-    showReport(data.perfil, data.keywords, data.perfil_comprador, data.prioridad);
+    const perfilFinal = isAgentMode ? ('**Llenado por agente.**\n\n' + data.perfil) : data.perfil;
+    showReport(perfilFinal, data.keywords, data.perfil_comprador, data.prioridad);
   }catch(e){
     console.error('[Discovery] error generando perfil:', e);
     alert('Tuvimos un problema técnico generando tu perfil. \nPor favor intenta de nuevo en un momento.');
