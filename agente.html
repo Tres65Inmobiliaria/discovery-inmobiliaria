@@ -153,6 +153,17 @@ const ROLE_BY_PHONE = {
   '5219992413657': 'Asesor certificado'
 };
 
+const BIO_BY_PHONE = {
+  '5219992413657': {
+    years: '5+',
+    paragraphs: [
+      'Soy Guillermo Martínez, asesor inmobiliario con más de cinco años de experiencia en Yucatán, Quintana Roo y Ciudad de México. Soy licenciado en Administración de Empresas y cuento con una maestría en Mercadotecnia, especialidad en Evaluación Inmobiliaria y certificación en la NOM-247.',
+      'Me gusta conocer personalmente a cada cliente, entender lo que realmente necesita y acompañarlo durante todo el proceso, desde la búsqueda de propiedades hasta la firma de escrituras. Mi objetivo es ayudarle a ahorrar tiempo, tomar decisiones informadas y encontrar una propiedad que verdaderamente se adapte a su estilo de vida o inversión.',
+      'Fuera del trabajo, disfruto jugar pádel y, sobre todo, ser el feliz papá de una hermosa adolescente.'
+    ]
+  }
+};
+
 const clientToken = new URLSearchParams(window.location.search).get('client');
 if(clientToken){
   localStorage.setItem('tres65_client_token', clientToken);
@@ -170,6 +181,16 @@ if(activeToken){
       document.getElementById('agent-role').textContent = ROLE_BY_PHONE[digits] || 'Asesor certificado';
       const waBtn = document.getElementById('agent-wa-btn');
       waBtn.href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
+
+      const bioInfo = BIO_BY_PHONE[digits];
+      if(bioInfo){
+        const bioEl = document.querySelector('.bio');
+        bioEl.innerHTML = bioInfo.paragraphs.map(p => '<p></p>').join('');
+        bioEl.querySelectorAll('p').forEach((p, i) => { p.textContent = bioInfo.paragraphs[i]; });
+        if(bioInfo.years){
+          document.querySelector('.stat .num').textContent = bioInfo.years;
+        }
+      }
     })
     .catch(e => console.error('[Agente] error consultando ficha:', e));
 }
