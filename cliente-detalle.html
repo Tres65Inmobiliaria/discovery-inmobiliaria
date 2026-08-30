@@ -620,6 +620,17 @@ function buildInfoCard(ficha, token){
     card.appendChild(row);
   });
 
+  const portalRow = document.createElement('div');
+  portalRow.className = 'info-row';
+  portalRow.innerHTML = '<span class="label">Link de su perfil</span><span class="value"></span>';
+  const portalLink = document.createElement('a');
+  portalLink.href = 'home.html?client=' + encodeURIComponent(token);
+  portalLink.target = '_blank';
+  portalLink.rel = 'noopener';
+  portalLink.textContent = 'Ver portal del cliente';
+  portalRow.querySelector('.value').appendChild(portalLink);
+  card.appendChild(portalRow);
+
   const discoveryLink = document.createElement('a');
   discoveryLink.className = 'analysis-btn';
   discoveryLink.style.display = 'block';
