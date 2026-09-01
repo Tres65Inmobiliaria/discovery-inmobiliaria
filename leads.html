@@ -325,8 +325,10 @@
     <input type="text" id="manual-lead-property" placeholder="https://...">
     <label for="manual-lead-origen">De dónde entra el lead (opcional)</label>
     <input type="text" id="manual-lead-origen" placeholder="Ej. Referido de cliente, feria, redes sociales...">
-    <label for="manual-lead-agent">Asignar a</label>
-    <select id="manual-lead-agent"></select>
+    <div id="manual-lead-agent-wrap">
+      <label for="manual-lead-agent">Asignar a</label>
+      <select id="manual-lead-agent"></select>
+    </div>
     <label for="manual-lead-notes">Notas (opcional)</label>
     <textarea id="manual-lead-notes" placeholder="Cualquier detalle que le sirva al agente..." style="width:100%; font-family:'Raleway',sans-serif; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid var(--borde); background:#fff; color:var(--texto); margin-bottom:14px; min-height:70px; resize:vertical;"></textarea>
     <p class="modal-error" id="manual-lead-error"></p>
@@ -861,7 +863,7 @@ function setView(view){
     subtitle.textContent = 'Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"';
     label.textContent = 'Ver leads perdidos';
   }
-  document.getElementById('add-manual-lead-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
+  document.getElementById('add-manual-lead-btn').style.display = (view === 'activos') ? 'inline-flex' : 'none';
   document.getElementById('round-robin-potencial-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('round-robin-listo-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('perdidos-search-wrap').style.display = (view === 'perdidos') ? 'block' : 'none';
@@ -927,6 +929,8 @@ async function boot(){
       opt.textContent = a.name;
       manualAgentSelect.appendChild(opt);
     });
+  } else {
+    document.getElementById('manual-lead-agent-wrap').style.display = 'none';
   }
 
   const initialView = new URLSearchParams(window.location.search).get('view') === 'perdidos' ? 'perdidos' : 'activos';
@@ -1004,7 +1008,7 @@ async function boot(){
     const property_url = document.getElementById('manual-lead-property').value.trim();
     const origen = document.getElementById('manual-lead-origen').value.trim();
     const notes = document.getElementById('manual-lead-notes').value.trim();
-    const agent_uid = document.getElementById('manual-lead-agent').value;
+    const agent_uid = session.isAdmin ? document.getElementById('manual-lead-agent').value : session.uid;
 
     if(!name || !phone){
       errorEl.textContent = 'Falta el nombre o el teléfono.';
