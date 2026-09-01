@@ -1120,6 +1120,9 @@ b2.forEach((q,i)=>makeQuestionPage(q,i));
 let currentPage = 0;
 
 function showPage(){
+  if(typeof fbq === 'function'){
+    fbq('trackCustom', 'DiscoveryStep', {step: currentPage, total: pages.length});
+  }
   pageEls.forEach((el,i)=>{ el.style.display = (i===currentPage ? 'block' : 'none'); });
   const isFirst = currentPage === 0;
   const isLast = currentPage === pages.length-1;
