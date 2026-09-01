@@ -399,6 +399,8 @@
       <button id="note-btn" type="button">Agregar tarea</button>
     </div>
   </div>
+
+  <div id="sale-closed-container"></div>
 </div>
 
 <script>
@@ -1120,6 +1122,53 @@ function renderNotes(notes, token){
   });
 }
 
+function buildSaleClosedCard(ficha, token){
+  const card = document.createElement('div');
+  card.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'card-title';
+  title.innerHTML = '<i data-lucide="badge-check"></i> Venta';
+  card.appendChild(title);
+
+  if(ficha.sale_closed){
+    const note = document.createElement('div');
+    note.style.color = 'var(--listo)';
+    note.style.fontFamily = "'Montserrat',sans-serif";
+    note.style.fontWeight = '600';
+    note.style.fontSize = '13px';
+    const monto = Number(ficha.sale_amount || 0).toLocaleString('es-MX', {style:'currency', currency:'MXN', maximumFractionDigits:0});
+    note.textContent = 'Venta cerrada — ' + monto + (ficha.sale_closed_at ? ' (' + fmtDate(ficha.sale_closed_at) + ')' : '');
+    card.appendChild(note);
+  }
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'analysis-btn';
+  btn.style.display = 'block';
+  btn.style.marginTop = ficha.sale_closed ? '10px' : '0';
+  btn.textContent = ficha.sale_closed ? 'Corregir monto' : 'Venta cerrada';
+  btn.addEventListener('click', async ()=>{
+    const raw = prompt('¿Con qué monto se cerró la venta? (solo el número, en pesos)', ficha.sale_amount || '');
+    if(raw === null) return;
+    const amount = parseFloat(raw.replace(/[^0-9.]/g, ''));
+    if(!amount || amount <= 0){
+      alert('Monto inválido.');
+      return;
+    }
+    btn.disabled = true;
+    try{
+      await window.tres65Sync.markSaleClosed(token, amount);
+      await refreshClientContent(token);
+    }catch(err){
+      alert(err.message || 'Error guardando la venta cerrada.');
+      btn.disabled = false;
+    }
+  });
+  card.appendChild(btn);
+
+  return card;
+}
+
 async function refreshClientContent(token){
   const data = await window.tres65Sync.getClientDetail(token);
   const {ficha, progress, notes} = data;
@@ -1136,6 +1185,10 @@ async function refreshClientContent(token){
   const propsListCard = buildPropertiesListCard(ficha, token);
   if(propsListCard) content.appendChild(propsListCard);
   content.appendChild(buildProgressCard(progress));
+
+  const saleContainer = document.getElementById('sale-closed-container');
+  saleContainer.innerHTML = '';
+  saleContainer.appendChild(buildSaleClosedCard(ficha, token));
 
   renderNotes(notes, token);
   if(window.lucide) lucide.createIcons();

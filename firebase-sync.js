@@ -371,6 +371,10 @@ async function deleteClient(token, reason){
   return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/eliminar", {reason});
 }
 
+async function markSaleClosed(token, amount){
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/venta-cerrada", {amount});
+}
+
 async function createClient({client_name, client_phone, client_email, property_raw, agent_uid, confirm_duplicate}){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -482,7 +486,7 @@ window.tres65Sync = {
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio,
-  getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail,
+  getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
