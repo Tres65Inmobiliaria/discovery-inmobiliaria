@@ -685,6 +685,8 @@ async function init(){
 
   renderEmailWidget(ficha);
 
+  if(activeToken) window.tres65Sync.sendPixelIds(activeToken);
+
   if(ficha && ficha.client_name){
     const banner = document.getElementById('client-info-banner');
     banner.textContent = ficha.client_name + (ficha.client_phone ? ' · ' + ficha.client_phone : '');

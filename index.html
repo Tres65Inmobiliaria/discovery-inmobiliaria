@@ -1326,6 +1326,7 @@ document.getElementById('privacidad-continuar').addEventListener('click', async 
   await waitForSync();
   tres65Uid = await window.tres65Sync.init(activeClientToken);
   if(tres65Uid) await window.tres65Sync.pull(tres65Uid);
+  if(activeClientToken) window.tres65Sync.sendPixelIds(activeClientToken);
 
   const privacyAccepted = localStorage.getItem('tres65_privacy_accepted') === 'true';
   if(!privacyAccepted){

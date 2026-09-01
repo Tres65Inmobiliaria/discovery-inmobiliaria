@@ -170,6 +170,24 @@ async function addClientEmail(token, email){
   return data;
 }
 
+function _readCookie(name){
+  const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return match ? match.pop() : null;
+}
+
+async function sendPixelIds(token){
+  const fbp = _readCookie('_fbp');
+  const fbc = _readCookie('_fbc');
+  if(!fbp && !fbc) return;
+  try{
+    await fetch(API_BASE + "/portal/ficha/" + encodeURIComponent(token) + "/pixel-ids", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({fbp, fbc})
+    });
+  }catch(e){ console.error('[Pixel] error guardando fbp/fbc:', e); }
+}
+
 async function signInAgent(email, password){
   const cred = await signInWithEmailAndPassword(auth, email, password);
   return cred.user.uid;
@@ -486,7 +504,7 @@ window.tres65Sync = {
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio,
-  getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed,
+  getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));
