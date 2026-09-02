@@ -510,6 +510,9 @@
   .modal-save:disabled{opacity:.6;}
   .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
   .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
+  .directorio-delete-x{width:26px; height:26px; border-radius:50%; border:1px solid #F5E4E1; background:#F5E4E1; color:#C0453A; font-size:16px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .directorio-delete-x:hover{background:#EFD3CE;}
+  .directorio-delete-x:disabled{opacity:.6; cursor:default;}
 
   .delete-reason-options{display:flex; flex-direction:column; gap:8px; margin-bottom:6px;}
   .delete-reason-btn{
@@ -1363,21 +1366,22 @@ async function renderDirectorio(){
     }
     if(e.source === 'manual' && currentSession && currentSession.isAdmin){
       const delBtn = document.createElement('button');
-      delBtn.className = 'search-btn secondary';
-      delBtn.style.fontSize = '12px';
-      delBtn.style.padding = '4px 10px';
-      delBtn.textContent = 'Borrar';
+      delBtn.className = 'directorio-delete-x';
+      delBtn.title = 'Borrar para siempre';
+      delBtn.setAttribute('aria-label', 'Borrar para siempre');
+      delBtn.textContent = '×';
       delBtn.onclick = async ()=>{
-        if(!confirm('¿Borrar "' + e.name + '" del directorio?')) return;
+        const ok = confirm('¿Borrar a "' + e.name + '" del directorio?\n\nEsta acción es DEFINITIVA: se borra para siempre de la base de datos (no solo del dashboard) y no se puede deshacer.');
+        if(!ok) return;
         delBtn.disabled = true;
-        delBtn.textContent = 'Borrando...';
+        delBtn.textContent = '…';
         try{
           await window.tres65Sync.deleteDirectorioManual(e.manual_id);
           renderDirectorio();
         }catch(err){
           alert(err.message || 'Error borrando la entrada.');
           delBtn.disabled = false;
-          delBtn.textContent = 'Borrar';
+          delBtn.textContent = '×';
         }
       };
       actionTd.appendChild(delBtn);
