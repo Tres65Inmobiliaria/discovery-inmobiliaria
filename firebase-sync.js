@@ -307,6 +307,18 @@ async function getDirectorio(){
   return data.entries;
 }
 
+async function addDirectorioManual(entry){
+  return _authedPost("/portal/directorio/agregar", entry);
+}
+
+async function importDirectorioCsv(entries, agent_uid){
+  return _authedPost("/portal/directorio/importar", {entries, agent_uid});
+}
+
+async function deleteDirectorioManual(manual_id){
+  return _authedPost("/portal/directorio/" + encodeURIComponent(manual_id) + "/borrar", {});
+}
+
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -503,7 +515,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual,
   getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

@@ -782,7 +782,36 @@
   <div class="modal-card" style="max-width:760px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
     <h3>Directorio</h3>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="search-btn secondary" id="directorio-add-manual-btn" type="button" style="font-size:12px; padding:6px 12px;">+ Agregar manual</button>
+      <button class="search-btn secondary" id="directorio-import-csv-btn" type="button" style="font-size:12px; padding:6px 12px;">Importar CSV</button>
+      <input type="file" id="directorio-csv-input" accept=".csv" style="display:none;">
+    </div>
+    <p class="modal-error" id="directorio-import-status" style="display:none;"></p>
     <div id="directorio-body" style="max-height:70vh; overflow:auto;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="directorio-manual-modal">
+  <div class="modal-card" style="max-width:420px;">
+    <button class="modal-close" id="directorio-manual-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Agregar al directorio</h3>
+    <label for="directorio-manual-name">Nombre completo</label>
+    <input type="text" id="directorio-manual-name" placeholder="Nombre del contacto">
+    <label for="directorio-manual-phone">Teléfono</label>
+    <input type="text" id="directorio-manual-phone" placeholder="9991234567">
+    <label for="directorio-manual-email">Correo (opcional)</label>
+    <input type="email" id="directorio-manual-email" placeholder="contacto@correo.com">
+    <label for="directorio-manual-status">Estado (opcional)</label>
+    <input type="text" id="directorio-manual-status" placeholder="Ej. Cliente potencial">
+    <label for="directorio-manual-agent" id="directorio-manual-agent-label">Asignar a</label>
+    <select id="directorio-manual-agent"></select>
+    <p class="modal-error" id="directorio-manual-error"></p>
+    <p class="modal-success" id="directorio-manual-success" style="display:none;">Agregado al directorio.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="directorio-manual-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="directorio-manual-save" type="button">Agregar</button>
+    </div>
   </div>
 </div>
 
@@ -1305,13 +1334,14 @@ async function renderDirectorio(){
   const tbody = document.createElement('tbody');
   entries.forEach(e=>{
     const tr = document.createElement('tr');
-    [e.name, e.phone, e.email, e.status, e.assignee_name || 'Sin asignar'].forEach(val=>{
+    const statusDisplay = e.source === 'manual' ? (e.status || 'Cliente potencial') + ' (manual)' : e.status;
+    [e.name, e.phone, e.email, statusDisplay, e.assignee_name || 'Sin asignar'].forEach(val=>{
       const td = document.createElement('td');
       td.textContent = val || '—';
       tr.appendChild(td);
     });
     const actionTd = document.createElement('td');
-    if(e.status === 'Perdido'){
+    if(e.status === 'Perdido' && e.source !== 'manual'){
       const btn = document.createElement('button');
       btn.className = 'search-btn secondary';
       btn.style.fontSize = '12px';
@@ -1330,6 +1360,27 @@ async function renderDirectorio(){
         }
       };
       actionTd.appendChild(btn);
+    }
+    if(e.source === 'manual' && currentSession && currentSession.isAdmin){
+      const delBtn = document.createElement('button');
+      delBtn.className = 'search-btn secondary';
+      delBtn.style.fontSize = '12px';
+      delBtn.style.padding = '4px 10px';
+      delBtn.textContent = 'Borrar';
+      delBtn.onclick = async ()=>{
+        if(!confirm('¿Borrar "' + e.name + '" del directorio?')) return;
+        delBtn.disabled = true;
+        delBtn.textContent = 'Borrando...';
+        try{
+          await window.tres65Sync.deleteDirectorioManual(e.manual_id);
+          renderDirectorio();
+        }catch(err){
+          alert(err.message || 'Error borrando la entrada.');
+          delBtn.disabled = false;
+          delBtn.textContent = 'Borrar';
+        }
+      };
+      actionTd.appendChild(delBtn);
     }
     tr.appendChild(actionTd);
     tbody.appendChild(tr);
@@ -1874,6 +1925,109 @@ async function boot(){
   });
   document.getElementById('directorio-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('directorio-modal').classList.remove('open');
+  });
+
+  if(session.isAdmin){
+    const dirAgentSelect = document.getElementById('directorio-manual-agent');
+    AGENTS.forEach(a=>{
+      const opt = document.createElement('option');
+      opt.value = a.uid;
+      opt.textContent = a.name;
+      dirAgentSelect.appendChild(opt);
+    });
+  } else {
+    document.getElementById('directorio-manual-agent-label').style.display = 'none';
+    document.getElementById('directorio-manual-agent').style.display = 'none';
+  }
+
+  function closeDirectorioManualModal(){
+    document.getElementById('directorio-manual-modal').classList.remove('open');
+    document.getElementById('directorio-manual-error').style.display = 'none';
+    document.getElementById('directorio-manual-success').style.display = 'none';
+    ['directorio-manual-name','directorio-manual-phone','directorio-manual-email','directorio-manual-status'].forEach(id=>{
+      document.getElementById(id).value = '';
+    });
+  }
+  document.getElementById('directorio-add-manual-btn').addEventListener('click', ()=>{
+    document.getElementById('directorio-manual-modal').classList.add('open');
+  });
+  document.getElementById('directorio-manual-modal-close-x').addEventListener('click', closeDirectorioManualModal);
+  document.getElementById('directorio-manual-cancel').addEventListener('click', closeDirectorioManualModal);
+  document.getElementById('directorio-manual-save').addEventListener('click', async ()=>{
+    const btn = document.getElementById('directorio-manual-save');
+    const errorEl = document.getElementById('directorio-manual-error');
+    const successEl = document.getElementById('directorio-manual-success');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    const name = document.getElementById('directorio-manual-name').value.trim();
+    const phone = document.getElementById('directorio-manual-phone').value.trim();
+    const email = document.getElementById('directorio-manual-email').value.trim();
+    const status = document.getElementById('directorio-manual-status').value.trim();
+    const agent_uid = document.getElementById('directorio-manual-agent').value;
+
+    if(!name || !phone){
+      errorEl.textContent = 'Falta el nombre o el teléfono.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Agregando...';
+    try{
+      await window.tres65Sync.addDirectorioManual({name, phone, email, status, agent_uid});
+      successEl.style.display = 'block';
+      renderDirectorio();
+      setTimeout(closeDirectorioManualModal, 900);
+    }catch(err){
+      errorEl.textContent = err.message || 'Error agregando la entrada.';
+      errorEl.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Agregar';
+  });
+
+  document.getElementById('directorio-import-csv-btn').addEventListener('click', ()=>{
+    document.getElementById('directorio-csv-input').click();
+  });
+  document.getElementById('directorio-csv-input').addEventListener('change', async (ev)=>{
+    const file = ev.target.files[0];
+    ev.target.value = '';
+    if(!file) return;
+    const statusEl = document.getElementById('directorio-import-status');
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Leyendo archivo...';
+    try{
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l=>l.trim().length);
+      if(lines.length < 2){
+        statusEl.textContent = 'El CSV no tiene filas para importar (¿le falta el encabezado?).';
+        return;
+      }
+      const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
+      const idxName = headers.findIndex(h=>['nombre','name'].includes(h));
+      const idxPhone = headers.findIndex(h=>['telefono','teléfono','phone'].includes(h));
+      const idxEmail = headers.findIndex(h=>['correo','email'].includes(h));
+      const idxStatus = headers.findIndex(h=>['estado','status'].includes(h));
+      if(idxName === -1 || idxPhone === -1){
+        statusEl.textContent = 'El CSV necesita al menos columnas "nombre" y "telefono".';
+        return;
+      }
+      const entries = lines.slice(1).map(line=>{
+        const cols = line.split(',').map(c=>c.trim());
+        return {
+          name: cols[idxName] || '', phone: cols[idxPhone] || '',
+          email: idxEmail > -1 ? (cols[idxEmail] || '') : '',
+          status: idxStatus > -1 ? (cols[idxStatus] || '') : '',
+        };
+      });
+      const agent_uid = session.isAdmin ? document.getElementById('directorio-manual-agent').value : undefined;
+      statusEl.textContent = 'Importando ' + entries.length + ' filas...';
+      const result = await window.tres65Sync.importDirectorioCsv(entries, agent_uid);
+      statusEl.textContent = 'Importadas ' + result.added + ' filas' + (result.skipped ? ', ' + result.skipped + ' con error/vacías' : '') + '.';
+      renderDirectorio();
+    }catch(err){
+      statusEl.textContent = err.message || 'Error importando el CSV.';
+    }
   });
 
   document.getElementById('eb-mensajes-toggle-btn').addEventListener('click', ()=>{
