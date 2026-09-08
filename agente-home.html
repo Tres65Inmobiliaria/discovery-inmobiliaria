@@ -127,6 +127,32 @@
   }
   .client-tag.discarded{background:#F5E4E1; color:#C0453A;}
 
+  .pipeline-scroll{
+    display:flex; gap:16px; overflow-x:auto; padding-bottom:14px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .pipeline-col{flex:0 0 260px; width:260px;}
+  .pipeline-col-head{
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:12px; padding-bottom:8px;
+    border-bottom:2px solid var(--borde);
+  }
+  .pipeline-col-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+  .pipeline-col-title{
+    font-family:'Montserrat',sans-serif; font-weight:600; font-size:13px;
+    color:var(--profundo); flex:1;
+  }
+  .pipeline-col-count{
+    font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px;
+    color:var(--texto-suave); background:var(--menta);
+    border-radius:20px; padding:2px 8px;
+  }
+  .pipeline-col-empty{font-size:12px; color:var(--texto-suave); font-style:italic;}
+  .pipeline-col .client-card{
+    flex-direction:column; align-items:stretch; gap:10px;
+  }
+  .pipeline-col .client-tag{align-self:flex-start;}
+
   .funnel{margin-bottom:14px;}
   .funnel-row{margin-bottom:10px;}
   .funnel-label{
@@ -925,6 +951,54 @@ let clientsCache = [];
 const FUNNEL_STAGES = ['Conociendo a su agente', 'En discovery', 'Esperando propiedad', 'Con propiedad'];
 const FUNNEL_COLORS = ['#1A4F5C', '#1E7A6E', '#2AA898', '#5FC3B4'];
 
+// Mismas etapas del embudo + "Propiedad descartada" (única que el embudo no
+// cuenta aparte) para que el pipeline no se coma a ningún cliente.
+const PIPELINE_STAGES = FUNNEL_STAGES.concat(['Propiedad descartada']);
+const PIPELINE_COLORS = FUNNEL_COLORS.concat(['#C0453A']);
+
+function renderClientsPipeline(clients, onDelete){
+  const list = document.getElementById('clients-list');
+  list.innerHTML = '';
+  if(!clients.length){
+    list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
+    return;
+  }
+  const scroll = document.createElement('div');
+  scroll.className = 'pipeline-scroll';
+  PIPELINE_STAGES.forEach((stage, i)=>{
+    const inStage = clients.filter(c => (c.status || 'Conociendo a su agente') === stage);
+    const col = document.createElement('div');
+    col.className = 'pipeline-col';
+
+    const head = document.createElement('div');
+    head.className = 'pipeline-col-head';
+    const dot = document.createElement('span');
+    dot.className = 'pipeline-col-dot';
+    dot.style.background = PIPELINE_COLORS[i];
+    const title = document.createElement('span');
+    title.className = 'pipeline-col-title';
+    title.textContent = stage;
+    const count = document.createElement('span');
+    count.className = 'pipeline-col-count';
+    count.textContent = String(inStage.length);
+    head.appendChild(dot);
+    head.appendChild(title);
+    head.appendChild(count);
+    col.appendChild(head);
+
+    if(!inStage.length){
+      const empty = document.createElement('p');
+      empty.className = 'pipeline-col-empty';
+      empty.textContent = 'Sin clientes aquí';
+      col.appendChild(empty);
+    } else {
+      inStage.forEach(c => col.appendChild(buildClientCard(c, onDelete)));
+    }
+    scroll.appendChild(col);
+  });
+  list.appendChild(scroll);
+}
+
 let inactiveClientsCache = [];
 let deletedSummaryCache = [];
 let sinContactarCache = [];
@@ -1261,18 +1335,14 @@ async function loadClients(session){
   populateClientSelect();
   if(window.lucide) lucide.createIcons();
   if(session.isAdmin) return;
-  if(!clientsCache.length){
-    list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
-    return;
-  }
-  clientsCache.forEach(c => list.appendChild(buildClientCard(c, async (token, reason)=>{
+  renderClientsPipeline(clientsCache, async (token, reason)=>{
     try{
       await window.tres65Sync.deleteClient(token, reason);
       await loadClients(session);
     }catch(err){
       alert(err.message || 'Error eliminando el cliente.');
     }
-  })));
+  });
 }
 
 function fmtTaskDate(iso){
