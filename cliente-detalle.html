@@ -172,6 +172,7 @@
   .pretour-actions-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
   .pretour-actions-row .analysis-btn.secondary{margin-left:0;}
   .pretour-correct-box{margin-top:10px;}
+  .pretour-correct-hint{font-size:11.5px; color:var(--texto-suave); margin:0 0 6px;}
   .pretour-correct-box textarea{
     width:100%; min-height:60px; padding:8px 10px; border:1px solid var(--borde);
     border-radius:6px; font-family:'Raleway',sans-serif; font-size:13px; color:var(--texto);
@@ -587,8 +588,13 @@ function renderPretourPanel(container, ficha, token, url){
   correctBox.style.display = 'none';
   container.appendChild(correctBox);
 
+  const correctHint = document.createElement('p');
+  correctHint.className = 'pretour-correct-hint';
+  correctHint.textContent = 'Esto también relee las propiedades agregadas o marcadas sin interés de arriba, y el Discovery del cliente — deja el cuadro vacío si solo quieres actualizar con eso.';
+  correctBox.appendChild(correctHint);
+
   const correctInput = document.createElement('textarea');
-  correctInput.placeholder = 'Ej: quita la casa de Cholul, sube el presupuesto a 9 millones...';
+  correctInput.placeholder = 'Ej: el presupuesto real es de 4 a 4.5 millones, corrige el tono...';
   correctBox.appendChild(correctInput);
 
   const correctActions = document.createElement('div');
@@ -596,7 +602,7 @@ function renderPretourPanel(container, ficha, token, url){
   const applyBtn = document.createElement('button');
   applyBtn.type = 'button';
   applyBtn.className = 'analysis-btn';
-  applyBtn.textContent = 'Aplicar corrección';
+  applyBtn.textContent = 'Actualizar análisis';
   const cancelCorrectBtn = document.createElement('button');
   cancelCorrectBtn.type = 'button';
   cancelCorrectBtn.className = 'analysis-btn secondary';
@@ -618,11 +624,13 @@ function renderPretourPanel(container, ficha, token, url){
     if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); applyBtn.click(); }
   });
   applyBtn.addEventListener('click', async ()=>{
+    // La instrucción puede venir vacía a propósito: "Actualizar" también
+    // sirve solo para releer la lista de propiedades (agregadas/marcadas
+    // sin interés) y el Discovery del cliente, sin pedirle nada a la IA.
     const instruction = correctInput.value.trim();
-    if(!instruction) return;
     const original = applyBtn.textContent;
     applyBtn.disabled = true;
-    applyBtn.textContent = 'Corrigiendo...';
+    applyBtn.textContent = 'Actualizando...';
     try{
       const result = await window.tres65Sync.correctAnalysis(token, instruction);
       // Misma liga de siempre — la corrección actualiza el contenido en el
@@ -1423,9 +1431,9 @@ async function refreshClientContent(token){
   if(buyerCard) content.appendChild(buyerCard);
   const propCard = buildPropertyCard(ficha, token);
   if(propCard) content.appendChild(propCard);
+  content.appendChild(buildProgressCard(progress));
   const propsListCard = buildPropertiesListCard(ficha, token);
   if(propsListCard) content.appendChild(propsListCard);
-  content.appendChild(buildProgressCard(progress));
 
   const saleContainer = document.getElementById('sale-closed-container');
   saleContainer.innerHTML = '';
