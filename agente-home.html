@@ -71,7 +71,7 @@
   .new-client-btn svg{width:18px; height:18px;}
 
   .view-toggle{
-    display:flex; gap:6px; margin-bottom:16px;
+    display:flex; gap:6px;
   }
   .view-toggle-btn{
     display:flex; align-items:center; gap:6px;
@@ -82,6 +82,30 @@
   }
   .view-toggle-btn svg{width:14px; height:14px;}
   .view-toggle-btn.active{background:var(--profundo); border-color:var(--profundo); color:#fff;}
+
+  .clients-controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+  .clients-search-wrap{
+    position:relative; flex:1 1 220px; min-width:180px;
+  }
+  .clients-search-wrap svg{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    width:15px; height:15px; color:var(--texto-suave); pointer-events:none;
+  }
+  .clients-search-wrap input{
+    width:100%; box-sizing:border-box;
+    font-family:'Raleway',sans-serif; font-size:13px;
+    padding:9px 12px 9px 34px; border-radius:20px;
+    border:1px solid var(--borde); color:var(--texto);
+  }
+  .clients-search-wrap input:focus{outline:none; border-color:var(--acento);}
+  .sort-toggle{display:flex; gap:6px;}
+  .sort-toggle-btn{
+    font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600;
+    padding:7px 12px; border-radius:20px;
+    border:1px solid var(--borde); background:#fff; color:var(--texto-suave);
+    cursor:pointer;
+  }
+  .sort-toggle-btn.active{background:var(--acento); border-color:var(--acento); color:#fff;}
   .topnav-icon{width:13px; height:13px;}
   .topnav-btn{
     display:inline-flex; align-items:center; gap:4px; box-sizing:border-box;
@@ -610,13 +634,23 @@
     <i data-lucide="user-plus"></i> Crear cliente
   </button>
 
-  <div class="view-toggle" id="clients-view-toggle">
-    <button type="button" class="view-toggle-btn" data-view="kanban">
-      <i data-lucide="columns"></i> Kanban
-    </button>
-    <button type="button" class="view-toggle-btn" data-view="list">
-      <i data-lucide="list"></i> Lista
-    </button>
+  <div class="clients-controls">
+    <div class="clients-search-wrap">
+      <i data-lucide="search"></i>
+      <input type="text" id="clients-search-input" placeholder="Buscar cliente por nombre o teléfono...">
+    </div>
+    <div class="view-toggle" id="clients-view-toggle">
+      <button type="button" class="view-toggle-btn" data-view="kanban">
+        <i data-lucide="columns"></i> Kanban
+      </button>
+      <button type="button" class="view-toggle-btn" data-view="list">
+        <i data-lucide="list"></i> Lista
+      </button>
+    </div>
+    <div class="sort-toggle" id="clients-sort-toggle">
+      <button type="button" class="sort-toggle-btn" data-sort="proceso">Por proceso</button>
+      <button type="button" class="sort-toggle-btn" data-sort="nombre">A-Z</button>
+    </div>
   </div>
 
   <div id="clients-list"></div>
@@ -982,7 +1016,7 @@ function renderClientsPipeline(clients, onDelete){
   const list = document.getElementById('clients-list');
   list.innerHTML = '';
   if(!clients.length){
-    list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
+    list.innerHTML = '<p class="empty-note">No hay clientes que coincidan.</p>';
     return;
   }
   const scroll = document.createElement('div');
@@ -1025,30 +1059,61 @@ function renderClientsFlat(clients, onDelete){
   const list = document.getElementById('clients-list');
   list.innerHTML = '';
   if(!clients.length){
-    list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
+    list.innerHTML = '<p class="empty-note">No hay clientes que coincidan.</p>';
     return;
   }
-  const byStage = clients.slice().sort((a, b)=>{
-    const ia = PIPELINE_STAGES.indexOf(a.status || 'Conociendo a su agente');
-    const ib = PIPELINE_STAGES.indexOf(b.status || 'Conociendo a su agente');
-    return (ia < 0 ? PIPELINE_STAGES.length : ia) - (ib < 0 ? PIPELINE_STAGES.length : ib);
-  });
-  byStage.forEach(c => list.appendChild(buildClientCard(c, onDelete)));
+  clients.forEach(c => list.appendChild(buildClientCard(c, onDelete)));
 }
 
 const CLIENTS_VIEW_KEY = 'tres65_agent_clients_view';
+const CLIENTS_SORT_KEY = 'tres65_agent_clients_sort';
 
 function getClientsView(){
   return localStorage.getItem(CLIENTS_VIEW_KEY) === 'list' ? 'list' : 'kanban';
 }
 
+function getClientsSort(){
+  return localStorage.getItem(CLIENTS_SORT_KEY) === 'nombre' ? 'nombre' : 'proceso';
+}
+
+function filterClientsBySearch(clients, query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q) return clients;
+  return clients.filter(c=>{
+    const name = (c.client_name || '').toLowerCase();
+    const phone = (c.client_phone || '').toLowerCase();
+    return name.includes(q) || phone.includes(q);
+  });
+}
+
+function sortClients(clients, mode){
+  const arr = clients.slice();
+  if(mode === 'nombre'){
+    arr.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || '', 'es', {sensitivity:'base'}));
+  } else {
+    arr.sort((a, b)=>{
+      const ia = PIPELINE_STAGES.indexOf(a.status || 'Conociendo a su agente');
+      const ib = PIPELINE_STAGES.indexOf(b.status || 'Conociendo a su agente');
+      return (ia < 0 ? PIPELINE_STAGES.length : ia) - (ib < 0 ? PIPELINE_STAGES.length : ib);
+    });
+  }
+  return arr;
+}
+
 function renderClients(clients, onDelete){
   const view = getClientsView();
+  const sortMode = getClientsSort();
   document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.view === view);
   });
-  if(view === 'list') renderClientsFlat(clients, onDelete);
-  else renderClientsPipeline(clients, onDelete);
+  document.querySelectorAll('.sort-toggle-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.sort === sortMode);
+  });
+  const searchInput = document.getElementById('clients-search-input');
+  const filtered = filterClientsBySearch(clients, searchInput ? searchInput.value : '');
+  const sorted = sortClients(filtered, sortMode);
+  if(view === 'list') renderClientsFlat(sorted, onDelete);
+  else renderClientsPipeline(sorted, onDelete);
 }
 
 async function deleteClientAndRerender(token, reason){
@@ -1066,6 +1131,17 @@ document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
     localStorage.setItem(CLIENTS_VIEW_KEY, btn.dataset.view);
     renderClients(clientsCache, deleteClientAndRerender);
   });
+});
+
+document.querySelectorAll('.sort-toggle-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    localStorage.setItem(CLIENTS_SORT_KEY, btn.dataset.sort);
+    renderClients(clientsCache, deleteClientAndRerender);
+  });
+});
+
+document.getElementById('clients-search-input').addEventListener('input', ()=>{
+  renderClients(clientsCache, deleteClientAndRerender);
 });
 
 let inactiveClientsCache = [];
