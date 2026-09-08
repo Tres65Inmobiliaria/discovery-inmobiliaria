@@ -484,6 +484,12 @@ async function shareAnalysis(client_token, url){
   return _authedPost("/portal/compartir-analisis/" + encodeURIComponent(client_token), {url});
 }
 
+async function editClientInfo(token, fields){
+  // fields: {client_name, client_email} — client_phone no se puede editar aquí,
+  // es la clave que vincula al progreso del cliente en Firestore/Firebase Auth.
+  return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/editar", fields);
+}
+
 async function getClientDetail(token){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -525,7 +531,7 @@ window.tres65Sync = {
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual,
-  getClientDetail, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
+  getClientDetail, editClientInfo, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
 window.dispatchEvent(new Event("tres65-sync-ready"));

@@ -103,6 +103,22 @@
   .info-row .label{color:var(--texto-suave);}
   .info-row .value{font-weight:600; color:var(--texto); text-align:right;}
 
+  .edit-icon-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:28px; height:28px; padding:0; border:none; border-radius:6px;
+    background:transparent; color:var(--texto-suave); cursor:pointer;
+  }
+  .edit-icon-btn:hover{background:var(--menta); color:var(--profundo);}
+  .edit-icon-btn svg{width:15px; height:15px;}
+  .client-edit-form label{
+    display:block; font-size:12px; color:var(--texto-suave); margin:10px 0 4px;
+  }
+  .client-edit-form input{
+    width:100%; padding:8px 10px; border:1px solid var(--borde); border-radius:6px;
+    font-family:'Raleway',sans-serif; font-size:13px; color:var(--texto);
+  }
+  .client-edit-actions{display:flex; gap:8px; margin-top:12px;}
+
   .prop-title{font-family:'Montserrat',sans-serif; font-weight:600; font-size:14px; color:var(--profundo);}
   .prop-meta{font-size:12px; color:var(--texto-suave); margin:2px 0 6px;}
   .prop-link{display:block; font-size:12px; color:var(--acento); word-break:break-all;}
@@ -153,6 +169,14 @@
   .analysis-status{font-size:12px; margin-top:8px;}
   .analysis-status.ok{color:var(--medio);}
   .analysis-status.err{color:#C0453A;}
+  .pretour-actions-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .pretour-actions-row .analysis-btn.secondary{margin-left:0;}
+  .pretour-correct-box{margin-top:10px;}
+  .pretour-correct-box textarea{
+    width:100%; min-height:60px; padding:8px 10px; border:1px solid var(--borde);
+    border-radius:6px; font-family:'Raleway',sans-serif; font-size:13px; color:var(--texto);
+    resize:vertical;
+  }
 
   .check-item{border-bottom:1px solid var(--menta);}
   .check-item:last-child{border-bottom:none;}
@@ -527,6 +551,112 @@ function renderAnalysisResult(container, token, url){
   });
 }
 
+function renderPretourPanel(container, ficha, token, url){
+  container.innerHTML = '';
+  container.className = 'analysis-status ok';
+  container.style.display = 'block';
+  let currentUrl = url;
+  let alreadyShared = ficha.analysis_url === url;
+
+  const linkLine = document.createElement('div');
+  linkLine.innerHTML = 'Análisis pre-tour: <a href="' + currentUrl + '" target="_blank" rel="noopener">' + currentUrl + '</a>';
+  container.appendChild(linkLine);
+
+  const actionsRow = document.createElement('div');
+  actionsRow.className = 'pretour-actions-row';
+  container.appendChild(actionsRow);
+
+  const updateBtn = document.createElement('button');
+  updateBtn.type = 'button';
+  updateBtn.className = 'analysis-btn secondary';
+  updateBtn.textContent = 'Actualizar';
+  actionsRow.appendChild(updateBtn);
+
+  const shareBtn = document.createElement('button');
+  shareBtn.type = 'button';
+  shareBtn.className = 'analysis-btn';
+  actionsRow.appendChild(shareBtn);
+  function paintShareBtn(){
+    shareBtn.textContent = alreadyShared ? '✓ Visible para el cliente' : 'Subir a progreso de cliente';
+    shareBtn.disabled = alreadyShared;
+  }
+  paintShareBtn();
+
+  const correctBox = document.createElement('div');
+  correctBox.className = 'pretour-correct-box';
+  correctBox.style.display = 'none';
+  container.appendChild(correctBox);
+
+  const correctInput = document.createElement('textarea');
+  correctInput.placeholder = 'Ej: quita la casa de Cholul, sube el presupuesto a 9 millones...';
+  correctBox.appendChild(correctInput);
+
+  const correctActions = document.createElement('div');
+  correctActions.className = 'pretour-actions-row';
+  const applyBtn = document.createElement('button');
+  applyBtn.type = 'button';
+  applyBtn.className = 'analysis-btn';
+  applyBtn.textContent = 'Aplicar corrección';
+  const cancelCorrectBtn = document.createElement('button');
+  cancelCorrectBtn.type = 'button';
+  cancelCorrectBtn.className = 'analysis-btn secondary';
+  cancelCorrectBtn.textContent = 'Cancelar';
+  correctActions.appendChild(applyBtn);
+  correctActions.appendChild(cancelCorrectBtn);
+  correctBox.appendChild(correctActions);
+
+  updateBtn.addEventListener('click', ()=>{
+    const opening = correctBox.style.display === 'none';
+    correctBox.style.display = opening ? 'block' : 'none';
+    if(opening) correctInput.focus();
+  });
+  cancelCorrectBtn.addEventListener('click', ()=>{
+    correctInput.value = '';
+    correctBox.style.display = 'none';
+  });
+  correctInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); applyBtn.click(); }
+  });
+  applyBtn.addEventListener('click', async ()=>{
+    const instruction = correctInput.value.trim();
+    if(!instruction) return;
+    const original = applyBtn.textContent;
+    applyBtn.disabled = true;
+    applyBtn.textContent = 'Corrigiendo...';
+    try{
+      const result = await window.tres65Sync.correctAnalysis(token, instruction);
+      // Misma liga de siempre — la corrección actualiza el contenido en el
+      // mismo link, no crea uno nuevo. Si ya estaba subido al progreso del
+      // cliente, sigue viéndose ahí mismo, actualizado, sin volver a subirlo.
+      currentUrl = result.url;
+      linkLine.innerHTML = 'Análisis pre-tour: <a href="' + currentUrl + '" target="_blank" rel="noopener">' + currentUrl + '</a>';
+      correctInput.value = '';
+      correctBox.style.display = 'none';
+    }catch(err){
+      alert(err.message || 'Error aplicando la corrección.');
+    }finally{
+      applyBtn.disabled = false;
+      applyBtn.textContent = original;
+    }
+  });
+
+  shareBtn.addEventListener('click', async ()=>{
+    if(alreadyShared) return;
+    const original = shareBtn.textContent;
+    shareBtn.disabled = true;
+    shareBtn.textContent = 'Subiendo...';
+    try{
+      await window.tres65Sync.shareAnalysis(token, currentUrl);
+      alreadyShared = true;
+      paintShareBtn();
+    }catch(err){
+      alert(err.message || 'Error subiendo el análisis al progreso del cliente.');
+      shareBtn.disabled = false;
+      shareBtn.textContent = original;
+    }
+  });
+}
+
 function fmtDate(iso){
   if(!iso) return '';
   try{
@@ -619,11 +749,23 @@ function buildBuyerProfileCard(progress){
 function buildInfoCard(ficha, token){
   const card = document.createElement('div');
   card.className = 'card';
+  const titleRow = document.createElement('div');
+  titleRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
   const title = document.createElement('div');
   title.className = 'card-title';
+  title.style.marginBottom = '0';
   title.innerHTML = '<i data-lucide="user"></i> Datos del cliente';
-  card.appendChild(title);
+  titleRow.appendChild(title);
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'edit-icon-btn';
+  editBtn.innerHTML = '<i data-lucide="pencil"></i>';
+  editBtn.setAttribute('aria-label', 'Corregir o agregar nombre / correo');
+  editBtn.title = 'Corregir o agregar nombre / correo';
+  titleRow.appendChild(editBtn);
+  card.appendChild(titleRow);
 
+  const viewRows = document.createElement('div');
   [
     ['Nombre', ficha.client_name],
     ['Teléfono', ficha.client_phone],
@@ -634,7 +776,57 @@ function buildInfoCard(ficha, token){
     row.className = 'info-row';
     row.innerHTML = '<span class="label">' + label + '</span><span class="value"></span>';
     row.querySelector('.value').textContent = value || '—';
-    card.appendChild(row);
+    viewRows.appendChild(row);
+  });
+  card.appendChild(viewRows);
+
+  const editForm = document.createElement('div');
+  editForm.className = 'client-edit-form';
+  editForm.style.display = 'none';
+  editForm.innerHTML =
+    '<label>Nombre completo</label><input type="text" id="edit-client-name">' +
+    '<label>Correo</label><input type="email" id="edit-client-email">' +
+    '<div class="client-edit-actions">' +
+      '<button type="button" class="analysis-btn" id="edit-client-save">Guardar</button>' +
+      '<button type="button" class="analysis-btn secondary" id="edit-client-cancel">Cancelar</button>' +
+    '</div>';
+  card.appendChild(editForm);
+  const nameInput = editForm.querySelector('#edit-client-name');
+  const emailInput = editForm.querySelector('#edit-client-email');
+  nameInput.value = ficha.client_name || '';
+  emailInput.value = ficha.client_email || '';
+
+  editBtn.addEventListener('click', ()=>{
+    viewRows.style.display = 'none';
+    editBtn.style.display = 'none';
+    editForm.style.display = 'block';
+    nameInput.focus();
+  });
+  editForm.querySelector('#edit-client-cancel').addEventListener('click', ()=>{
+    editForm.style.display = 'none';
+    viewRows.style.display = 'block';
+    editBtn.style.display = 'inline-flex';
+  });
+  editForm.querySelector('#edit-client-save').addEventListener('click', async (e)=>{
+    const btn = e.currentTarget;
+    const original = btn.textContent;
+    if(!nameInput.value.trim()){
+      alert('El nombre no puede quedar vacío.');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    try{
+      await window.tres65Sync.editClientInfo(token, {
+        client_name: nameInput.value.trim(),
+        client_email: emailInput.value.trim(),
+      });
+      await refreshClientContent(token);
+    }catch(err){
+      alert(err.message || 'Error guardando los datos.');
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   });
 
   const portalRow = document.createElement('div');
@@ -952,31 +1144,39 @@ function buildPropertiesListCard(ficha, token){
 
   if(!properties.length) return card;
 
-  const analysisBtn = document.createElement('button');
-  analysisBtn.type = 'button';
-  analysisBtn.className = 'analysis-btn';
-  analysisBtn.textContent = 'Análisis pre-tour';
   const status = document.createElement('div');
   status.className = 'analysis-status';
   status.style.display = 'none';
-  analysisBtn.addEventListener('click', async ()=>{
-    const original = analysisBtn.textContent;
-    analysisBtn.disabled = true;
-    analysisBtn.textContent = 'Generando...';
-    status.style.display = 'none';
-    try{
-      const result = await window.tres65Sync.runAnalysis(token);
-      renderAnalysisResult(status, token, result.url);
-    }catch(err){
-      status.className = 'analysis-status err';
-      status.textContent = err.message || 'Error generando el análisis.';
-      status.style.display = 'block';
-    }finally{
-      analysisBtn.disabled = false;
-      analysisBtn.textContent = original;
-    }
-  });
-  card.appendChild(analysisBtn);
+
+  if(ficha.pretour_url){
+    // Ya existe un análisis para este cliente — no hay botón de "Análisis
+    // pre-tour" que regenere otro desde cero (y otra URL); se muestra
+    // directo el panel persistente con la liga de siempre.
+    renderPretourPanel(status, ficha, token, ficha.pretour_url);
+  } else {
+    const analysisBtn = document.createElement('button');
+    analysisBtn.type = 'button';
+    analysisBtn.className = 'analysis-btn';
+    analysisBtn.textContent = 'Análisis pre-tour';
+    analysisBtn.addEventListener('click', async ()=>{
+      const original = analysisBtn.textContent;
+      analysisBtn.disabled = true;
+      analysisBtn.textContent = 'Generando...';
+      try{
+        const result = await window.tres65Sync.runAnalysis(token);
+        ficha.pretour_url = result.url;
+        analysisBtn.style.display = 'none';
+        renderPretourPanel(status, ficha, token, result.url);
+      }catch(err){
+        status.className = 'analysis-status err';
+        status.textContent = err.message || 'Error generando el análisis.';
+        status.style.display = 'block';
+        analysisBtn.disabled = false;
+        analysisBtn.textContent = original;
+      }
+    });
+    card.appendChild(analysisBtn);
+  }
 
   const routeBtn = document.createElement('button');
   routeBtn.type = 'button';
