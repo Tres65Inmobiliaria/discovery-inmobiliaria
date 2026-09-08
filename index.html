@@ -952,6 +952,8 @@ const activeClientToken = urlClientToken || localStorage.getItem('tres65_client_
 let tres65Uid = null;
 
 const isAgentMode = new URLSearchParams(window.location.search).get('agent') === '1';
+let clientAgentPhone = null; // teléfono del agente dueño de esta ficha — para el botón de WhatsApp, nunca uno fijo
+
 if(isAgentMode){
   [
     {id:'presupuesto_compra', placeholder:'Monto exacto en pesos (MXN), ej. 3,500,000'},
@@ -966,20 +968,23 @@ if(isAgentMode){
       q.placeholder = placeholder;
     }
   });
+}
 
-  if(activeClientToken){
-    fetch('https://agente-tres65-production.up.railway.app/portal/ficha/' + activeClientToken)
-      .then(r => r.json())
-      .then(data => {
-        if(!data.ok) return;
-        const f = data.ficha;
+if(activeClientToken){
+  fetch('https://agente-tres65-production.up.railway.app/portal/ficha/' + activeClientToken)
+    .then(r => r.json())
+    .then(data => {
+      if(!data.ok) return;
+      const f = data.ficha;
+      clientAgentPhone = f.agent_phone || null;
+      if(isAgentMode){
         const banner = document.getElementById('agent-mode-banner');
         banner.innerHTML = '<span class="tag">Modo agente</span> Llenando para: ' +
           (f.client_name || 'Sin nombre') + (f.client_phone ? ' · ' + f.client_phone : '');
         banner.style.display = 'flex';
-      })
-      .catch(e => console.error('[Discovery] error consultando ficha en modo agente:', e));
-  }
+      }
+    })
+    .catch(e => console.error('[Discovery] error consultando ficha:', e));
 }
 
 function waitForSync(){
@@ -1298,7 +1303,11 @@ document.getElementById('save-later-btn').addEventListener('click', ()=>{
 document.getElementById('call-btn').addEventListener('click', ()=>{
   saveLocal();
   const mensaje = encodeURIComponent('Hola, prefiero platicar el cuestionario de discovery por llamada o WhatsApp.');
-  window.location.href = 'https://wa.me/5219992786153?text=' + mensaje;
+  // Nunca un número fijo — debe ser el agente dueño de esta ficha
+  // (clientAgentPhone, de /portal/ficha/<token>), o el cliente termina
+  // escribiéndole a un agente que no es el suyo.
+  const digits = (clientAgentPhone || '').replace(/\D/g, '') || '529992786153';
+  window.location.href = 'https://wa.me/' + digits + '?text=' + mensaje;
 });
 document.getElementById('popup-welcome-call-si').addEventListener('click', ()=>{
   document.getElementById('call-btn').click();
