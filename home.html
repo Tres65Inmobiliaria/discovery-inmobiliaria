@@ -239,6 +239,20 @@ src="https://www.facebook.com/tr?id=516732134278228&ev=PageView&noscript=1"
   }
   .property-step-link{color:#fff; font-size:13px; text-decoration:underline; align-self:flex-start;}
 
+  .property-step-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
+  .property-step-btn{
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    border-radius:20px;
+    padding:8px 14px;
+    cursor:pointer;
+    border:1px solid rgba(255,255,255,.5);
+  }
+  .property-step-btn:disabled{opacity:.6; cursor:default;}
+  .property-step-btn-add{background:#fff; color:var(--medio); border-color:#fff;}
+  .property-step-btn-discard{background:transparent; color:#fff;}
+
   .property-step.discarded{
     background:#fff;
     border:1px solid var(--borde);
@@ -511,6 +525,57 @@ function buildPropertyStepCard(ficha){
     link.rel = 'noopener';
     link.textContent = 'Ver ficha completa';
     card.appendChild(link);
+
+    const actions = document.createElement('div');
+    actions.className = 'property-step-actions';
+
+    if(p){
+      const addBtn = document.createElement('button');
+      addBtn.className = 'property-step-btn property-step-btn-add';
+      addBtn.textContent = 'Agregar a mis propiedades';
+      addBtn.addEventListener('click', async ()=>{
+        addBtn.disabled = true;
+        addBtn.textContent = 'Agregando...';
+        try{
+          const res = await fetch(API_BASE + '/portal/ficha/' + encodeURIComponent(activeToken) + '/property/agregar', {method:'POST'});
+          const data = await res.json();
+          if(!data.ok) throw new Error(data.error || 'error');
+          addBtn.textContent = 'Agregada ✓';
+        }catch(e){
+          console.error('[Home] error agregando propiedad:', e);
+          addBtn.disabled = false;
+          addBtn.textContent = 'Agregar a mis propiedades';
+          alert('No pudimos agregarla, intenta de nuevo en un momento.');
+        }
+      });
+      actions.appendChild(addBtn);
+    }
+
+    const discardBtn = document.createElement('button');
+    discardBtn.className = 'property-step-btn property-step-btn-discard';
+    discardBtn.textContent = 'No me interesa';
+    discardBtn.addEventListener('click', async ()=>{
+      const reason = prompt('¿Por qué no te interesa esta propiedad? (se lo mostramos a tu agente)');
+      if(!reason || !reason.trim()) return;
+      discardBtn.disabled = true;
+      try{
+        const res = await fetch(API_BASE + '/portal/ficha/' + encodeURIComponent(activeToken) + '/property/descartar', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({reason: reason.trim()})
+        });
+        const data = await res.json();
+        if(!data.ok) throw new Error(data.error || 'error');
+        location.reload();
+      }catch(e){
+        console.error('[Home] error descartando propiedad:', e);
+        discardBtn.disabled = false;
+        alert('No pudimos guardar tu respuesta, intenta de nuevo en un momento.');
+      }
+    });
+    actions.appendChild(discardBtn);
+
+    card.appendChild(actions);
   } else {
     const reasonBox = document.createElement('div');
     reasonBox.className = 'property-step-reason';
@@ -543,12 +608,12 @@ const colors = ['#1A4F5C', '#2AA898'];
 
 function stepsForProperty(propertyId, blocking, analysisUrl){
   const hasReport = !!localStorage.getItem('tres65_property_' + propertyId + '_report');
-  const cuestionarioDone = blocking ? false : metAgent;
+  const cuestionarioDone = metAgent;
   const resumenDone = blocking ? false : hasReport;
   const blockedTip = 'Tu agente te va a contactar sobre la propiedad que ya tiene en mente primero';
   return [
     {num:1, title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true, href:agentHref, whatsapp:true},
-    {num:2, title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:cuestionarioDone, href:(hasReport ? 'resumen.html?property=' : 'index.html?property=') + propertyId, tooltip: blocking ? blockedTip : 'Se desbloquea cuando conozcas a tu agente'},
+    {num:2, title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:cuestionarioDone, href:(hasReport ? 'resumen.html?property=' : 'index.html?property=') + propertyId, tooltip:'Se desbloquea cuando conozcas a tu agente'},
     {num:3, title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:resumenDone, href:'resumen.html?property=' + propertyId, tooltip: blocking ? blockedTip : 'Se desbloquea cuando completes el cuestionario de discovery'},
     {num:4, title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:!!analysisUrl, href:analysisUrl, tooltip:'Se desbloquea cuando tu agente empiece a trabajar en tu búsqueda'},
     {num:5, title:'Ficha pre-tour', sub:'Opciones de propiedades a visitar', icon:'clipboard-list', done:!!analysisUrl, href:analysisUrl, tooltip:'Se desbloquea cuando tu agente tenga propiedades listas para comparar'},
