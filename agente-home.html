@@ -1028,7 +1028,12 @@ function renderClientsFlat(clients, onDelete){
     list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
     return;
   }
-  clients.forEach(c => list.appendChild(buildClientCard(c, onDelete)));
+  const byStage = clients.slice().sort((a, b)=>{
+    const ia = PIPELINE_STAGES.indexOf(a.status || 'Conociendo a su agente');
+    const ib = PIPELINE_STAGES.indexOf(b.status || 'Conociendo a su agente');
+    return (ia < 0 ? PIPELINE_STAGES.length : ia) - (ib < 0 ? PIPELINE_STAGES.length : ib);
+  });
+  byStage.forEach(c => list.appendChild(buildClientCard(c, onDelete)));
 }
 
 const CLIENTS_VIEW_KEY = 'tres65_agent_clients_view';
