@@ -670,7 +670,7 @@ function buildStepCard(s){
     // El número de WhatsApp SIEMPRE debe ser el del agente dueño de esta
     // ficha (ficha.agent_phone) — nunca uno fijo, o todos los clientes
     // terminan escribiéndole al mismo agente sin importar quién los lleva
-    // de verdad. 5219992786153 solo queda como respaldo si por algún
+    // de verdad. 529992786153 solo queda como respaldo si por algún
     // motivo la ficha no trajo agent_phone.
     const agentDigits = (s.agentPhone || '').replace(/\D/g, '') || '529992786153';
     wa.href = 'https://wa.me/' + agentDigits + '?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
