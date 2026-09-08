@@ -609,12 +609,12 @@ const colors = ['#1A4F5C', '#2AA898'];
 function stepsForProperty(propertyId, blocking, analysisUrl){
   const hasReport = !!localStorage.getItem('tres65_property_' + propertyId + '_report');
   const cuestionarioDone = metAgent;
-  const resumenDone = blocking ? false : hasReport;
+  const resumenDone = hasReport;
   const blockedTip = 'Tu agente te va a contactar sobre la propiedad que ya tiene en mente primero';
   return [
     {num:1, title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true, href:agentHref, whatsapp:true},
     {num:2, title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:cuestionarioDone, href:(hasReport ? 'resumen.html?property=' : 'index.html?property=') + propertyId, tooltip:'Se desbloquea cuando conozcas a tu agente'},
-    {num:3, title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:resumenDone, href:'resumen.html?property=' + propertyId, tooltip: blocking ? blockedTip : 'Se desbloquea cuando completes el cuestionario de discovery'},
+    {num:3, title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:resumenDone, href:'resumen.html?property=' + propertyId, tooltip: (blocking && !resumenDone) ? blockedTip : 'Se desbloquea cuando completes el cuestionario de discovery'},
     {num:4, title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:!!analysisUrl, href:analysisUrl, tooltip:'Se desbloquea cuando tu agente empiece a trabajar en tu búsqueda'},
     {num:5, title:'Ficha pre-tour', sub:'Opciones de propiedades a visitar', icon:'clipboard-list', done:!!analysisUrl, href:analysisUrl, tooltip:'Se desbloquea cuando tu agente tenga propiedades listas para comparar'},
     {num:6, title:'Tour de casas', sub:'Visita a propiedades', icon:'home', done:false, tooltip:'Se desbloquea cuando agendes tu primer tour'},
