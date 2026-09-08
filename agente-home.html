@@ -35,6 +35,9 @@
     line-height:1.6;
   }
   .wrap{max-width:640px;margin:0 auto;padding:32px 20px 80px;}
+  @media(min-width:900px){
+    .wrap{max-width:1200px;}
+  }
   header{display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;}
   header .logo{display:block; max-width:160px;}
   .who{text-align:right;}
@@ -69,6 +72,9 @@
   }
   .new-client-btn:hover{background:var(--medio);}
   .new-client-btn svg{width:18px; height:18px;}
+  @media(min-width:900px){
+    .new-client-btn{width:auto; padding-left:28px; padding-right:28px;}
+  }
 
   .view-toggle{
     display:flex; gap:6px;
@@ -94,10 +100,19 @@
   .clients-search-wrap input{
     width:100%; box-sizing:border-box;
     font-family:'Raleway',sans-serif; font-size:13px;
-    padding:9px 12px 9px 34px; border-radius:20px;
+    padding:9px 34px 9px 34px; border-radius:20px;
     border:1px solid var(--borde); color:var(--texto);
   }
   .clients-search-wrap input:focus{outline:none; border-color:var(--acento);}
+  .clients-search-clear{
+    display:none;
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    width:20px; height:20px; border-radius:50%; border:none;
+    background:var(--borde); color:var(--texto-suave);
+    align-items:center; justify-content:center; cursor:pointer; padding:0;
+  }
+  .clients-search-clear svg{position:static; width:12px; height:12px; color:inherit; pointer-events:none;}
+  .clients-search-clear.visible{display:flex;}
   .sort-toggle{display:flex; gap:6px;}
   .sort-toggle-btn{
     font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600;
@@ -638,6 +653,9 @@
     <div class="clients-search-wrap">
       <i data-lucide="search"></i>
       <input type="text" id="clients-search-input" placeholder="Buscar cliente por nombre o teléfono...">
+      <button type="button" class="clients-search-clear" id="clients-search-clear" aria-label="Borrar búsqueda">
+        <i data-lucide="x"></i>
+      </button>
     </div>
     <div class="view-toggle" id="clients-view-toggle">
       <button type="button" class="view-toggle-btn" data-view="kanban">
@@ -1110,6 +1128,8 @@ function renderClients(clients, onDelete){
     btn.classList.toggle('active', btn.dataset.sort === sortMode);
   });
   const searchInput = document.getElementById('clients-search-input');
+  const searchClear = document.getElementById('clients-search-clear');
+  if(searchClear) searchClear.classList.toggle('visible', !!(searchInput && searchInput.value));
   const filtered = filterClientsBySearch(clients, searchInput ? searchInput.value : '');
   const sorted = sortClients(filtered, sortMode);
   if(view === 'list') renderClientsFlat(sorted, onDelete);
@@ -1141,6 +1161,13 @@ document.querySelectorAll('.sort-toggle-btn').forEach(btn=>{
 });
 
 document.getElementById('clients-search-input').addEventListener('input', ()=>{
+  renderClients(clientsCache, deleteClientAndRerender);
+});
+
+document.getElementById('clients-search-clear').addEventListener('click', ()=>{
+  const input = document.getElementById('clients-search-input');
+  input.value = '';
+  input.focus();
   renderClients(clientsCache, deleteClientAndRerender);
 });
 
