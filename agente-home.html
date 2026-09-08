@@ -595,9 +595,13 @@
   .modal-save:disabled{opacity:.6;}
   .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
   .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
-  .directorio-delete-x{width:26px; height:26px; border-radius:50%; border:1px solid #F5E4E1; background:#F5E4E1; color:#C0453A; font-size:16px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
-  .directorio-delete-x:hover{background:#EFD3CE;}
+  .directorio-row-actions{display:flex; gap:6px; align-items:center;}
+  .directorio-delete-x{width:22px; height:22px; border:none; background:none; color:#C0453A; font-size:16px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .directorio-delete-x:hover{color:#8C3327;}
   .directorio-delete-x:disabled{opacity:.6; cursor:default;}
+  .directorio-edit-btn{width:22px; height:22px; border:none; background:none; color:var(--acento); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .directorio-edit-btn:hover{color:var(--profundo);}
+  .directorio-edit-btn svg{width:15px; height:15px;}
 
   .delete-reason-options{display:flex; flex-direction:column; gap:8px; margin-bottom:6px;}
   .delete-reason-btn{
@@ -899,6 +903,20 @@
       <input type="file" id="directorio-csv-input" accept=".csv" style="display:none;">
     </div>
     <p class="modal-error" id="directorio-import-status" style="display:none;"></p>
+    <div class="clients-controls" style="margin-bottom:12px;">
+      <div class="clients-search-wrap">
+        <i data-lucide="search"></i>
+        <input type="text" id="directorio-search-input" placeholder="Buscar por nombre, teléfono o agente...">
+        <button type="button" class="clients-search-clear" id="directorio-search-clear" aria-label="Borrar búsqueda">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="sort-toggle" id="directorio-sort-toggle">
+        <button type="button" class="sort-toggle-btn" data-sort="proceso">Por estado</button>
+        <button type="button" class="sort-toggle-btn" data-sort="nombre">A-Z</button>
+        <button type="button" class="sort-toggle-btn" data-sort="agente" id="directorio-sort-btn-agente" style="display:none;">Por agente</button>
+      </div>
+    </div>
     <div id="directorio-body" style="max-height:70vh; overflow:auto;"></div>
   </div>
 </div>
@@ -1588,20 +1606,68 @@ async function renderAgentTasks(session){
   }
 }
 
-async function renderDirectorio(){
+let directorioCache = [];
+let directorioEditingId = null;
+const DIRECTORIO_VIEW_KEY = 'tres65_directorio_sort';
+const DIRECTORIO_STATUS_ORDER = ['Cliente potencial', 'Listo para asesor', 'Perdido'];
+
+function getDirectorioSort(){
+  const v = localStorage.getItem(DIRECTORIO_VIEW_KEY);
+  return (v === 'nombre' || v === 'agente') ? v : 'proceso';
+}
+
+function filterDirectorioBySearch(entries, query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q) return entries;
+  return entries.filter(e=>{
+    const name = (e.name || '').toLowerCase();
+    const phone = (e.phone || '').toLowerCase();
+    const agent = (e.assignee_name || '').toLowerCase();
+    return name.includes(q) || phone.includes(q) || agent.includes(q);
+  });
+}
+
+function sortDirectorioEntries(entries, mode){
+  const arr = entries.slice();
+  if(mode === 'nombre'){
+    arr.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', {sensitivity:'base'}));
+  } else if(mode === 'agente'){
+    const order = AGENTS.map(a => a.uid);
+    arr.sort((a, b)=>{
+      const ia = order.indexOf(a.assignee_uid);
+      const ib = order.indexOf(b.assignee_uid);
+      return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+    });
+  } else {
+    arr.sort((a, b)=>{
+      const ia = DIRECTORIO_STATUS_ORDER.indexOf(a.status);
+      const ib = DIRECTORIO_STATUS_ORDER.indexOf(b.status);
+      return (ia < 0 ? DIRECTORIO_STATUS_ORDER.length : ia) - (ib < 0 ? DIRECTORIO_STATUS_ORDER.length : ib);
+    });
+  }
+  return arr;
+}
+
+function openDirectorioEditModal(e){
+  document.querySelector('#directorio-manual-modal h3').textContent = 'Editar en el directorio';
+  document.getElementById('directorio-manual-save').textContent = 'Guardar';
+  document.getElementById('directorio-manual-name').value = e.name || '';
+  document.getElementById('directorio-manual-phone').value = e.phone || '';
+  document.getElementById('directorio-manual-email').value = e.email || '';
+  document.getElementById('directorio-manual-status').value = e.status || '';
+  const agentSelect = document.getElementById('directorio-manual-agent');
+  if(agentSelect) agentSelect.value = e.assignee_uid || '';
+  directorioEditingId = e.manual_id;
+  document.getElementById('directorio-manual-modal').classList.add('open');
+}
+
+function renderDirectorioTable(entries){
   const body = document.getElementById('directorio-body');
-  body.innerHTML = '<p class="empty-note">Cargando...</p>';
-  let entries = [];
-  try{
-    entries = await window.tres65Sync.getDirectorio();
-  }catch(err){
-    body.innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando el directorio.') + '</p>';
-    return;
-  }
   if(!entries.length){
-    body.innerHTML = '<p class="empty-note">Todavía no hay leads registrados.</p>';
+    body.innerHTML = '<p class="empty-note">No hay entradas que coincidan.</p>';
     return;
   }
+  const puedeGestionar = currentSession && (currentSession.isAdmin || currentSession.uid === '5219992399890');
   const table = document.createElement('table');
   table.className = 'roster-table';
   table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>Agente</th><th></th></tr></thead>';
@@ -1615,6 +1681,9 @@ async function renderDirectorio(){
       tr.appendChild(td);
     });
     const actionTd = document.createElement('td');
+    const actions = document.createElement('div');
+    actions.className = 'directorio-row-actions';
+
     if(e.status === 'Perdido' && e.source !== 'manual'){
       const btn = document.createElement('button');
       btn.className = 'search-btn secondary';
@@ -1633,36 +1702,96 @@ async function renderDirectorio(){
           btn.textContent = 'Reactivar';
         }
       };
-      actionTd.appendChild(btn);
+      actions.appendChild(btn);
     }
-    if(e.source === 'manual' && currentSession && currentSession.isAdmin){
+
+    if(e.source === 'manual' && puedeGestionar){
+      const editBtn = document.createElement('button');
+      editBtn.className = 'directorio-edit-btn';
+      editBtn.title = 'Editar';
+      editBtn.setAttribute('aria-label', 'Editar');
+      editBtn.innerHTML = '<i data-lucide="pencil"></i>';
+      editBtn.onclick = ()=> openDirectorioEditModal(e);
+      actions.appendChild(editBtn);
+    }
+
+    if(e.source === 'manual' && puedeGestionar){
       const delBtn = document.createElement('button');
       delBtn.className = 'directorio-delete-x';
       delBtn.title = 'Borrar para siempre';
       delBtn.setAttribute('aria-label', 'Borrar para siempre');
-      delBtn.textContent = '×';
+      delBtn.innerHTML = '<i data-lucide="x"></i>';
       delBtn.onclick = async ()=>{
         const ok = confirm('¿Borrar a "' + e.name + '" del directorio?\n\nEsta acción es DEFINITIVA: se borra para siempre de la base de datos (no solo del dashboard) y no se puede deshacer.');
         if(!ok) return;
         delBtn.disabled = true;
-        delBtn.textContent = '…';
         try{
           await window.tres65Sync.deleteDirectorioManual(e.manual_id);
           renderDirectorio();
         }catch(err){
           alert(err.message || 'Error borrando la entrada.');
           delBtn.disabled = false;
-          delBtn.textContent = '×';
         }
       };
-      actionTd.appendChild(delBtn);
+      actions.appendChild(delBtn);
+    } else if(e.source !== 'manual' && e.status !== 'Perdido'){
+      const delBtn = document.createElement('button');
+      delBtn.className = 'directorio-delete-x';
+      delBtn.title = 'Marcar como perdido';
+      delBtn.setAttribute('aria-label', 'Marcar como perdido');
+      delBtn.innerHTML = '<i data-lucide="x"></i>';
+      delBtn.onclick = ()=>{
+        openDeleteReasonModal(e.name, async (reason)=>{
+          try{
+            await window.tres65Sync.deleteLead(e.conv_id, reason);
+            renderDirectorio();
+          }catch(err){
+            alert(err.message || 'Error marcando el lead como perdido.');
+          }
+        });
+      };
+      actions.appendChild(delBtn);
     }
+
+    actionTd.appendChild(actions);
     tr.appendChild(actionTd);
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
   body.innerHTML = '';
   body.appendChild(table);
+  if(window.lucide) lucide.createIcons();
+}
+
+function renderDirectorioFiltered(){
+  const sortMode = getDirectorioSort();
+  document.querySelectorAll('#directorio-sort-toggle .sort-toggle-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.sort === sortMode);
+  });
+  const searchInput = document.getElementById('directorio-search-input');
+  const searchClear = document.getElementById('directorio-search-clear');
+  if(searchClear) searchClear.classList.toggle('visible', !!(searchInput && searchInput.value));
+  const filtered = filterDirectorioBySearch(directorioCache, searchInput ? searchInput.value : '');
+  const sorted = sortDirectorioEntries(filtered, sortMode);
+  renderDirectorioTable(sorted);
+}
+
+async function renderDirectorio(){
+  const body = document.getElementById('directorio-body');
+  body.innerHTML = '<p class="empty-note">Cargando...</p>';
+  try{
+    directorioCache = await window.tres65Sync.getDirectorio();
+  }catch(err){
+    body.innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando el directorio.') + '</p>';
+    return;
+  }
+  if(!directorioCache.length){
+    body.innerHTML = '<p class="empty-note">Todavía no hay leads registrados.</p>';
+    return;
+  }
+  const agenteSortBtn = document.getElementById('directorio-sort-btn-agente');
+  if(agenteSortBtn) agenteSortBtn.style.display = (currentSession && (currentSession.isAdmin || currentSession.uid === '5219992399890')) ? 'inline-flex' : 'none';
+  renderDirectorioFiltered();
 }
 
 async function renderClientTasks(session){
@@ -2202,7 +2331,22 @@ async function boot(){
     document.getElementById('directorio-modal').classList.remove('open');
   });
 
-  if(session.isAdmin){
+  document.querySelectorAll('#directorio-sort-toggle .sort-toggle-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      localStorage.setItem(DIRECTORIO_VIEW_KEY, btn.dataset.sort);
+      renderDirectorioFiltered();
+    });
+  });
+  document.getElementById('directorio-search-input').addEventListener('input', renderDirectorioFiltered);
+  document.getElementById('directorio-search-clear').addEventListener('click', ()=>{
+    const input = document.getElementById('directorio-search-input');
+    input.value = '';
+    input.focus();
+    renderDirectorioFiltered();
+  });
+
+  const puedeGestionarDirectorio = session.isAdmin || session.uid === '5219992399890';
+  if(puedeGestionarDirectorio){
     const dirAgentSelect = document.getElementById('directorio-manual-agent');
     AGENTS.forEach(a=>{
       const opt = document.createElement('option');
@@ -2222,8 +2366,13 @@ async function boot(){
     ['directorio-manual-name','directorio-manual-phone','directorio-manual-email','directorio-manual-status'].forEach(id=>{
       document.getElementById(id).value = '';
     });
+    document.getElementById('directorio-manual-agent').value = '';
+    directorioEditingId = null;
+    document.querySelector('#directorio-manual-modal h3').textContent = 'Agregar al directorio';
+    document.getElementById('directorio-manual-save').textContent = 'Agregar';
   }
   document.getElementById('directorio-add-manual-btn').addEventListener('click', ()=>{
+    closeDirectorioManualModal();
     document.getElementById('directorio-manual-modal').classList.add('open');
   });
   document.getElementById('directorio-manual-modal-close-x').addEventListener('click', closeDirectorioManualModal);
@@ -2246,15 +2395,21 @@ async function boot(){
       errorEl.style.display = 'block';
       return;
     }
+    const editingId = directorioEditingId;
     btn.disabled = true;
-    btn.textContent = 'Agregando...';
+    btn.textContent = editingId ? 'Guardando...' : 'Agregando...';
     try{
-      await window.tres65Sync.addDirectorioManual({name, phone, email, status, agent_uid});
+      if(editingId){
+        await window.tres65Sync.editDirectorioManual(editingId, {name, phone, email, status, agent_uid});
+      } else {
+        await window.tres65Sync.addDirectorioManual({name, phone, email, status, agent_uid});
+      }
+      successEl.textContent = editingId ? 'Cambios guardados.' : 'Agregado al directorio.';
       successEl.style.display = 'block';
       renderDirectorio();
       setTimeout(closeDirectorioManualModal, 900);
     }catch(err){
-      errorEl.textContent = err.message || 'Error agregando la entrada.';
+      errorEl.textContent = err.message || 'Error guardando la entrada.';
       errorEl.style.display = 'block';
     }
     btn.disabled = false;
