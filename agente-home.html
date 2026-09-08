@@ -121,6 +121,13 @@
     cursor:pointer;
   }
   .sort-toggle-btn.active{background:var(--acento); border-color:var(--acento); color:#fff;}
+
+  .agent-group-head{
+    font-family:'Montserrat',sans-serif; font-size:12px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.04em; color:var(--profundo);
+    padding:16px 0 6px; border-bottom:1px solid var(--borde); margin-bottom:10px;
+  }
+  .agent-group-head:first-child{padding-top:0;}
   .topnav-icon{width:13px; height:13px;}
   .topnav-btn{
     display:inline-flex; align-items:center; gap:4px; box-sizing:border-box;
@@ -668,6 +675,7 @@
     <div class="sort-toggle" id="clients-sort-toggle">
       <button type="button" class="sort-toggle-btn" data-sort="proceso">Por proceso</button>
       <button type="button" class="sort-toggle-btn" data-sort="nombre">A-Z</button>
+      <button type="button" class="sort-toggle-btn" data-sort="agente" id="sort-btn-agente" style="display:none;">Por agente</button>
     </div>
   </div>
 
@@ -1073,14 +1081,32 @@ function renderClientsPipeline(clients, onDelete){
   list.appendChild(scroll);
 }
 
-function renderClientsFlat(clients, onDelete){
+function agentNameFor(c){
+  const known = AGENTS.find(a => a.uid === c.agent_uid);
+  return (known && known.name) || c.agent_name || 'Sin agente asignado';
+}
+
+function renderClientsFlat(clients, onDelete, groupByAgent){
   const list = document.getElementById('clients-list');
   list.innerHTML = '';
   if(!clients.length){
     list.innerHTML = '<p class="empty-note">No hay clientes que coincidan.</p>';
     return;
   }
-  clients.forEach(c => list.appendChild(buildClientCard(c, onDelete)));
+  let lastAgent = null;
+  clients.forEach(c=>{
+    if(groupByAgent){
+      const agentName = agentNameFor(c);
+      if(agentName !== lastAgent){
+        const head = document.createElement('div');
+        head.className = 'agent-group-head';
+        head.textContent = agentName;
+        list.appendChild(head);
+        lastAgent = agentName;
+      }
+    }
+    list.appendChild(buildClientCard(c, onDelete));
+  });
 }
 
 const CLIENTS_VIEW_KEY = 'tres65_agent_clients_view';
@@ -1091,7 +1117,8 @@ function getClientsView(){
 }
 
 function getClientsSort(){
-  return localStorage.getItem(CLIENTS_SORT_KEY) === 'nombre' ? 'nombre' : 'proceso';
+  const v = localStorage.getItem(CLIENTS_SORT_KEY);
+  return (v === 'nombre' || v === 'agente') ? v : 'proceso';
 }
 
 function filterClientsBySearch(clients, query){
@@ -1100,7 +1127,8 @@ function filterClientsBySearch(clients, query){
   return clients.filter(c=>{
     const name = (c.client_name || '').toLowerCase();
     const phone = (c.client_phone || '').toLowerCase();
-    return name.includes(q) || phone.includes(q);
+    const agent = agentNameFor(c).toLowerCase();
+    return name.includes(q) || phone.includes(q) || agent.includes(q);
   });
 }
 
@@ -1108,6 +1136,13 @@ function sortClients(clients, mode){
   const arr = clients.slice();
   if(mode === 'nombre'){
     arr.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || '', 'es', {sensitivity:'base'}));
+  } else if(mode === 'agente'){
+    const order = AGENTS.map(a => a.uid);
+    arr.sort((a, b)=>{
+      const ia = order.indexOf(a.agent_uid);
+      const ib = order.indexOf(b.agent_uid);
+      return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+    });
   } else {
     arr.sort((a, b)=>{
       const ia = PIPELINE_STAGES.indexOf(a.status || 'Conociendo a su agente');
@@ -1132,7 +1167,7 @@ function renderClients(clients, onDelete){
   if(searchClear) searchClear.classList.toggle('visible', !!(searchInput && searchInput.value));
   const filtered = filterClientsBySearch(clients, searchInput ? searchInput.value : '');
   const sorted = sortClients(filtered, sortMode);
-  if(view === 'list') renderClientsFlat(sorted, onDelete);
+  if(view === 'list') renderClientsFlat(sorted, onDelete, sortMode === 'agente');
   else renderClientsPipeline(sorted, onDelete);
 }
 
@@ -1506,7 +1541,8 @@ async function loadClients(session){
   renderAgentRoster(session, allClients);
   populateClientSelect();
   if(window.lucide) lucide.createIcons();
-  if(session.isAdmin) return;
+  const agenteSortBtn = document.getElementById('sort-btn-agente');
+  if(agenteSortBtn) agenteSortBtn.style.display = session.isAdmin ? 'inline-flex' : 'none';
   renderClients(clientsCache, deleteClientAndRerender);
 }
 
