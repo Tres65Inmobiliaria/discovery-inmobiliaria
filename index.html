@@ -394,6 +394,7 @@ desde el inicio a la propiedad ideal para ti.</p>
       <button class="link-btn" id="save-later-btn" type="button">Guardar y continuar después</button>
       <button class="link-btn" id="call-btn" type="button">Prefiero contestarlo en una llamada</button>
       <button class="link-btn" id="restart-btn" type="button">Volver a empezar</button>
+      <button class="link-btn" id="skip-optional-btn" type="button">Saltar preguntas opcionales y generar perfil de cliente</button>
     </div>
   </div>
 
@@ -402,6 +403,7 @@ desde el inicio a la propiedad ideal para ti.</p>
   <div id="reportView">
     <div class="bloque-label">Tu perfil</div>
     <p class="bloque-intro">Este resumen le llega a tu agente certificado, quien se va a contactar contigo con las mejores oportunidades basadas en tus respuestas.</p>
+    <p class="bloque-intro" id="discovery-corto-note" style="display:none;">Este es un discovery corto — contestaste las preguntas obligatorias, sin las opcionales. Tu agente puede contactarte para conocer más detalles y afinar tu búsqueda.</p>
     <div id="reportText" class="report-text"></div>
     <textarea id="reportComments" placeholder="Notas para ti (opcional)"></textarea>
     <div class="nav-buttons" style="margin-top:12px;">
@@ -841,9 +843,14 @@ function renderQuestion(q, index, container){
 
     if(!q.text){
       const notas = document.createElement('textarea');
-      notas.placeholder = 'Notas (opcional)';
+      notas.placeholder = NOTES_CAN_ANSWER.includes(q.id)
+        ? 'Notas (opcional) — o escribe aquí tu monto exacto si ninguna opción encaja'
+        : 'Notas (opcional)';
       notas.style.marginTop = '8px';
-      notas.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
+      notas.addEventListener('input', e=>{
+        state[q.id].text = e.target.value;
+        if(NOTES_CAN_ANSWER.includes(q.id)) updateProgress(); else saveLocal();
+      });
       notas.addEventListener('keydown', e=>{
         if(e.key === 'Enter' && !e.shiftKey){
           e.preventDefault();
@@ -890,10 +897,13 @@ function paintQuestion(q){
   });
 }
 
+const NOTES_CAN_ANSWER = ['presupuesto_compra', 'presupuesto_renta'];
+
 function isAnswered(q){
   const s = state[q.id];
   if(q.multi) return s.sel.size > 0;
   if(q.rank) return s.order.length > 0;
+  if(NOTES_CAN_ANSWER.includes(q.id) && s.text && s.text.trim()) return true;
   return !!s.sel || (q.text && s.text.trim());
 }
 
@@ -912,6 +922,8 @@ function refreshNavLinks(){
   document.getElementById('save-later-btn').style.display = show ? 'inline-block' : 'none';
   document.getElementById('restart-btn').style.display = show ? 'inline-block' : 'none';
   document.getElementById('call-btn').style.display = (currentPage === 0) ? 'inline-block' : 'none';
+  const inBloque2 = currentPage >= b2StartIndex && currentPage < pages.length - 1;
+  document.getElementById('skip-optional-btn').style.display = inBloque2 ? 'inline-block' : 'none';
 }
 
 function updateProgress(){
@@ -995,6 +1007,17 @@ function buildAnswers(){
     else answer = s.sel ? displayOption(q, s.sel) : s.sel;
     let notas = s.text || '';
     if((q.followUpOptions || q.optionFollowUps) && s.followUp) notas += (notas ? ' | ' : '') + (q.followUpLabel || 'Detalle') + ': ' + s.followUp;
+    if(NOTES_CAN_ANSWER.includes(q.id) && notas.trim()){
+      // Si el cliente escribió un monto (con o sin texto alrededor), lo dejamos
+      // explícito para que el perfil generado use el número exacto, no solo el rango.
+      const digitsOnly = notas.replace(/[^\d]/g, '');
+      if(digitsOnly.length >= 4){
+        const exacto = Number(digitsOnly).toLocaleString('es-MX');
+        const esSoloNumero = /^[\d.,\s]+$/.test(notas.trim());
+        notas = 'Presupuesto exacto: $' + exacto + ' MXN' + (esSoloNumero ? '' : '. ' + notas.trim());
+        if(!answer) answer = '$' + exacto + ' MXN (exacto)';
+      }
+    }
     out[q.id] = {title:displayTitle(q), answer:answer, notas:notas};
   });
   return out;
@@ -1117,7 +1140,9 @@ b1.forEach((q,i)=>makeQuestionPage(q,i));
 makeIntroPage(2, intro2);
 b2.forEach((q,i)=>makeQuestionPage(q,i));
 
+const b2StartIndex = pages.findIndex(p=>p.type==='intro' && p.bloque===2);
 let currentPage = 0;
+let discoveryCorto = false;
 
 function showPage(){
   if(typeof fbq === 'function'){
@@ -1163,6 +1188,8 @@ function showReport(perfilText, keywords, perfilComprador, prioridad){
   document.querySelector('.nav-bar').style.display = 'none';
   document.getElementById('stage').style.display = 'none';
   document.getElementById('reportText').innerHTML = renderReportHtml(perfilText);
+  const shortNote = document.getElementById('discovery-corto-note');
+  if(shortNote) shortNote.style.display = discoveryCorto ? 'block' : 'none';
   document.getElementById('reportView').style.display = 'block';
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -1278,6 +1305,17 @@ document.getElementById('popup-welcome-call-si').addEventListener('click', ()=>{
 });
 document.getElementById('popup-welcome-call-no').addEventListener('click', ()=>{
   document.getElementById('popup-welcome-call').style.display = 'none';
+});
+document.getElementById('skip-optional-btn').addEventListener('click', ()=>{
+  saveLocal();
+  const reqQs = relevantQuestions(b1).filter(q=>q.req);
+  const allDone = reqQs.every(isAnswered);
+  if(!allDone){
+    document.getElementById('popup').style.display = 'flex';
+    return;
+  }
+  discoveryCorto = true;
+  finalizeProfile();
 });
 document.getElementById('restart-btn').addEventListener('click', ()=>{
   const ok = confirm('Vas a borrar todo tu avance en el cuestionario y vas a empezar desde cero. \n¿Quieres continuar?');
