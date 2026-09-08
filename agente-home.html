@@ -2096,8 +2096,6 @@ async function boot(){
   document.getElementById('agents-toggle-label').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('agents-modal-title').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('eb-mensajes-toggle-btn').style.display = session.isAdmin ? 'inline-flex' : 'none';
-  // Directorio completo: solo Admin y Moises Traconis Corres (a petición explícita) — el backend ya lo rechaza para los demás, esto solo evita mostrar un botón que va a fallar.
-  document.getElementById('directorio-toggle-btn').style.display = (session.isAdmin || session.uid === '5219992399890') ? 'inline-flex' : 'none';
 
   if(session.isAdmin){
     const wrap = document.getElementById('agent-select-wrap');
