@@ -109,6 +109,8 @@
   .who-text .meta{font-size:11.5px; color:var(--texto-suave); margin-top:1px;}
 
   .src-tag{font-size:10px; font-family:'Montserrat',sans-serif; font-weight:600; color:var(--medio); background:var(--menta); padding:3px 8px; border-radius:6px; white-space:nowrap;}
+  .precio-tag{display:flex; align-items:center; gap:4px; font-size:11.5px; font-family:'Montserrat',sans-serif; font-weight:700; color:#8a6b1a; margin-top:8px;}
+  .precio-tag i{width:13px; height:13px;}
 
   .interes-tag{display:flex; align-items:flex-start; gap:5px; font-size:11.5px; color:var(--texto-suave); margin-top:10px;}
   .interes-tag i{width:13px; height:13px; color:var(--acento); flex-shrink:0; margin-top:1px;}
@@ -430,6 +432,14 @@ function buildLeadCard(lead){
   src.textContent = lead.origen || 'Link directo';
   top.appendChild(src);
   card.appendChild(top);
+
+  if(lead.precio){
+    const precio = document.createElement('div');
+    precio.className = 'precio-tag';
+    precio.innerHTML = '<i data-lucide="dollar-sign"></i> <span></span>';
+    precio.querySelector('span').textContent = lead.precio;
+    card.appendChild(precio);
+  }
 
   if(lead.interes){
     const interes = document.createElement('div');
@@ -770,6 +780,14 @@ function buildLostLeadCard(lead){
   who.appendChild(whoText);
   top.appendChild(who);
   card.appendChild(top);
+
+  if(lead.precio){
+    const precio = document.createElement('div');
+    precio.className = 'precio-tag';
+    precio.innerHTML = '<i data-lucide="dollar-sign"></i> <span></span>';
+    precio.querySelector('span').textContent = lead.precio;
+    card.appendChild(precio);
+  }
 
   if(lead.interes){
     const interes = document.createElement('div');
