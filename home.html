@@ -606,13 +606,13 @@ function buildPropertyStepCard(ficha){
 let metAgent, propertyCount;
 const colors = ['#1A4F5C', '#2AA898'];
 
-function stepsForProperty(propertyId, blocking, analysisUrl){
+function stepsForProperty(propertyId, blocking, analysisUrl, agentPhone){
   const hasReport = !!localStorage.getItem('tres65_property_' + propertyId + '_report');
   const cuestionarioDone = metAgent;
   const resumenDone = hasReport;
   const blockedTip = 'Tu agente te va a contactar sobre la propiedad que ya tiene en mente primero';
   return [
-    {num:1, title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true, href:agentHref, whatsapp:true},
+    {num:1, title:'Conoce a tu agente', sub:'Agencia + trayectoria', icon:'user-check', done:true, href:agentHref, whatsapp:true, agentPhone:agentPhone},
     {num:2, title:'Cuestionario de discovery', sub:'Conocer al cliente', icon:'clipboard-check', done:cuestionarioDone, href:(hasReport ? 'resumen.html?property=' : 'index.html?property=') + propertyId, tooltip:'Se desbloquea cuando conozcas a tu agente'},
     {num:3, title:'Resumen discovery', sub:'Tu perfil de cliente', icon:'file-text', done:resumenDone, href:'resumen.html?property=' + propertyId, tooltip: (blocking && !resumenDone) ? blockedTip : 'Se desbloquea cuando completes el cuestionario de discovery'},
     {num:4, title:'Tu agente está trabajando en tus propiedades', sub:'Buscando las mejores opciones para ti', icon:'search', done:!!analysisUrl, href:analysisUrl, tooltip:'Se desbloquea cuando tu agente empiece a trabajar en tu búsqueda'},
@@ -667,7 +667,13 @@ function buildStepCard(s){
   if(s.whatsapp){
     const wa = document.createElement('a');
     wa.className = 'step-wa';
-    wa.href = 'https://wa.me/5219992786153?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
+    // El número de WhatsApp SIEMPRE debe ser el del agente dueño de esta
+    // ficha (ficha.agent_phone) — nunca uno fijo, o todos los clientes
+    // terminan escribiéndole al mismo agente sin importar quién los lleva
+    // de verdad. 5219992786153 solo queda como respaldo si por algún
+    // motivo la ficha no trajo agent_phone.
+    const agentDigits = (s.agentPhone || '').replace(/\D/g, '') || '529992786153';
+    wa.href = 'https://wa.me/' + agentDigits + '?text=' + encodeURIComponent('Hola, me gustaría platicar sobre mi búsqueda de propiedad');
     wa.target = '_blank';
     wa.rel = 'noopener';
     wa.innerHTML = WHATSAPP_ICON;
@@ -798,7 +804,7 @@ async function init(){
 
     const hasProperty = p === 1 && ficha && (ficha.property || ficha.property_raw);
     const blocking = hasProperty && !ficha.property_discarded;
-    const cards = stepsForProperty(p, blocking, ficha && ficha.analysis_url);
+    const cards = stepsForProperty(p, blocking, ficha && ficha.analysis_url, ficha && ficha.agent_phone);
     if(hasProperty) cards.splice(1, 0, {special:'property', ficha});
 
     const stepperEl = document.createElement('div');
