@@ -323,6 +323,11 @@ async function editDirectorioManual(manual_id, entry){
   return _authedPost("/portal/directorio/" + encodeURIComponent(manual_id) + "/editar", entry);
 }
 
+async function mariaPausa(accion){
+  const data = await _authedPost("/portal/maria-pausa", {accion});
+  return data.paused;
+}
+
 async function getLeadsCount(){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
@@ -530,7 +535,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis, setTourInterest,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual, mariaPausa,
   getClientDetail, editClientInfo, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

@@ -141,6 +141,7 @@
     color:var(--profundo); background:#fff; border:1px solid var(--borde);
     border-radius:20px; padding:0 10px; text-decoration:none; cursor:pointer;
   }
+  .topnav-btn.paused{background:#F5E4E1; border-color:#C0453A; color:#C0453A;}
 
   .client-card{
     display:flex;
@@ -654,6 +655,9 @@
     <button id="eb-mensajes-toggle-btn" type="button" class="topnav-btn">
       <i data-lucide="mail" class="topnav-icon"></i> Mensajes EasyBroker
       <span id="eb-mensajes-badge" style="display:none; font-size:10px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 7px; border-radius:20px;"></span>
+    </button>
+    <button id="maria-pausa-btn" type="button" class="topnav-btn" style="display:none;">
+      <i data-lucide="bot" class="topnav-icon"></i> <span id="maria-pausa-label">María: activa</span>
     </button>
   </div>
 
@@ -1803,6 +1807,22 @@ async function renderDirectorio(){
   renderDirectorioFiltered();
 }
 
+function applyMariaPausaState(paused){
+  const btn = document.getElementById('maria-pausa-btn');
+  const label = document.getElementById('maria-pausa-label');
+  btn.classList.toggle('paused', paused);
+  label.textContent = paused ? 'María: pausada' : 'María: activa';
+}
+
+async function refreshMariaPausaBtn(){
+  try{
+    const paused = await window.tres65Sync.mariaPausa('status');
+    applyMariaPausaState(paused);
+  }catch(err){
+    console.error('[María] error consultando estado:', err);
+  }
+}
+
 async function renderClientTasks(session){
   const wrap = document.getElementById('client-tasks-wrap');
   if(session.isAdmin){
@@ -2234,6 +2254,10 @@ async function boot(){
   document.getElementById('agents-toggle-label').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('agents-modal-title').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('eb-mensajes-toggle-btn').style.display = session.isAdmin ? 'inline-flex' : 'none';
+  if(session.isAdmin){
+    document.getElementById('maria-pausa-btn').style.display = 'inline-flex';
+    refreshMariaPausaBtn();
+  }
 
   if(session.isAdmin){
     const wrap = document.getElementById('agent-select-wrap');
@@ -2469,6 +2493,25 @@ async function boot(){
     }catch(err){
       statusEl.textContent = err.message || 'Error importando el CSV.';
     }
+  });
+
+  document.getElementById('maria-pausa-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('maria-pausa-btn');
+    const label = document.getElementById('maria-pausa-label');
+    const currentlyPaused = btn.classList.contains('paused');
+    const accion = currentlyPaused ? 'off' : 'on';
+    const msg = currentlyPaused
+      ? '¿Reactivar las respuestas automáticas de María?'
+      : '¿Pausar a María? WhatsApp y Chatwoot van a seguir funcionando normal, los agentes van a poder seguir respondiendo a mano — solo se detienen las respuestas automáticas del bot, para todos los números, hasta que la reactives.';
+    if(!confirm(msg)) return;
+    btn.disabled = true;
+    try{
+      const paused = await window.tres65Sync.mariaPausa(accion);
+      applyMariaPausaState(paused);
+    }catch(err){
+      alert(err.message || 'Error cambiando el estado de María.');
+    }
+    btn.disabled = false;
   });
 
   document.getElementById('eb-mensajes-toggle-btn').addEventListener('click', ()=>{
