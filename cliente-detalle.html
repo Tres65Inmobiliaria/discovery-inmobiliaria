@@ -120,6 +120,12 @@
     filter:grayscale(1);
     opacity:0.75;
   }
+  .reactivar-btn{
+    display:inline-block; font-size:10.5px; font-weight:700; font-family:'Montserrat',sans-serif;
+    padding:3px 9px; border-radius:20px; margin-left:6px; margin-bottom:6px;
+    background:#fff; color:var(--profundo); border:1px solid var(--profundo); cursor:pointer;
+  }
+  .reactivar-btn:disabled{opacity:.6; cursor:default;}
   .prop-badge{
     display:inline-block; font-size:10.5px; font-weight:700; font-family:'Montserrat',sans-serif;
     padding:3px 9px; border-radius:20px; background:var(--acento); color:#fff; margin-bottom:6px;
@@ -805,6 +811,26 @@ function buildPropertiesListCard(ficha, token){
         tourBadge.textContent = 'Al cliente no le interesó';
       }
       row.appendChild(tourBadge);
+
+      if(entry.tour_interest === 'no'){
+        const reactivarBtn = document.createElement('button');
+        reactivarBtn.type = 'button';
+        reactivarBtn.className = 'reactivar-btn';
+        reactivarBtn.textContent = 'Reactivar';
+        reactivarBtn.addEventListener('click', async ()=>{
+          reactivarBtn.disabled = true;
+          reactivarBtn.textContent = 'Reactivando...';
+          try{
+            await window.tres65Sync.setTourInterest(token, p.public_id, '');
+            await refreshClientContent(token);
+          }catch(err){
+            alert(err.message || 'Error reactivando la propiedad.');
+            reactivarBtn.disabled = false;
+            reactivarBtn.textContent = 'Reactivar';
+          }
+        });
+        row.appendChild(reactivarBtn);
+      }
     }
 
     const link = document.createElement('a');
@@ -957,9 +983,10 @@ function buildPropertiesListCard(ficha, token){
   routeBtn.className = 'analysis-btn secondary';
   routeBtn.textContent = 'Ruta del tour';
   routeBtn.addEventListener('click', ()=>{
-    const withCoords = properties.filter(entry => entry.data && entry.data.latitude && entry.data.longitude);
+    const interesadas = properties.filter(entry => entry.tour_interest !== 'no');
+    const withCoords = interesadas.filter(entry => entry.data && entry.data.latitude && entry.data.longitude);
     if(!withCoords.length){
-      alert('Ninguna de las propiedades agregadas tiene coordenadas guardadas todavía.');
+      alert('Ninguna de las propiedades con interés tiene coordenadas guardadas todavía.');
       return;
     }
     const origin = prompt('¿Desde dónde empieza el recorrido? (dirección o punto de partida)', '');
@@ -978,8 +1005,8 @@ function buildPropertiesListCard(ficha, token){
       url += '&waypoints=' + encodeURIComponent(waypoints.join('|'));
     }
     window.open(url, '_blank', 'noopener');
-    if(withCoords.length < properties.length){
-      alert((properties.length - withCoords.length) + ' propiedad(es) sin coordenadas no se incluyeron en la ruta.');
+    if(withCoords.length < interesadas.length){
+      alert((interesadas.length - withCoords.length) + ' propiedad(es) sin coordenadas no se incluyeron en la ruta.');
     }
   });
   card.appendChild(routeBtn);

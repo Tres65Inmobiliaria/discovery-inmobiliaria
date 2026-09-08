@@ -471,6 +471,11 @@ async function runAnalysis(client_token){
   return _authedPost("/portal/analisis-cliente/" + encodeURIComponent(client_token), {});
 }
 
+async function setTourInterest(client_token, public_id, interes){
+  // interes: "si" | "no" | "" (vacío = reactivar, quita la marca)
+  return _authedPost("/portal/analisis-interes", {client_token, public_id, interes});
+}
+
 async function correctAnalysis(client_token, instruction){
   return _authedPost("/portal/corregir-analisis/" + encodeURIComponent(client_token), {instruction});
 }
@@ -516,7 +521,7 @@ async function summarizeLink(url){
 window.tres65Sync = {
   init, pull, push, getUid: () => auth.currentUser && auth.currentUser.uid,
   signInAgent, signOutAgent, resetAgentPassword, agentInit, listClients, createClient,
-  searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis,
+  searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis, setTourInterest,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
   runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual,
