@@ -69,6 +69,19 @@
   }
   .new-client-btn:hover{background:var(--medio);}
   .new-client-btn svg{width:18px; height:18px;}
+
+  .view-toggle{
+    display:flex; gap:6px; margin-bottom:16px;
+  }
+  .view-toggle-btn{
+    display:flex; align-items:center; gap:6px;
+    font-family:'Montserrat',sans-serif; font-size:12px; font-weight:600;
+    padding:7px 12px; border-radius:20px;
+    border:1px solid var(--borde); background:#fff; color:var(--texto-suave);
+    cursor:pointer;
+  }
+  .view-toggle-btn svg{width:14px; height:14px;}
+  .view-toggle-btn.active{background:var(--profundo); border-color:var(--profundo); color:#fff;}
   .topnav-icon{width:13px; height:13px;}
   .topnav-btn{
     display:inline-flex; align-items:center; gap:4px; box-sizing:border-box;
@@ -597,6 +610,15 @@
     <i data-lucide="user-plus"></i> Crear cliente
   </button>
 
+  <div class="view-toggle" id="clients-view-toggle">
+    <button type="button" class="view-toggle-btn" data-view="kanban">
+      <i data-lucide="columns"></i> Kanban
+    </button>
+    <button type="button" class="view-toggle-btn" data-view="list">
+      <i data-lucide="list"></i> Lista
+    </button>
+  </div>
+
   <div id="clients-list"></div>
 
   <h1 style="margin-top:36px;">Herramientas rápidas</h1>
@@ -999,6 +1021,48 @@ function renderClientsPipeline(clients, onDelete){
   list.appendChild(scroll);
 }
 
+function renderClientsFlat(clients, onDelete){
+  const list = document.getElementById('clients-list');
+  list.innerHTML = '';
+  if(!clients.length){
+    list.innerHTML = '<p class="empty-note">Todavía no tienes clientes. Dale a "Crear cliente" para empezar.</p>';
+    return;
+  }
+  clients.forEach(c => list.appendChild(buildClientCard(c, onDelete)));
+}
+
+const CLIENTS_VIEW_KEY = 'tres65_agent_clients_view';
+
+function getClientsView(){
+  return localStorage.getItem(CLIENTS_VIEW_KEY) === 'list' ? 'list' : 'kanban';
+}
+
+function renderClients(clients, onDelete){
+  const view = getClientsView();
+  document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  if(view === 'list') renderClientsFlat(clients, onDelete);
+  else renderClientsPipeline(clients, onDelete);
+}
+
+async function deleteClientAndRerender(token, reason){
+  try{
+    await window.tres65Sync.deleteClient(token, reason);
+    clientsCache = clientsCache.filter(c => c.token !== token);
+    renderClients(clientsCache, deleteClientAndRerender);
+  }catch(err){
+    alert(err.message || 'Error eliminando el cliente.');
+  }
+}
+
+document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    localStorage.setItem(CLIENTS_VIEW_KEY, btn.dataset.view);
+    renderClients(clientsCache, deleteClientAndRerender);
+  });
+});
+
 let inactiveClientsCache = [];
 let deletedSummaryCache = [];
 let sinContactarCache = [];
@@ -1335,14 +1399,7 @@ async function loadClients(session){
   populateClientSelect();
   if(window.lucide) lucide.createIcons();
   if(session.isAdmin) return;
-  renderClientsPipeline(clientsCache, async (token, reason)=>{
-    try{
-      await window.tres65Sync.deleteClient(token, reason);
-      await loadClients(session);
-    }catch(err){
-      alert(err.message || 'Error eliminando el cliente.');
-    }
-  });
+  renderClients(clientsCache, deleteClientAndRerender);
 }
 
 function fmtTaskDate(iso){
