@@ -626,7 +626,7 @@ function buildInfoCard(ficha, token){
   portalRow.className = 'info-row';
   portalRow.innerHTML = '<span class="label">Link de su perfil</span><span class="value"></span>';
   const portalLink = document.createElement('a');
-  portalLink.href = 'home.html?client=' + encodeURIComponent(token);
+  portalLink.href = 'home.html?client=' + encodeURIComponent(token) + '&from=agent';
   portalLink.target = '_blank';
   portalLink.rel = 'noopener';
   portalLink.textContent = 'Ver portal del cliente';

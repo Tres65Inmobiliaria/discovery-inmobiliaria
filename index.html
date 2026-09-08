@@ -1328,6 +1328,14 @@ document.getElementById('privacidad-continuar').addEventListener('click', async 
   if(tres65Uid) await window.tres65Sync.pull(tres65Uid);
   if(activeClientToken) window.tres65Sync.sendPixelIds(activeClientToken);
 
+  // El agente está llenando el discovery a nombre del cliente — cuenta como
+  // si ya lo hubiera conocido, para que no quede bloqueado ese paso en
+  // home.html si el cliente entra después por su cuenta.
+  if(isAgentMode){
+    localStorage.setItem('tres65_met_agent', 'true');
+    if(tres65Uid) await window.tres65Sync.push(tres65Uid);
+  }
+
   const privacyAccepted = localStorage.getItem('tres65_privacy_accepted') === 'true';
   if(!privacyAccepted){
     document.getElementById('popup-privacidad').style.display = 'flex';
