@@ -779,6 +779,8 @@ function buildInfoCard(ficha, token){
     ['Teléfono', ficha.client_phone],
     ['Correo', ficha.client_email],
     ['Agente asignado', ficha.agent_name],
+    // Origen solo aparece si existe — clientes creados antes de este campo no lo traen.
+    ...(ficha.client_origin ? [['Origen', ficha.client_origin]] : []),
   ].forEach(([label, value])=>{
     const row = document.createElement('div');
     row.className = 'info-row';

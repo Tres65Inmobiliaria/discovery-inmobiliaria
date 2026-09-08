@@ -881,7 +881,13 @@ function setView(view){
     subtitle.textContent = 'Sincronizado desde Chatwoot — labels "cliente-potencial" y "listo-para-asesor"';
     label.textContent = 'Ver leads perdidos';
   }
-  document.getElementById('add-manual-lead-btn').style.display = (view === 'activos') ? 'inline-flex' : 'none';
+  // "Agregar lead manual" se quita para Damara y Guillermo (piden por
+  // teléfono directo casos que ya no pasan por acá) — Admin y Moisés lo
+  // conservan tal cual. Esos mismos datos ahora se capturan en "Agregar
+  // cliente" (agente-home.html) para los agentes a los que se les quitó.
+  const MANUAL_LEAD_HIDDEN_FOR = ['5219992786153', '5219992413657']; // Damara, Guillermo
+  const canAddManualLead = session.isAdmin || !MANUAL_LEAD_HIDDEN_FOR.includes(session.uid);
+  document.getElementById('add-manual-lead-btn').style.display = (view === 'activos' && canAddManualLead) ? 'inline-flex' : 'none';
   document.getElementById('round-robin-potencial-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('round-robin-listo-btn').style.display = (view === 'activos' && session.isAdmin) ? 'inline-flex' : 'none';
   document.getElementById('perdidos-search-wrap').style.display = (view === 'perdidos') ? 'block' : 'none';

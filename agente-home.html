@@ -770,6 +770,10 @@
     <input type="email" id="client-email" placeholder="cliente@correo.com">
     <label for="client-property">Link de la propiedad (opcional)</label>
     <input type="text" id="client-property" placeholder="https://...">
+    <label for="client-origin">De dónde entra el cliente/lead (opcional)</label>
+    <input type="text" id="client-origin" placeholder="Ej. Referido de cliente, feria, redes sociales...">
+    <label for="client-notes">Notas (opcional)</label>
+    <textarea id="client-notes" placeholder="Cualquier detalle que le sirva al agente..." style="width:100%; font-family:'Raleway',sans-serif; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid var(--borde); background:#fff; color:var(--texto); margin-bottom:14px; min-height:70px; resize:vertical;"></textarea>
     <p class="modal-error" id="modal-error"></p>
     <div id="modal-success-wrap" style="display:none; margin-bottom:14px;">
       <p class="modal-success" style="display:block;">Cliente creado.</p>
@@ -2295,6 +2299,8 @@ async function boot(){
     document.getElementById('client-phone').value = '';
     document.getElementById('client-email').value = '';
     document.getElementById('client-property').value = '';
+    document.getElementById('client-origin').value = '';
+    document.getElementById('client-notes').value = '';
     document.getElementById('modal-error').style.display = 'none';
     document.getElementById('modal-success-wrap').style.display = 'none';
     document.getElementById('modal-send-status').style.display = 'none';
@@ -2623,6 +2629,8 @@ async function boot(){
     const client_phone = document.getElementById('client-phone').value.trim();
     const client_email = document.getElementById('client-email').value.trim();
     const property_raw = document.getElementById('client-property').value.trim();
+    const origin = document.getElementById('client-origin').value.trim();
+    const notes = document.getElementById('client-notes').value.trim();
     const agent_uid = session.isAdmin ? document.getElementById('agent-select').value : undefined;
 
     if(!client_name || !client_phone){
@@ -2634,7 +2642,7 @@ async function boot(){
     btn.disabled = true;
     btn.textContent = 'Creando...';
     try{
-      let result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid});
+      let result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, origin, notes, agent_uid});
       if(!result.ok && result.duplicate){
         const existing = result.existing || {};
         const proceed = confirm(
@@ -2647,7 +2655,7 @@ async function boot(){
           btn.textContent = 'Crear';
           return;
         }
-        result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, agent_uid, confirm_duplicate: true});
+        result = await window.tres65Sync.createClient({client_name, client_phone, client_email, property_raw, origin, notes, agent_uid, confirm_duplicate: true});
       }
       const linkEl = document.getElementById('modal-success-link');
       linkEl.href = result.link;

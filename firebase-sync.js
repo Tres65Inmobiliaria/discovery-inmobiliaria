@@ -409,14 +409,14 @@ async function markSaleClosed(token, amount){
   return _authedPost("/portal/cliente-detalle/" + encodeURIComponent(token) + "/venta-cerrada", {amount});
 }
 
-async function createClient({client_name, client_phone, client_email, property_raw, agent_uid, confirm_duplicate}){
+async function createClient({client_name, client_phone, client_email, property_raw, origin, notes, agent_uid, confirm_duplicate}){
   const user = auth.currentUser;
   if(!user) throw new Error("No autenticado");
   const idToken = await user.getIdToken(true);
   const res = await fetch(API_BASE + "/portal/crear-cliente", {
     method: "POST",
     headers: {"Content-Type": "application/json", "Authorization": "Bearer " + idToken},
-    body: JSON.stringify({client_name, client_phone, client_email, property_raw, agent_uid, confirm_duplicate})
+    body: JSON.stringify({client_name, client_phone, client_email, property_raw, origin, notes, agent_uid, confirm_duplicate})
   });
   const data = await res.json();
   if(!data.ok && !data.duplicate) throw new Error(data.error || "Error creando el cliente");
