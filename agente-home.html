@@ -1697,7 +1697,11 @@ function renderDirectorioTable(entries){
   const tbody = document.createElement('tbody');
   entries.forEach(e=>{
     const tr = document.createElement('tr');
-    const statusDisplay = e.source === 'manual' ? (e.status || 'Cliente potencial') + ' (manual)' : e.status;
+    // Una fila de directorio_manual con client_token es el ESPEJO de un cliente (índice
+    // interno), no un registro manual independiente: sin "(manual)" y sin acciones de
+    // borrar/editar del directorio (se gestiona desde Mis clientes).
+    const esEspejoCliente = !!e.client_token;
+    const statusDisplay = (e.source === 'manual' && !esEspejoCliente) ? (e.status || 'Cliente potencial') + ' (manual)' : e.status;
     [e.name, e.phone, e.email, statusDisplay, e.assignee_name || 'Sin asignar'].forEach(val=>{
       const td = document.createElement('td');
       td.textContent = val || '—';
@@ -1728,7 +1732,7 @@ function renderDirectorioTable(entries){
       actions.appendChild(btn);
     }
 
-    if(e.source === 'manual' && puedeGestionar){
+    if(e.source === 'manual' && !esEspejoCliente && puedeGestionar){
       const editBtn = document.createElement('button');
       editBtn.className = 'directorio-edit-btn';
       editBtn.title = 'Editar';
@@ -1738,7 +1742,7 @@ function renderDirectorioTable(entries){
       actions.appendChild(editBtn);
     }
 
-    if(e.source === 'manual' && puedeGestionar){
+    if(e.source === 'manual' && !esEspejoCliente && puedeGestionar){
       const delBtn = document.createElement('button');
       delBtn.className = 'directorio-delete-x';
       delBtn.title = 'Borrar para siempre';
