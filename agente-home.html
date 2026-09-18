@@ -657,6 +657,10 @@
     <button id="directorio-toggle-btn" type="button" class="topnav-btn">
       <i data-lucide="table-2" class="topnav-icon"></i> Directorio
     </button>
+    <!-- Herramienta TEMPORAL de limpieza — quitar este botón + el modal #damara-cleanup-modal + su JS cuando ya no haga falta -->
+    <button id="damara-cleanup-toggle-btn" type="button" class="topnav-btn" style="display:none;">
+      <i data-lucide="user-x" class="topnav-icon"></i> Revisar limpieza Damara
+    </button>
     <button id="eb-mensajes-toggle-btn" type="button" class="topnav-btn">
       <i data-lucide="mail" class="topnav-icon"></i> Mensajes EasyBroker
       <span id="eb-mensajes-badge" style="display:none; font-size:10px; font-weight:700; background:var(--alerta-bg, #F5E4E1); color:#C0453A; padding:2px 7px; border-radius:20px;"></span>
@@ -962,10 +966,24 @@
   </div>
 </div>
 
+<!-- Herramienta TEMPORAL de limpieza — quitar junto con el botón de arriba y su JS -->
+<div class="modal-overlay" id="damara-cleanup-modal">
+  <div class="modal-card" style="max-width:720px;">
+    <button class="modal-close" id="damara-cleanup-modal-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3>Revisar limpieza Damara</h3>
+    <p id="damara-cleanup-count-label" style="font-size:13px; color:var(--texto-suave); margin:-8px 0 14px;">Cargando...</p>
+    <div id="damara-cleanup-body" style="max-height:55vh; overflow:auto;"></div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; flex-wrap:wrap;">
+      <span id="damara-cleanup-selected-label" style="font-size:13px; color:var(--texto-suave);">0 de 0 seleccionados</span>
+      <button class="modal-save" id="damara-cleanup-delete-btn" type="button" disabled style="background:#C0453A;">Eliminar seleccionados (0)</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const AGENTS = [
-  {uid:'5219992786153', name:'Damara Traconis Corres'},
   {uid:'5219992399890', name:'Moises Traconis Corres'},
+  {uid:'5219992786153', name:'Damara Traconis Corres'},
   {uid:'5219992413657', name:'Guillermo Martínez Espinosa'}
 ];
 
@@ -1465,9 +1483,7 @@ async function renderMensajesEasyBroker(){
         document.getElementById('eb-lead-manual-email').value = item.email || '';
         document.getElementById('eb-lead-manual-property').value = item.property_url || '';
         document.getElementById('eb-lead-manual-origen').value = 'Mensaje desde el portal de EasyBroker';
-        if(item.agent_uid){
-          document.getElementById('eb-lead-manual-agent').value = item.agent_uid;
-        }
+        document.getElementById('eb-lead-manual-agent').value = item.agent_uid || '';
         ebLeadManualMensajeId = item.id;
         document.getElementById('eb-lead-manual-modal').classList.add('open');
       });
@@ -1596,6 +1612,12 @@ async function renderAgentTasks(session){
     assignWrap.style.display = 'block';
     const select = document.getElementById('agent-task-select');
     if(!select.options.length){
+      const taskPlaceholder = document.createElement('option');
+      taskPlaceholder.value = '';
+      taskPlaceholder.textContent = 'Selecciona un agente';
+      taskPlaceholder.selected = true;
+      taskPlaceholder.disabled = true;
+      select.appendChild(taskPlaceholder);
       AGENTS.forEach(a=>{
         const opt = document.createElement('option');
         opt.value = a.uid;
@@ -1810,6 +1832,96 @@ async function renderDirectorio(){
   const agenteSortBtn = document.getElementById('directorio-sort-btn-agente');
   if(agenteSortBtn) agenteSortBtn.style.display = (currentSession && (currentSession.isAdmin || currentSession.uid === '5219992399890')) ? 'inline-flex' : 'none';
   renderDirectorioFiltered();
+}
+
+// Herramienta TEMPORAL de limpieza — quitar junto con el botón/modal del HTML cuando ya no haga falta
+const DAMARA_CLEANUP_UID = '5219992786153';
+let damaraCleanupEntries = [];
+let damaraCleanupSelected = new Set();
+
+async function openDamaraCleanupModal(){
+  const modal = document.getElementById('damara-cleanup-modal');
+  const countLabel = document.getElementById('damara-cleanup-count-label');
+  const body = document.getElementById('damara-cleanup-body');
+  damaraCleanupSelected = new Set();
+  countLabel.textContent = 'Cargando...';
+  body.innerHTML = '';
+  modal.classList.add('open');
+  try{
+    const all = await window.tres65Sync.getDirectorio();
+    damaraCleanupEntries = all.filter(e => e.source === 'manual' && e.assignee_uid === DAMARA_CLEANUP_UID);
+  }catch(err){
+    countLabel.textContent = err.message || 'Error cargando el directorio.';
+    return;
+  }
+  countLabel.textContent = damaraCleanupEntries.length + ' contactos manuales asignados a Damara';
+  renderDamaraCleanupTable();
+}
+
+function renderDamaraCleanupTable(){
+  const body = document.getElementById('damara-cleanup-body');
+  if(!damaraCleanupEntries.length){
+    body.innerHTML = '<p class="empty-note">No hay contactos manuales asignados a Damara.</p>';
+    updateDamaraCleanupControls();
+    return;
+  }
+  const table = document.createElement('table');
+  table.className = 'roster-table';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th></th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>manual_id</th></tr>';
+  const masterCheckbox = document.createElement('input');
+  masterCheckbox.type = 'checkbox';
+  masterCheckbox.id = 'damara-cleanup-select-all';
+  masterCheckbox.title = 'Seleccionar todos';
+  masterCheckbox.addEventListener('change', ()=>{
+    damaraCleanupSelected = masterCheckbox.checked
+      ? new Set(damaraCleanupEntries.map(e => e.manual_id))
+      : new Set();
+    renderDamaraCleanupTable();
+  });
+  thead.querySelector('th').appendChild(masterCheckbox);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  damaraCleanupEntries.forEach(e=>{
+    const tr = document.createElement('tr');
+    const tdCheck = document.createElement('td');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = damaraCleanupSelected.has(e.manual_id);
+    checkbox.addEventListener('change', ()=>{
+      if(checkbox.checked) damaraCleanupSelected.add(e.manual_id);
+      else damaraCleanupSelected.delete(e.manual_id);
+      updateDamaraCleanupControls();
+    });
+    tdCheck.appendChild(checkbox);
+    tr.appendChild(tdCheck);
+    [e.name, e.phone, e.email, e.manual_id].forEach(val=>{
+      const td = document.createElement('td');
+      td.textContent = val || '—';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  body.innerHTML = '';
+  body.appendChild(table);
+  updateDamaraCleanupControls();
+}
+
+function updateDamaraCleanupControls(){
+  const total = damaraCleanupEntries.length;
+  const selected = damaraCleanupSelected.size;
+  const selectedLabel = document.getElementById('damara-cleanup-selected-label');
+  selectedLabel.textContent = selected + ' de ' + total + ' seleccionados';
+  const deleteBtn = document.getElementById('damara-cleanup-delete-btn');
+  deleteBtn.textContent = 'Eliminar seleccionados (' + selected + ')';
+  deleteBtn.disabled = selected === 0;
+  const masterCheckbox = document.getElementById('damara-cleanup-select-all');
+  if(masterCheckbox){
+    masterCheckbox.checked = total > 0 && selected === total;
+    masterCheckbox.indeterminate = selected > 0 && selected < total;
+  }
 }
 
 function applyMariaPausaState(paused){
@@ -2259,6 +2371,7 @@ async function boot(){
   document.getElementById('agents-toggle-label').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('agents-modal-title').textContent = session.isAdmin ? 'Agentes' : 'Mis tareas';
   document.getElementById('eb-mensajes-toggle-btn').style.display = session.isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('damara-cleanup-toggle-btn').style.display = session.isAdmin ? 'inline-flex' : 'none';
   if(session.isAdmin){
     document.getElementById('maria-pausa-btn').style.display = 'inline-flex';
     refreshMariaPausaBtn();
@@ -2268,12 +2381,20 @@ async function boot(){
     const wrap = document.getElementById('agent-select-wrap');
     wrap.style.display = 'block';
     const select = document.getElementById('agent-select');
-    AGENTS.forEach(a=>{
-      const opt = document.createElement('option');
-      opt.value = a.uid;
-      opt.textContent = a.name;
-      select.appendChild(opt);
-    });
+    if(!select.options.length){
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Selecciona un agente';
+      placeholder.selected = true;
+      placeholder.disabled = true;
+      select.appendChild(placeholder);
+      AGENTS.forEach(a=>{
+        const opt = document.createElement('option');
+        opt.value = a.uid;
+        opt.textContent = a.name;
+        select.appendChild(opt);
+      });
+    }
   }
 
   window.tres65Sync.getLeadsCount().then(count=>{
@@ -2300,13 +2421,18 @@ async function boot(){
     const input = document.getElementById('agent-task-input');
     const text = input.value.trim();
     const agentUid = select.value;
-    if(!text || !agentUid) return;
+    if(!text) return;
+    if(!agentUid){
+      alert('Selecciona un agente antes de asignar la tarea.');
+      return;
+    }
     const original = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Asignando...';
     try{
       await window.tres65Sync.createAgentTask(agentUid, text);
       input.value = '';
+      select.value = '';
       await renderAgentTasks(session);
     }catch(err){
       alert(err.message || 'Error asignando la tarea.');
@@ -2330,6 +2456,7 @@ async function boot(){
     document.getElementById('client-property').value = '';
     document.getElementById('client-origin').value = '';
     document.getElementById('client-notes').value = '';
+    document.getElementById('agent-select').value = '';
     document.getElementById('modal-error').style.display = 'none';
     document.getElementById('modal-success-wrap').style.display = 'none';
     document.getElementById('modal-send-status').style.display = 'none';
@@ -2371,6 +2498,39 @@ async function boot(){
     document.getElementById('directorio-modal').classList.remove('open');
   });
 
+  document.getElementById('damara-cleanup-toggle-btn').addEventListener('click', openDamaraCleanupModal);
+  document.getElementById('damara-cleanup-modal-close-x').addEventListener('click', ()=>{
+    document.getElementById('damara-cleanup-modal').classList.remove('open');
+  });
+  document.getElementById('damara-cleanup-delete-btn').addEventListener('click', async ()=>{
+    const idsToDelete = damaraCleanupEntries
+      .filter(e => damaraCleanupSelected.has(e.manual_id))
+      .map(e => e.manual_id);
+    if(!idsToDelete.length) return;
+    const ok = confirm(
+      'Vas a borrar ' + idsToDelete.length + ' contacto(s) manual(es) del directorio, asignados a Damara.\n\n' +
+      'Esta acción es DEFINITIVA: se borran para siempre de la base de datos y no se puede deshacer.'
+    );
+    if(!ok) return;
+    const btn = document.getElementById('damara-cleanup-delete-btn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Borrando...';
+    const errors = [];
+    for(const manual_id of idsToDelete){
+      try{
+        await window.tres65Sync.deleteDirectorioManual(manual_id);
+      }catch(err){
+        errors.push((err.message || 'Error') + ' (manual_id: ' + manual_id + ')');
+      }
+    }
+    if(errors.length){
+      alert('Se borraron ' + (idsToDelete.length - errors.length) + ' de ' + idsToDelete.length + '.\n\nErrores:\n' + errors.join('\n'));
+    }
+    btn.textContent = original;
+    await openDamaraCleanupModal();
+  });
+
   document.querySelectorAll('#directorio-sort-toggle .sort-toggle-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       localStorage.setItem(DIRECTORIO_VIEW_KEY, btn.dataset.sort);
@@ -2388,6 +2548,12 @@ async function boot(){
   const puedeGestionarDirectorio = session.isAdmin || session.uid === '5219992399890';
   if(puedeGestionarDirectorio){
     const dirAgentSelect = document.getElementById('directorio-manual-agent');
+    const dirPlaceholder = document.createElement('option');
+    dirPlaceholder.value = '';
+    dirPlaceholder.textContent = 'Selecciona un agente';
+    dirPlaceholder.selected = true;
+    dirPlaceholder.disabled = true;
+    dirAgentSelect.appendChild(dirPlaceholder);
     AGENTS.forEach(a=>{
       const opt = document.createElement('option');
       opt.value = a.uid;
@@ -2435,6 +2601,11 @@ async function boot(){
       errorEl.style.display = 'block';
       return;
     }
+    if(!agent_uid){
+      errorEl.textContent = 'Selecciona un agente antes de guardar.';
+      errorEl.style.display = 'block';
+      return;
+    }
     const editingId = directorioEditingId;
     btn.disabled = true;
     btn.textContent = editingId ? 'Guardando...' : 'Agregando...';
@@ -2465,6 +2636,11 @@ async function boot(){
     if(!file) return;
     const statusEl = document.getElementById('directorio-import-status');
     statusEl.style.display = 'block';
+    const agent_uid_check = document.getElementById('directorio-manual-agent').value;
+    if(!agent_uid_check){
+      statusEl.textContent = 'Selecciona un agente antes de importar el CSV.';
+      return;
+    }
     statusEl.textContent = 'Leyendo archivo...';
     try{
       const text = await file.text();
@@ -2536,6 +2712,12 @@ async function boot(){
 
   if(session.isAdmin){
     const ebAgentSelect = document.getElementById('eb-lead-manual-agent');
+    const ebPlaceholder = document.createElement('option');
+    ebPlaceholder.value = '';
+    ebPlaceholder.textContent = 'Selecciona un agente';
+    ebPlaceholder.selected = true;
+    ebPlaceholder.disabled = true;
+    ebAgentSelect.appendChild(ebPlaceholder);
     AGENTS.forEach(a=>{
       const opt = document.createElement('option');
       opt.value = a.uid;
@@ -2551,6 +2733,7 @@ async function boot(){
     ['eb-lead-manual-name','eb-lead-manual-phone','eb-lead-manual-email','eb-lead-manual-property','eb-lead-manual-origen'].forEach(id=>{
       document.getElementById(id).value = '';
     });
+    document.getElementById('eb-lead-manual-agent').value = '';
     ebLeadManualMensajeId = null;
   }
   document.getElementById('eb-lead-manual-modal-close-x').addEventListener('click', closeEbLeadManualModal);
@@ -2571,6 +2754,11 @@ async function boot(){
 
     if(!name || !phone){
       errorEl.textContent = 'Falta el nombre o el teléfono.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if(!agent_uid){
+      errorEl.textContent = 'Selecciona un agente antes de crear el lead.';
       errorEl.style.display = 'block';
       return;
     }
@@ -2683,6 +2871,11 @@ async function boot(){
 
     if(!client_name || !client_phone){
       errorNote.textContent = 'Falta el nombre o el teléfono.';
+      errorNote.style.display = 'block';
+      return;
+    }
+    if(session.isAdmin && !agent_uid){
+      errorNote.textContent = 'Selecciona un agente antes de crear el cliente.';
       errorNote.style.display = 'block';
       return;
     }

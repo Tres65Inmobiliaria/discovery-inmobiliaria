@@ -366,8 +366,8 @@
 
 <script>
 const AGENTS = [
-  {uid:'5219992786153', name:'Damara Traconis Corres'},
   {uid:'5219992399890', name:'Moises Traconis Corres'},
+  {uid:'5219992786153', name:'Damara Traconis Corres'},
   {uid:'5219992413657', name:'Guillermo Martínez Espinosa'}
 ];
 
@@ -669,8 +669,10 @@ function openCreateModal(lead){
   document.getElementById('modal-send-status').style.display = 'none';
   document.getElementById('modal-buttons-default').style.display = 'flex';
   document.getElementById('modal-buttons-success').style.display = 'none';
-  if(session.isAdmin && lead.assignee_uid){
-    document.getElementById('agent-select').value = lead.assignee_uid;
+  if(session.isAdmin){
+    const select = document.getElementById('agent-select');
+    const knownAgent = lead.assignee_uid && AGENTS.some(a => a.uid === lead.assignee_uid);
+    select.value = knownAgent ? lead.assignee_uid : '';
   }
   document.getElementById('modal').classList.add('open');
 }
@@ -939,6 +941,12 @@ async function boot(){
     const wrap = document.getElementById('agent-select-wrap');
     wrap.style.display = 'block';
     const select = document.getElementById('agent-select');
+    const agentSelectPlaceholder = document.createElement('option');
+    agentSelectPlaceholder.value = '';
+    agentSelectPlaceholder.textContent = 'Selecciona un agente';
+    agentSelectPlaceholder.selected = true;
+    agentSelectPlaceholder.disabled = true;
+    select.appendChild(agentSelectPlaceholder);
     AGENTS.forEach(a=>{
       const opt = document.createElement('option');
       opt.value = a.uid;
@@ -947,6 +955,12 @@ async function boot(){
     });
 
     const manualAgentSelect = document.getElementById('manual-lead-agent');
+    const manualAgentPlaceholder = document.createElement('option');
+    manualAgentPlaceholder.value = '';
+    manualAgentPlaceholder.textContent = 'Selecciona un agente';
+    manualAgentPlaceholder.selected = true;
+    manualAgentPlaceholder.disabled = true;
+    manualAgentSelect.appendChild(manualAgentPlaceholder);
     AGENTS.forEach(a=>{
       const opt = document.createElement('option');
       opt.value = a.uid;
@@ -1011,9 +1025,11 @@ async function boot(){
     ['manual-lead-name','manual-lead-phone','manual-lead-email','manual-lead-property','manual-lead-origen','manual-lead-notes'].forEach(id=>{
       document.getElementById(id).value = '';
     });
+    document.getElementById('manual-lead-agent').value = '';
   }
 
   document.getElementById('add-manual-lead-btn').addEventListener('click', ()=>{
+    closeManualLeadModal();
     document.getElementById('manual-lead-modal').classList.add('open');
   });
   document.getElementById('manual-lead-modal-close-x').addEventListener('click', closeManualLeadModal);
@@ -1036,6 +1052,10 @@ async function boot(){
 
     if(!name || !phone){
       errorEl.textContent = 'Falta el nombre o el teléfono.';
+      return;
+    }
+    if(session.isAdmin && !agent_uid){
+      errorEl.textContent = 'Selecciona un agente antes de crear el lead.';
       return;
     }
 
@@ -1159,6 +1179,11 @@ async function boot(){
 
     if(!client_name || !client_phone){
       errorNote.textContent = 'Falta el nombre o el teléfono.';
+      errorNote.style.display = 'block';
+      return;
+    }
+    if(session.isAdmin && !agent_uid){
+      errorNote.textContent = 'Selecciona un agente antes de crear el portal.';
       errorNote.style.display = 'block';
       return;
     }
