@@ -236,7 +236,13 @@ async function logLeadContact(conv_id, contacted, result, method){
 }
 
 async function deleteLead(conv_id, reason){
+  // Ruta LEGACY (leads.html): en el backend ya solo marca como perdido; nunca borró nada.
   return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/borrar", {reason});
+}
+
+// CIERRE PERDIDO: cambio de estado del lead (no borra contacto ni conversación).
+async function markLeadLost(conv_id, reason){
+  return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/cierre-perdido", {reason});
 }
 
 async function reactivarLead(conv_id){
@@ -535,7 +541,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis, setTourInterest,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual, mariaPausa,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual, mariaPausa,
   getClientDetail, editClientInfo, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

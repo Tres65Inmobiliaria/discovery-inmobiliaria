@@ -1632,7 +1632,7 @@ async function renderAgentTasks(session){
 let directorioCache = [];
 let directorioEditingId = null;
 const DIRECTORIO_VIEW_KEY = 'tres65_directorio_sort';
-const DIRECTORIO_STATUS_ORDER = ['Cliente potencial', 'Listo para asesor', 'Perdido'];
+const DIRECTORIO_STATUS_ORDER = ['Cliente potencial', 'Listo para asesor', 'Cierre perdido'];
 
 function getDirectorioSort(){
   const v = localStorage.getItem(DIRECTORIO_VIEW_KEY);
@@ -1711,7 +1711,7 @@ function renderDirectorioTable(entries){
     const actions = document.createElement('div');
     actions.className = 'directorio-row-actions';
 
-    if(e.status === 'Perdido' && e.source !== 'manual'){
+    if(e.status === 'Cierre perdido' && e.source !== 'manual'){
       const btn = document.createElement('button');
       btn.className = 'search-btn secondary';
       btn.style.fontSize = '12px';
@@ -1742,7 +1742,34 @@ function renderDirectorioTable(entries){
       actions.appendChild(editBtn);
     }
 
-    if(e.source === 'manual' && !esEspejoCliente && puedeGestionar){
+    // CIERRE PERDIDO: cambio de ESTADO del lead (historial comercial), no borrar. Acción propia
+    // (botón de texto, no la X). El BACKEND decide por fila si corresponde (puede_cierre_perdido):
+    // Admin/Moises en cualquier lead activo; un agente normal solo en conversaciones asignadas a él;
+    // nunca en clientes ni en registros manuales. El contacto sigue en el Directorio como "Cierre perdido".
+    if(e.puede_cierre_perdido === true){
+      const lostBtn = document.createElement('button');
+      lostBtn.className = 'search-btn secondary';
+      lostBtn.style.fontSize = '12px';
+      lostBtn.style.padding = '4px 10px';
+      lostBtn.textContent = 'Cierre perdido';
+      lostBtn.title = 'Marcar el lead como perdido (no lo borra del Directorio)';
+      lostBtn.onclick = ()=>{
+        openDeleteReasonModal(e.name, async (reason)=>{
+          try{
+            await window.tres65Sync.markLeadLost(e.conv_id, reason);
+            renderDirectorio();
+          }catch(err){
+            alert(err.message || 'Error marcando el lead como perdido.');
+          }
+        }, '¿Por qué se cierra como perdido a ');
+      };
+      actions.appendChild(lostBtn);
+    }
+
+    // BORRAR DEL DIRECTORIO: la X. Acción distinta y destructiva; la autorización la decide
+    // el BACKEND por fila (puede_borrar = Admin/Moises y solo entradas manuales independientes).
+    // Un agente normal nunca la ve, y aunque llamara al endpoint recibiría 403.
+    if(e.puede_borrar === true){
       const delBtn = document.createElement('button');
       delBtn.className = 'directorio-delete-x';
       delBtn.title = 'Borrar para siempre';
@@ -1759,23 +1786,6 @@ function renderDirectorioTable(entries){
           alert(err.message || 'Error borrando la entrada.');
           delBtn.disabled = false;
         }
-      };
-      actions.appendChild(delBtn);
-    } else if(e.source !== 'manual' && e.status !== 'Perdido'){
-      const delBtn = document.createElement('button');
-      delBtn.className = 'directorio-delete-x';
-      delBtn.title = 'Marcar como perdido';
-      delBtn.setAttribute('aria-label', 'Marcar como perdido');
-      delBtn.innerHTML = '<i data-lucide="x"></i>';
-      delBtn.onclick = ()=>{
-        openDeleteReasonModal(e.name, async (reason)=>{
-          try{
-            await window.tres65Sync.deleteLead(e.conv_id, reason);
-            renderDirectorio();
-          }catch(err){
-            alert(err.message || 'Error marcando el lead como perdido.');
-          }
-        });
       };
       actions.appendChild(delBtn);
     }
@@ -2052,9 +2062,9 @@ function openAgentRosterModal(agent, agentLeads, agentClients){
 
 let deleteReasonCallback = null;
 
-function openDeleteReasonModal(clientName, onConfirm){
+function openDeleteReasonModal(clientName, onConfirm, titlePrefix){
   deleteReasonCallback = onConfirm;
-  document.getElementById('delete-modal-title').textContent = '¿Por qué se elimina a ' + (clientName || 'este cliente') + '?';
+  document.getElementById('delete-modal-title').textContent = (titlePrefix || '¿Por qué se elimina a ') + (clientName || 'este cliente') + '?';
   document.getElementById('delete-reason-options').style.display = 'flex';
   document.getElementById('delete-reason-other-wrap').style.display = 'none';
   document.getElementById('delete-reason-other-input').value = '';
