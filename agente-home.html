@@ -1823,6 +1823,10 @@ async function copyContactText(e, btn){
 }
 
 let directorioCache = [];
+// Filas expandidas (por rowKey) que deben reabrirse solas tras un renderDirectorio() — así una
+// acción dentro del detalle (guardar clasificación, cierre perdido, reactivar) no se siente como
+// que "no hizo nada": el usuario ve el resultado en la misma fila, no tiene que volver a abrirla.
+let directorioExpandedKeys = new Set();
 let directorioEditingId = null;
 const DIRECTORIO_VIEW_KEY = 'tres65_directorio_sort';
 const DIRECTORIO_STATUS_ORDER = ['Cliente potencial', 'Listo para asesor', 'Cierre perdido'];
@@ -2157,6 +2161,7 @@ function directorioDetailRowHTML(e, rowKey, colspan, puedeGestionar){
           ${e.puede_cierre_perdido ? '<button type="button" class="search-btn secondary" data-act="cierre-perdido">Cierre perdido</button>' : ''}
           ${(e.status === 'Cierre perdido' && e.source !== 'manual') ? '<button type="button" class="search-btn secondary" data-act="reactivar-lead-perdido">Reactivar</button>' : ''}
         </div>
+        <p class="directorio-tipo-status" id="${idp}-detalle-status"></p>
       </div>
       ${e.puede_editar_tipo ? `
       <div class="directorio-detail-block">
@@ -2197,12 +2202,27 @@ function wireDirectorioDetailRow(detailTd, e, rowKey){
   const editBtn = detailTd.querySelector('[data-act="editar"]');
   if(editBtn) editBtn.onclick = ()=> openDirectorioEditModal(e);
 
+  const detalleStatusEl = document.getElementById(idp + '-detalle-status');
+  const mostrarConfirmacion = (el, texto)=>{
+    if(!el) return;
+    el.textContent = texto;
+    el.className = 'directorio-tipo-status success';
+    el.style.display = 'block';
+  };
+  // Tras guardar cualquier cambio se refresca el Directorio (para traer el dato real del
+  // servidor), pero con un respiro: si se refresca de inmediato, el mensaje de confirmación
+  // se pinta y se destruye en el mismo instante (nunca se llega a ver) y la fila se cierra sin
+  // que el usuario alcance a notar que sí pasó algo. directorioExpandedKeys ya hace que la fila
+  // se reabra sola tras el refresco; este setTimeout solo le da tiempo al ojo de leer el mensaje.
+  const refrescarConDemora = ()=> setTimeout(renderDirectorio, 900);
+
   const lostBtn = detailTd.querySelector('[data-act="cierre-perdido"]');
   if(lostBtn) lostBtn.onclick = ()=>{
     openDeleteReasonModal(e.name, async (reason)=>{
       try{
         await window.tres65Sync.markLeadLost(e.conv_id, reason);
-        renderDirectorio();
+        mostrarConfirmacion(detalleStatusEl, 'Marcado como Cierre perdido.');
+        refrescarConDemora();
       }catch(err){
         alert(err.message || 'Error marcando el lead como perdido.');
       }
@@ -2215,7 +2235,8 @@ function wireDirectorioDetailRow(detailTd, e, rowKey){
     reactivarPerdidoBtn.textContent = 'Reactivando...';
     try{
       await window.tres65Sync.reactivarLead(e.conv_id);
-      renderDirectorio();
+      mostrarConfirmacion(detalleStatusEl, 'Reactivado — vuelve a Listo para asesor.');
+      refrescarConDemora();
     }catch(err){
       alert(err.message || 'Error reactivando el lead.');
       reactivarPerdidoBtn.disabled = false;
@@ -2231,10 +2252,8 @@ function wireDirectorioDetailRow(detailTd, e, rowKey){
     guardarTipoBtn.disabled = true;
     try{
       await window.tres65Sync.setDirectorioTipo(rowKey, readTipoFieldsetValues(idp + '-tipo'));
-      statusEl.textContent = 'Clasificación guardada.';
-      statusEl.className = 'directorio-tipo-status success';
-      statusEl.style.display = 'block';
-      renderDirectorio();
+      mostrarConfirmacion(statusEl, 'Clasificación guardada.');
+      refrescarConDemora();
     }catch(err){
       statusEl.textContent = err.message || 'Error guardando la clasificación.';
       statusEl.className = 'directorio-tipo-status error';
@@ -2259,7 +2278,8 @@ function wireDirectorioDetailRow(detailTd, e, rowKey){
     reactivarLeadBtn.textContent = 'Reactivando...';
     try{
       await window.tres65Sync.reactivarComoLead(rowKey, agentSelect ? agentSelect.value : undefined);
-      renderDirectorio();
+      mostrarConfirmacion(statusEl, 'Reactivado como lead.');
+      refrescarConDemora();
     }catch(err){
       statusEl.textContent = err.message || 'Error reactivando el contacto.';
       statusEl.className = 'directorio-tipo-status error';
@@ -2355,17 +2375,29 @@ function renderDirectorioTable(entries){
     detailTr.appendChild(detailTd);
     tbody.appendChild(detailTr);
     let wired = false;
-    expandBtn.onclick = ()=>{
-      const open = detailTr.style.display !== 'none';
-      detailTr.style.display = open ? 'none' : 'table-row';
-      expandBtn.classList.toggle('open', !open);
-      expandBtn.setAttribute('aria-expanded', String(!open));
-      if(!open && !wired){
+    const abrir = ()=>{
+      detailTr.style.display = 'table-row';
+      expandBtn.classList.add('open');
+      expandBtn.setAttribute('aria-expanded', 'true');
+      directorioExpandedKeys.add(rowKey);
+      if(!wired){
         wireDirectorioDetailRow(detailTd, e, rowKey);
         wired = true;
+      }
+    };
+    expandBtn.onclick = ()=>{
+      const open = detailTr.style.display !== 'none';
+      if(open){
+        detailTr.style.display = 'none';
+        expandBtn.classList.remove('open');
+        expandBtn.setAttribute('aria-expanded', 'false');
+        directorioExpandedKeys.delete(rowKey);
+      } else {
+        abrir();
         if(window.lucide) lucide.createIcons();
       }
     };
+    if(directorioExpandedKeys.has(rowKey)) abrir();
   });
   table.appendChild(tbody);
   body.innerHTML = '';
