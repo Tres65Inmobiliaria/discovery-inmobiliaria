@@ -321,12 +321,29 @@ async function importDirectorioCsv(entries, agent_uid){
   return _authedPost("/portal/directorio/importar", {entries, agent_uid});
 }
 
-async function deleteDirectorioManual(manual_id){
-  return _authedPost("/portal/directorio/" + encodeURIComponent(manual_id) + "/borrar", {});
+// Borrar del Directorio (lote, también para UN contacto). El backend exige sesión Admin/Moises Y la
+// contraseña de borrado (segunda llave); esa contraseña solo viaja aquí, en el cuerpo del POST por HTTPS.
+// No se guarda ni se registra en ningún lado.
+async function deleteFromDirectorio(items, password){
+  return _authedPost("/portal/directorio/borrar", {items, password});
 }
 
 async function editDirectorioManual(manual_id, entry){
   return _authedPost("/portal/directorio/" + encodeURIComponent(manual_id) + "/editar", entry);
+}
+
+// Tipo de contacto (Cliente/Asesor externo/Personal interno/Proveedor) + estado (para Cliente) —
+// aplica a CUALQUIER fila del Directorio (Chatwoot, cliente o manual), row_key con el mismo
+// formato "tipo:id" que ya usa deleteFromDirectorio ("manual:<id>"|"cliente:<token>"|"chatwoot:<conv_id>").
+async function setDirectorioTipo(row_key, payload){
+  return _authedPost("/portal/directorio/tipo", {row_key, ...payload});
+}
+
+// Reactivar como lead (solo Cliente/Asesor externo): reusa el contacto/conversación existente en
+// Chatwoot — nunca crea un duplicado ni borra notas/historial/portal. agent_uid es opcional (solo
+// lo usa Admin cuando el contacto no tiene agente asignado).
+async function reactivarComoLead(row_key, agent_uid){
+  return _authedPost("/portal/directorio/reactivar", agent_uid ? {row_key, agent_uid} : {row_key});
 }
 
 async function mariaPausa(accion){
@@ -541,7 +558,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis, setTourInterest,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteDirectorioManual, editDirectorioManual, mariaPausa,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteFromDirectorio, editDirectorioManual, setDirectorioTipo, reactivarComoLead, mariaPausa,
   getClientDetail, editClientInfo, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };

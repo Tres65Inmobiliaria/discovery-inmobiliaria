@@ -608,12 +608,48 @@
   .modal-cancel{background:transparent; color:var(--texto-suave); border:1px solid var(--borde) !important;}
   .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
   .directorio-row-actions{display:flex; gap:6px; align-items:center;}
-  .directorio-delete-x{width:22px; height:22px; border:none; background:none; color:#C0453A; font-size:16px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
-  .directorio-delete-x:hover{color:#8C3327;}
-  .directorio-delete-x:disabled{opacity:.6; cursor:default;}
   .directorio-edit-btn{width:22px; height:22px; border:none; background:none; color:var(--acento); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
   .directorio-edit-btn:hover{color:var(--profundo);}
   .directorio-edit-btn svg{width:15px; height:15px;}
+  /* Selección del Directorio (solo seleccionar; ninguna acción se ejecuta por seleccionar) */
+  .directorio-check{width:16px; height:16px; margin:0; cursor:pointer; accent-color:var(--acento); vertical-align:middle;}
+  .roster-table th.directorio-check-col, .roster-table td.directorio-check-col{width:34px; padding-left:10px; padding-right:2px;}
+  #directorio-delete-modal{z-index:60;}
+  #directorio-action-bar{display:none; align-items:center; justify-content:space-between; gap:8px 12px; flex-wrap:wrap; padding:8px 12px; margin-bottom:10px; background:#F1F5FA; border:1px solid var(--borde); border-radius:10px;}
+  #directorio-selected-count{font-family:"Montserrat",sans-serif; font-size:12.5px; font-weight:700; color:var(--profundo);}
+  .directorio-bar-actions{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end;}
+  #directorio-action-bar .search-btn{font-size:12px; padding:6px 12px;}
+  #directorio-action-bar .search-btn:disabled{opacity:.5; cursor:not-allowed;}
+  /* Celular: contador arriba, acciones en cuadrícula de 2 columnas a todo el ancho, sin desbordar. */
+  @media (max-width:600px){
+    #directorio-action-bar{flex-direction:column; align-items:stretch;}
+    .directorio-bar-actions{display:grid; grid-template-columns:1fr 1fr; justify-content:stretch;}
+    #directorio-action-bar .search-btn{width:100%; white-space:normal; padding:8px 6px;}
+    #directorio-edit-toggle{margin-left:0 !important;}
+  }
+  /* Fila expandible: nombre/celular/email/tipo/asignado a en la fila cerrada; el resto
+     (estado, datos del tipo, clasificar, reactivar, compartir/copiar, acciones) va en el
+     detalle, para que la tabla cerrada quepa cómoda incluso con la ventana ampliada. */
+  .directorio-expand-btn{width:24px; height:24px; border:none; background:none; color:var(--texto-suave); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .directorio-expand-btn svg{width:16px; height:16px; transition:transform .15s;}
+  .directorio-expand-btn.open svg{transform:rotate(180deg);}
+  .directorio-detail-row td{background:#F7FAFB; padding:14px 16px; border-bottom:1px solid var(--borde);}
+  .directorio-detail-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px 20px;}
+  .directorio-detail-block h4{font-family:"Montserrat",sans-serif; font-size:11.5px; font-weight:700; color:var(--texto-suave); text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px;}
+  .directorio-detail-block label{font-size:11px;}
+  .directorio-detail-block select, .directorio-detail-block input:not([type="checkbox"]), .directorio-detail-block textarea{font-size:13px; padding:7px 9px; margin-bottom:8px;}
+  .directorio-detail-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .directorio-detail-actions .search-btn{font-size:12px; padding:6px 10px;}
+  .directorio-tipo-status{font-size:12px; margin:4px 0 0; display:none;}
+  .directorio-tipo-status.error{color:#C0453A;}
+  .directorio-tipo-status.success{color:#2f7d5c;}
+  .directorio-type-chip{display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--menta); color:var(--profundo); white-space:nowrap;}
+  .directorio-state-chip{display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; margin-left:6px; white-space:nowrap;}
+  .directorio-state-chip.ganado{background:#DCF3E4; color:#2f7d5c;}
+  .directorio-state-chip.perdido{background:#FBE3E0; color:#B3362B;}
+  @media (max-width:640px){
+    .directorio-detail-grid{grid-template-columns:1fr;}
+  }
 
   .delete-reason-options{display:flex; flex-direction:column; gap:8px; margin-bottom:6px;}
   .delete-reason-btn{
@@ -913,15 +949,17 @@
 </div>
 
 <div class="modal-overlay" id="directorio-modal">
-  <div class="modal-card" style="max-width:760px;">
+  <div class="modal-card" style="max-width:1180px;">
     <button class="modal-close" id="directorio-modal-close-x" type="button" aria-label="Cerrar">×</button>
     <h3>Directorio</h3>
-    <div style="display:flex; gap:8px; margin-bottom:12px;">
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
       <button class="search-btn secondary" id="directorio-add-manual-btn" type="button" style="font-size:12px; padding:6px 12px;">+ Agregar manual</button>
       <button class="search-btn secondary" id="directorio-import-csv-btn" type="button" style="font-size:12px; padding:6px 12px;">Importar CSV</button>
+      <button class="search-btn secondary" id="directorio-edit-toggle" type="button" aria-pressed="false" title="Seleccionar contactos para exportar, compartir o borrar" style="font-size:12px; padding:6px 12px; margin-left:auto;">Editar</button>
       <input type="file" id="directorio-csv-input" accept=".csv" style="display:none;">
     </div>
     <p class="modal-error" id="directorio-import-status" style="display:none;"></p>
+    <p class="modal-success" id="directorio-action-status" role="status" style="display:none;"></p>
     <div class="clients-controls" style="margin-bottom:12px;">
       <div class="clients-search-wrap">
         <i data-lucide="search"></i>
@@ -936,7 +974,33 @@
         <button type="button" class="sort-toggle-btn" data-sort="agente" id="directorio-sort-btn-agente" style="display:none;">Por agente</button>
       </div>
     </div>
+    <div id="directorio-action-bar" role="toolbar" aria-label="Modo edición del Directorio">
+      <span id="directorio-selected-count" aria-live="polite">0 seleccionados</span>
+      <div class="directorio-bar-actions">
+        <button type="button" class="search-btn secondary" id="directorio-act-export" disabled title="Descargar la selección como CSV">Exportar CSV</button>
+        <button type="button" class="search-btn secondary" id="directorio-act-share" disabled title="Próximamente: compartir por WhatsApp">Compartir por WhatsApp</button>
+        <button type="button" class="search-btn secondary" id="directorio-act-delete" disabled style="display:none;" title="Quitar del Directorio los contactos seleccionados (pide confirmación y la contraseña de borrado)">Borrar del Directorio</button>
+        <button type="button" class="search-btn secondary" id="directorio-act-cancel" title="Salir del modo edición y limpiar la selección">Cancelar</button>
+      </div>
+    </div>
     <div id="directorio-body" style="max-height:70vh; overflow:auto;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="directorio-delete-modal" role="dialog" aria-modal="true" aria-labelledby="directorio-delete-title">
+  <div class="modal-card" style="max-width:460px;">
+    <button class="modal-close" id="directorio-delete-close-x" type="button" aria-label="Cerrar">×</button>
+    <h3 id="directorio-delete-title">Borrar del Directorio</h3>
+    <p id="directorio-delete-summary" style="margin:0 0 8px; font-size:13.5px;"></p>
+    <ul id="directorio-delete-list" style="margin:0 0 10px; padding-left:18px; font-size:13px; max-height:140px; overflow:auto;"></ul>
+    <p id="directorio-delete-note" style="margin:0 0 12px; font-size:12.5px; color:#5c6b73;"></p>
+    <label for="directorio-delete-password">Contraseña de borrado</label>
+    <input type="password" id="directorio-delete-password" autocomplete="new-password" spellcheck="false" maxlength="200" placeholder="Contraseña de borrado">
+    <p class="modal-error" id="directorio-delete-error"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="directorio-delete-cancel" type="button">Cancelar</button>
+      <button class="modal-save" id="directorio-delete-confirm" type="button" style="background:#B3362B;">Borrar</button>
+    </div>
   </div>
 </div>
 
@@ -952,6 +1016,7 @@
     <input type="email" id="directorio-manual-email" placeholder="contacto@correo.com">
     <label for="directorio-manual-status">Estado (opcional)</label>
     <input type="text" id="directorio-manual-status" placeholder="Ej. Cliente potencial">
+    <div id="directorio-manual-tipo-fieldset"></div>
     <label for="directorio-manual-agent" id="directorio-manual-agent-label">Asignar a</label>
     <select id="directorio-manual-agent"></select>
     <p class="modal-error" id="directorio-manual-error"></p>
@@ -1629,6 +1694,134 @@ async function renderAgentTasks(session){
   }
 }
 
+// ══ Directorio: Tipo de contacto (Cliente / Asesor externo / Personal interno / Proveedor) ═══
+// Fieldset compartido: se usa tal cual en el modal "Agregar/Editar manual" (idPrefix fijo
+// 'directorio-manual-tipo') y en el detalle de CUALQUIER fila de la tabla (idPrefix por fila) —
+// misma marcación, mismas funciones de leer/escribir/mostrar-ocultar, un solo lugar que mantener.
+const CONTACT_TYPES = [
+  {value:'cliente', label:'Cliente'},
+  {value:'asesor_externo', label:'Asesor externo'},
+  {value:'personal_interno', label:'Personal interno TRES65'},
+  {value:'proveedor', label:'Proveedor de servicios'},
+];
+const CONTACT_TYPE_LABELS = Object.fromEntries(CONTACT_TYPES.map(t=>[t.value, t.label]));
+const PROVEEDOR_SERVICIOS = ['Contador', 'Mantenimiento de aires', 'Plomería', 'Electricidad', 'Legal', 'Fotografía', 'Otro'];
+const CLIENT_STATES = [
+  {value:'activo', label:'Activo'},
+  {value:'cierre_ganado', label:'Cierre ganado'},
+  {value:'cierre_perdido', label:'Cierre perdido'},
+];
+
+function tipoFieldsetHTML(idPrefix){
+  return `
+    <label for="${idPrefix}-tipo">Tipo de contacto</label>
+    <select id="${idPrefix}-tipo">${CONTACT_TYPES.map(t=>`<option value="${t.value}">${t.label}</option>`).join('')}</select>
+    <div id="${idPrefix}-asesor-wrap" style="display:none;">
+      <label for="${idPrefix}-inmobiliaria">Inmobiliaria a la que pertenece</label>
+      <input type="text" id="${idPrefix}-inmobiliaria" placeholder="Ej. Century 21">
+    </div>
+    <div id="${idPrefix}-proveedor-wrap" style="display:none;">
+      <label for="${idPrefix}-servicio">Tipo de servicio</label>
+      <select id="${idPrefix}-servicio">${PROVEEDOR_SERVICIOS.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+      <div id="${idPrefix}-servicio-otro-wrap" style="display:none;">
+        <label for="${idPrefix}-servicio-otro">Describe el servicio</label>
+        <input type="text" id="${idPrefix}-servicio-otro" placeholder="Ej. Jardinería">
+      </div>
+    </div>
+    <div id="${idPrefix}-cliente-wrap" style="display:none;">
+      <label for="${idPrefix}-estado">Estado</label>
+      <select id="${idPrefix}-estado">${CLIENT_STATES.map(s=>`<option value="${s.value}">${s.label}</option>`).join('')}</select>
+      <div id="${idPrefix}-notas-wrap" style="display:none;">
+        <label for="${idPrefix}-notas">Notas del cierre ganado</label>
+        <textarea id="${idPrefix}-notas" rows="2" placeholder="Opcional"></textarea>
+      </div>
+    </div>`;
+}
+
+function wireTipoFieldset(idPrefix){
+  const tipoSel = document.getElementById(idPrefix + '-tipo');
+  const servicioSel = document.getElementById(idPrefix + '-servicio');
+  const estadoSel = document.getElementById(idPrefix + '-estado');
+  if(!tipoSel || !servicioSel || !estadoSel) return;
+  const syncTipo = ()=>{
+    document.getElementById(idPrefix + '-asesor-wrap').style.display = tipoSel.value === 'asesor_externo' ? 'block' : 'none';
+    document.getElementById(idPrefix + '-proveedor-wrap').style.display = tipoSel.value === 'proveedor' ? 'block' : 'none';
+    document.getElementById(idPrefix + '-cliente-wrap').style.display = tipoSel.value === 'cliente' ? 'block' : 'none';
+  };
+  const syncServicio = ()=>{
+    document.getElementById(idPrefix + '-servicio-otro-wrap').style.display = servicioSel.value === 'Otro' ? 'block' : 'none';
+  };
+  const syncEstado = ()=>{
+    document.getElementById(idPrefix + '-notas-wrap').style.display = estadoSel.value === 'cierre_ganado' ? 'block' : 'none';
+  };
+  tipoSel.addEventListener('change', syncTipo);
+  servicioSel.addEventListener('change', syncServicio);
+  estadoSel.addEventListener('change', syncEstado);
+  syncTipo(); syncServicio(); syncEstado();
+}
+
+function setTipoFieldsetValues(idPrefix, e){
+  const data = e.contact_type_data || {};
+  document.getElementById(idPrefix + '-tipo').value = e.contact_type || 'cliente';
+  document.getElementById(idPrefix + '-inmobiliaria').value = data.inmobiliaria || '';
+  document.getElementById(idPrefix + '-servicio').value = PROVEEDOR_SERVICIOS.includes(data.servicio) ? data.servicio : 'Contador';
+  document.getElementById(idPrefix + '-servicio-otro').value = data.servicio_otro || '';
+  document.getElementById(idPrefix + '-estado').value = e.client_state || 'activo';
+  document.getElementById(idPrefix + '-notas').value = e.client_state_notes || '';
+  ['tipo', 'servicio', 'estado'].forEach(suf=> document.getElementById(idPrefix + '-' + suf).dispatchEvent(new Event('change')));
+}
+
+function readTipoFieldsetValues(idPrefix){
+  const contact_type = document.getElementById(idPrefix + '-tipo').value;
+  const payload = {contact_type, contact_type_data: {}, client_state: 'activo', client_state_notes: ''};
+  if(contact_type === 'asesor_externo'){
+    payload.contact_type_data = {inmobiliaria: document.getElementById(idPrefix + '-inmobiliaria').value.trim()};
+  } else if(contact_type === 'proveedor'){
+    payload.contact_type_data = {
+      servicio: document.getElementById(idPrefix + '-servicio').value,
+      servicio_otro: document.getElementById(idPrefix + '-servicio-otro').value.trim(),
+    };
+  } else if(contact_type === 'cliente'){
+    payload.client_state = document.getElementById(idPrefix + '-estado').value;
+    payload.client_state_notes = document.getElementById(idPrefix + '-notas').value.trim();
+  }
+  return payload;
+}
+
+// ══ Directorio: Compartir por WhatsApp / Copiar contacto ═════════════════════════════
+// Solo con los campos que el contacto realmente tiene — nunca inventa ni rellena vacíos.
+function buildContactShareText(e){
+  const lines = [];
+  if(e.name) lines.push('Nombre: ' + e.name);
+  if(e.phone) lines.push('Celular: ' + e.phone);
+  if(e.email) lines.push('Email: ' + e.email);
+  if(e.contact_type) lines.push('Tipo: ' + (CONTACT_TYPE_LABELS[e.contact_type] || e.contact_type));
+  const data = e.contact_type_data || {};
+  if(e.contact_type === 'asesor_externo' && data.inmobiliaria) lines.push('Inmobiliaria: ' + data.inmobiliaria);
+  if(e.contact_type === 'proveedor' && data.servicio){
+    lines.push('Servicio: ' + (data.servicio === 'Otro' ? (data.servicio_otro || 'Otro') : data.servicio));
+  }
+  return lines.join('\n');
+}
+
+function shareContactWhatsApp(e){
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(buildContactShareText(e)), '_blank');
+}
+
+async function copyContactText(e, btn){
+  const text = buildContactShareText(e);
+  try{
+    await navigator.clipboard.writeText(text);
+    if(btn){
+      const original = btn.textContent;
+      btn.textContent = 'Copiado';
+      setTimeout(()=>{ btn.textContent = original; }, 1200);
+    }
+  }catch(err){
+    alert('No se pudo copiar automáticamente. Copia manualmente:\n\n' + text);
+  }
+}
+
 let directorioCache = [];
 let directorioEditingId = null;
 const DIRECTORIO_VIEW_KEY = 'tres65_directorio_sort';
@@ -1680,12 +1873,407 @@ function openDirectorioEditModal(e){
   document.getElementById('directorio-manual-status').value = e.status || '';
   const agentSelect = document.getElementById('directorio-manual-agent');
   if(agentSelect) agentSelect.value = e.assignee_uid || '';
+  setTipoFieldsetValues('directorio-manual-tipo', e);
   directorioEditingId = e.manual_id;
   document.getElementById('directorio-manual-modal').classList.add('open');
 }
 
+// ══ Directorio: selección ═══════════════════════════════════════════════════════════
+// SOLO selecciona: ninguna acción se ejecuta por seleccionar. La selección se guarda por
+// clave estable de fila (sobrevive a ordenar y a recargar) y se poda a lo que está VISIBLE
+// tras la búsqueda: nunca queda algo seleccionado que el usuario no ve, así que ninguna
+// acción puede afectar filas ocultas por un filtro.
+let directorioEditMode = false;        // false: Directorio normal (sin checkboxes). true: modo edición/selección
+let directorioSelected = new Set();
+let directorioVisible = [];            // filas visibles (búsqueda + orden) del último render
+let directorioRowChecks = new Map();   // clave -> <input> de la fila actual
+
+function directorioRowKey(e){
+  if(e.client_token) return 'cliente:' + e.client_token;   // cliente (espejo o fusionado con Chatwoot)
+  if(e.conv_id) return 'chatwoot:' + e.conv_id;
+  return 'manual:' + (e.manual_id || '');
+}
+
+function directorioTipoLabel(e){
+  if(e.client_token && e.conv_id) return 'Cliente + WhatsApp';
+  if(e.client_token) return 'Cliente';
+  if(e.source === 'chatwoot') return 'WhatsApp';
+  return 'Manual';
+}
+
+function pruneDirectorioSelection(visible){
+  const keys = new Set(visible.map(directorioRowKey));
+  Array.from(directorioSelected).forEach(k=>{ if(!keys.has(k)) directorioSelected.delete(k); });
+}
+
+function directorioSelectedVisible(){
+  return directorioVisible.filter(e => directorioSelected.has(directorioRowKey(e)));
+}
+
+function directorioSelectionState(){
+  const total = directorioVisible.length;
+  const count = directorioSelectedVisible().length;
+  return {total, count, all: total > 0 && count === total, some: count > 0};
+}
+
+function updateDirectorioSelectionUI(){
+  const st = directorioSelectionState();
+  const counter = document.getElementById('directorio-selected-count');
+  if(counter) counter.textContent = st.count + (st.count === 1 ? ' seleccionado' : ' seleccionados');
+  // La barra existe solo en modo edición (aunque no haya nada seleccionado, para poder Cancelar).
+  const bar = document.getElementById('directorio-action-bar');
+  if(bar) bar.style.display = directorioEditMode ? 'flex' : 'none';
+  const editBtn = document.getElementById('directorio-edit-toggle');
+  if(editBtn){ editBtn.style.display = directorioEditMode ? 'none' : ''; editBtn.setAttribute('aria-pressed', directorioEditMode ? 'true' : 'false'); }
+  const all = document.getElementById('directorio-select-all');
+  if(all){ all.checked = st.all; all.indeterminate = st.some && !st.all; }
+  // Exportar y Borrar necesitan selección. Compartir sigue deshabilitado (sin lógica todavía).
+  const exp = document.getElementById('directorio-act-export');
+  if(exp) exp.disabled = st.count === 0;
+  // "Borrar del Directorio": el backend marca puede_borrar solo a Admin/Moises (y además exige la
+  // contraseña de borrado). Aquí solo se muestra/habilita; ninguna selección borra nada por sí sola.
+  const del = document.getElementById('directorio-act-delete');
+  if(del){
+    del.style.display = (directorioEditMode && directorioPuedeBorrar()) ? '' : 'none';
+    del.disabled = st.count === 0;
+  }
+}
+
+function directorioPuedeBorrar(){
+  return directorioCache.some(e => e.puede_borrar === true);
+}
+
+function setDirectorioEditMode(on){
+  directorioEditMode = !!on;
+  if(!directorioEditMode) directorioSelected.clear();     // salir de edición siempre limpia la selección
+  if(directorioCache.length) renderDirectorioFiltered(); else updateDirectorioSelectionUI();
+}
+
+function toggleDirectorioRow(key, checked){
+  if(checked) directorioSelected.add(key); else directorioSelected.delete(key);
+  updateDirectorioSelectionUI();
+}
+
+function toggleDirectorioAllVisible(checked){
+  directorioVisible.forEach(e=>{
+    const key = directorioRowKey(e);
+    if(checked) directorioSelected.add(key); else directorioSelected.delete(key);
+    const box = directorioRowChecks.get(key);
+    if(box) box.checked = checked;
+  });
+  updateDirectorioSelectionUI();
+}
+
+function clearDirectorioSelection(){
+  directorioSelected.clear();
+  directorioRowChecks.forEach(box => { box.checked = false; });
+  updateDirectorioSelectionUI();
+}
+
+function exitDirectorioEditMode(){
+  setDirectorioEditMode(false);
+  const dm = document.getElementById('directorio-delete-modal');
+  if(dm && dm.classList.contains('open')) closeDirectorioDeleteModal();
+}
+
+// CSV: nunca incluye tokens ni ids internos (client_token es la llave del portal del cliente).
+const DIRECTORIO_CSV_COLUMNS = ['Nombre', 'Teléfono', 'Correo', 'Estado', 'Agente', 'Tipo'];
+
+function directorioCsvCell(value, esTelefono){
+  let s = value == null ? '' : String(value);
+  // Anti inyección de fórmulas en Excel/Sheets (los nombres vienen de WhatsApp): =, +, -, @ al inicio.
+  // Un teléfono legítimo ("+52 999…") se deja tal cual.
+  if(/^[=+\-@\t\r]/.test(s) && !(esTelefono && /^\+?[\d\s()-]+$/.test(s))) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+function directorioBuildCsv(entries){
+  const rows = [DIRECTORIO_CSV_COLUMNS.map(c => directorioCsvCell(c)).join(',')];
+  entries.forEach(e=>{
+    rows.push([
+      directorioCsvCell(e.name),
+      directorioCsvCell(e.phone, true),
+      directorioCsvCell(e.email),
+      directorioCsvCell(e.status),
+      directorioCsvCell(e.assignee_name || 'Sin asignar'),
+      directorioCsvCell(directorioTipoLabel(e))
+    ].join(','));
+  });
+  return '\uFEFF' + rows.join('\r\n') + '\r\n';   // BOM para que Excel lea bien los acentos
+}
+
+function exportDirectorioSeleccionados(){
+  const rows = directorioSelectedVisible();
+  if(!rows.length) return;
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const filename = 'directorio-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.csv';
+  const url = URL.createObjectURL(new Blob([directorioBuildCsv(rows)], {type: 'text/csv;charset=utf-8'}));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── Borrar del Directorio: selección -> confirmación -> contraseña de borrado -> backend ──
+// La contraseña vive solo en el campo del modal mientras se escribe: se lee al confirmar, el campo se
+// vacía de inmediato y NO se guarda en ningún almacenamiento ni se registra. La valida el backend.
+function directorioDeletePreview(rows){
+  const manuales = rows.filter(e => !e.client_token && !e.conv_id && e.source === 'manual').length;
+  return {total: rows.length, manuales, ocultos: rows.length - manuales};
+}
+
+function openDirectorioDeleteModal(){
+  const rows = directorioSelectedVisible();
+  if(!rows.length || !directorioPuedeBorrar()) return;
+  const pv = directorioDeletePreview(rows);
+  document.getElementById('directorio-delete-summary').textContent =
+    '¿Borrar ' + pv.total + (pv.total === 1 ? ' contacto' : ' contactos') + ' del Directorio?';
+  const list = document.getElementById('directorio-delete-list');
+  list.innerHTML = '';
+  rows.slice(0, 10).forEach(e=>{
+    const li = document.createElement('li');
+    li.textContent = (e.name || 'Sin nombre') + (e.phone ? ' — ' + e.phone : '');
+    list.appendChild(li);
+  });
+  if(rows.length > 10){
+    const li = document.createElement('li');
+    li.textContent = 'y ' + (rows.length - 10) + ' más…';
+    list.appendChild(li);
+  }
+  const partes = [];
+  if(pv.ocultos) partes.push(pv.ocultos + ' se quitarán de la vista del Directorio (sus datos en Leads, Clientes y Chatwoot NO se tocan)');
+  if(pv.manuales) partes.push(pv.manuales + ' entrada(s) manual(es) se eliminarán definitivamente');
+  document.getElementById('directorio-delete-note').textContent = partes.join('. ') + '.';
+  document.getElementById('directorio-delete-error').style.display = 'none';
+  document.getElementById('directorio-delete-password').value = '';
+  document.getElementById('directorio-delete-modal').classList.add('open');
+  document.getElementById('directorio-delete-password').focus();
+}
+
+function closeDirectorioDeleteModal(){
+  document.getElementById('directorio-delete-password').value = '';
+  document.getElementById('directorio-delete-error').style.display = 'none';
+  document.getElementById('directorio-delete-modal').classList.remove('open');
+}
+
+async function confirmDirectorioDelete(){
+  const input = document.getElementById('directorio-delete-password');
+  const errorEl = document.getElementById('directorio-delete-error');
+  const confirmBtn = document.getElementById('directorio-delete-confirm');
+  const password = input.value;
+  input.value = '';                                   // no se conserva ni un instante más de lo necesario
+  errorEl.style.display = 'none';
+  if(!password){
+    errorEl.textContent = 'Escribe la contraseña de borrado.';
+    errorEl.style.display = 'block';
+    input.focus();
+    return;
+  }
+  const items = directorioSelectedVisible().map(directorioRowKey);
+  if(!items.length){ closeDirectorioDeleteModal(); return; }
+  confirmBtn.disabled = true;
+  try{
+    const res = await window.tres65Sync.deleteFromDirectorio(items, password);
+    closeDirectorioDeleteModal();
+    const partes = [];
+    if(res.excluidos) partes.push(res.excluidos + ' quitado(s) del Directorio');
+    if(res.borrados) partes.push(res.borrados + ' eliminado(s) definitivamente');
+    if(res.omitidos && res.omitidos.length) partes.push(res.omitidos.length + ' omitido(s)');
+    const status = document.getElementById('directorio-action-status');
+    status.textContent = partes.join(' · ') || 'Sin cambios.';
+    status.style.display = 'block';
+    directorioSelected.clear();
+    setDirectorioEditMode(false);
+    renderDirectorio();
+  }catch(err){
+    errorEl.textContent = (err && err.message) || 'No se pudo borrar.';
+    errorEl.style.display = 'block';
+    input.focus();
+  }finally{
+    confirmBtn.disabled = false;
+  }
+}
+
+function initDirectorioSelection(){
+  const delBtn = document.getElementById('directorio-act-delete');
+  if(delBtn) delBtn.addEventListener('click', openDirectorioDeleteModal);
+  const delCancel = document.getElementById('directorio-delete-cancel');
+  if(delCancel) delCancel.addEventListener('click', closeDirectorioDeleteModal);
+  const delX = document.getElementById('directorio-delete-close-x');
+  if(delX) delX.addEventListener('click', closeDirectorioDeleteModal);
+  const delOk = document.getElementById('directorio-delete-confirm');
+  if(delOk) delOk.addEventListener('click', confirmDirectorioDelete);
+  const delPw = document.getElementById('directorio-delete-password');
+  if(delPw) delPw.addEventListener('keydown', ev=>{ if(ev.key === 'Enter'){ ev.preventDefault(); confirmDirectorioDelete(); } });
+  const edit = document.getElementById('directorio-edit-toggle');
+  if(edit) edit.addEventListener('click', ()=>{
+    const st = document.getElementById('directorio-action-status'); if(st) st.style.display = 'none';
+    setDirectorioEditMode(true);
+  });
+  const cancel = document.getElementById('directorio-act-cancel');
+  if(cancel) cancel.addEventListener('click', exitDirectorioEditMode);
+  const exp = document.getElementById('directorio-act-export');
+  if(exp) exp.addEventListener('click', exportDirectorioSeleccionados);
+}
+// ══ fin selección ══════════════════════════════════════════════════════════════════
+
+function directorioRowDomId(rowKey){
+  return 'dirrow-' + rowKey.replace(/[^a-zA-Z0-9_-]/g, '-');
+}
+
+function directorioStateChipHTML(e){
+  if(e.client_state === 'cierre_ganado') return '<span class="directorio-state-chip ganado">Cierre ganado</span>';
+  if(e.client_state === 'cierre_perdido') return '<span class="directorio-state-chip perdido">Cierre perdido</span>';
+  return '';
+}
+
+function directorioDetailRowHTML(e, rowKey, colspan, puedeGestionar){
+  const idp = directorioRowDomId(rowKey);
+  const esEspejoCliente = !!e.client_token;
+  const statusDisplay = (e.source === 'manual' && !esEspejoCliente) ? (e.status || 'Cliente potencial') + ' (manual)' : e.status;
+  const data = e.contact_type_data || {};
+  const tipoDetalleLineas = [];
+  if(e.contact_type === 'asesor_externo' && data.inmobiliaria) tipoDetalleLineas.push('Inmobiliaria: ' + data.inmobiliaria);
+  if(e.contact_type === 'proveedor' && data.servicio){
+    tipoDetalleLineas.push('Servicio: ' + (data.servicio === 'Otro' ? (data.servicio_otro || 'Otro') : data.servicio));
+  }
+  if(e.client_state === 'cierre_ganado' && e.client_state_notes) tipoDetalleLineas.push('Notas: ' + e.client_state_notes);
+
+  return `
+    <div class="directorio-detail-grid">
+      <div class="directorio-detail-block">
+        <h4>Detalle</h4>
+        <p style="margin:0 0 4px;">Estado del proceso: ${statusDisplay || '—'}</p>
+        <p style="margin:0 0 4px;">Tipo: ${CONTACT_TYPE_LABELS[e.contact_type] || 'Cliente'} ${directorioStateChipHTML(e)}</p>
+        ${tipoDetalleLineas.map(l=>`<p style="margin:0 0 4px;">${l}</p>`).join('')}
+        <div class="directorio-detail-actions">
+          <button type="button" class="search-btn secondary" data-act="share">Compartir por WhatsApp</button>
+          <button type="button" class="search-btn secondary" data-act="copy">Copiar contacto</button>
+          ${(e.source === 'manual' && !esEspejoCliente && e.puede_editar_tipo) ? '<button type="button" class="search-btn secondary" data-act="editar">Editar</button>' : ''}
+          ${e.puede_cierre_perdido ? '<button type="button" class="search-btn secondary" data-act="cierre-perdido">Cierre perdido</button>' : ''}
+          ${(e.status === 'Cierre perdido' && e.source !== 'manual') ? '<button type="button" class="search-btn secondary" data-act="reactivar-lead-perdido">Reactivar</button>' : ''}
+        </div>
+      </div>
+      ${e.puede_editar_tipo ? `
+      <div class="directorio-detail-block">
+        <h4>Clasificar contacto</h4>
+        <div id="${idp}-tipo-fieldset"></div>
+        <div class="directorio-detail-actions">
+          <button type="button" class="search-btn secondary" data-act="guardar-tipo">Guardar clasificación</button>
+        </div>
+        <p class="directorio-tipo-status" id="${idp}-tipo-status"></p>
+      </div>` : ''}
+      ${e.puede_reactivar_lead ? `
+      <div class="directorio-detail-block">
+        <h4>Reactivar como lead</h4>
+        <p style="margin:0 0 8px; font-size:12.5px; color:var(--texto-suave);">Reusa este mismo contacto en Chatwoot — no crea un duplicado ni borra su historial.</p>
+        ${(!e.assignee_uid && currentSession && currentSession.isAdmin) ? `<select id="${idp}-reactivar-agente"><option value="" selected disabled>Selecciona un agente</option>${AGENTS.map(a=>`<option value="${a.uid}">${a.name}</option>`).join('')}</select>` : ''}
+        <div class="directorio-detail-actions">
+          <button type="button" class="search-btn secondary" data-act="reactivar-como-lead">Reactivar como lead</button>
+        </div>
+        <p class="directorio-tipo-status" id="${idp}-reactivar-status"></p>
+      </div>` : ''}
+    </div>`;
+}
+
+function wireDirectorioDetailRow(detailTd, e, rowKey){
+  const idp = directorioRowDomId(rowKey);
+  const fieldsetHost = document.getElementById(idp + '-tipo-fieldset');
+  if(fieldsetHost){
+    fieldsetHost.innerHTML = tipoFieldsetHTML(idp + '-tipo');
+    wireTipoFieldset(idp + '-tipo');
+    setTipoFieldsetValues(idp + '-tipo', e);
+  }
+
+  const shareBtn = detailTd.querySelector('[data-act="share"]');
+  if(shareBtn) shareBtn.onclick = ()=> shareContactWhatsApp(e);
+  const copyBtn = detailTd.querySelector('[data-act="copy"]');
+  if(copyBtn) copyBtn.onclick = ()=> copyContactText(e, copyBtn);
+
+  const editBtn = detailTd.querySelector('[data-act="editar"]');
+  if(editBtn) editBtn.onclick = ()=> openDirectorioEditModal(e);
+
+  const lostBtn = detailTd.querySelector('[data-act="cierre-perdido"]');
+  if(lostBtn) lostBtn.onclick = ()=>{
+    openDeleteReasonModal(e.name, async (reason)=>{
+      try{
+        await window.tres65Sync.markLeadLost(e.conv_id, reason);
+        renderDirectorio();
+      }catch(err){
+        alert(err.message || 'Error marcando el lead como perdido.');
+      }
+    }, '¿Por qué se cierra como perdido a ');
+  };
+
+  const reactivarPerdidoBtn = detailTd.querySelector('[data-act="reactivar-lead-perdido"]');
+  if(reactivarPerdidoBtn) reactivarPerdidoBtn.onclick = async ()=>{
+    reactivarPerdidoBtn.disabled = true;
+    reactivarPerdidoBtn.textContent = 'Reactivando...';
+    try{
+      await window.tres65Sync.reactivarLead(e.conv_id);
+      renderDirectorio();
+    }catch(err){
+      alert(err.message || 'Error reactivando el lead.');
+      reactivarPerdidoBtn.disabled = false;
+      reactivarPerdidoBtn.textContent = 'Reactivar';
+    }
+  };
+
+  const guardarTipoBtn = detailTd.querySelector('[data-act="guardar-tipo"]');
+  if(guardarTipoBtn) guardarTipoBtn.onclick = async ()=>{
+    const statusEl = document.getElementById(idp + '-tipo-status');
+    statusEl.className = 'directorio-tipo-status';
+    statusEl.style.display = 'none';
+    guardarTipoBtn.disabled = true;
+    try{
+      await window.tres65Sync.setDirectorioTipo(rowKey, readTipoFieldsetValues(idp + '-tipo'));
+      statusEl.textContent = 'Clasificación guardada.';
+      statusEl.className = 'directorio-tipo-status success';
+      statusEl.style.display = 'block';
+      renderDirectorio();
+    }catch(err){
+      statusEl.textContent = err.message || 'Error guardando la clasificación.';
+      statusEl.className = 'directorio-tipo-status error';
+      statusEl.style.display = 'block';
+    }
+    guardarTipoBtn.disabled = false;
+  };
+
+  const reactivarLeadBtn = detailTd.querySelector('[data-act="reactivar-como-lead"]');
+  if(reactivarLeadBtn) reactivarLeadBtn.onclick = async ()=>{
+    const statusEl = document.getElementById(idp + '-reactivar-status');
+    const agentSelect = document.getElementById(idp + '-reactivar-agente');
+    statusEl.className = 'directorio-tipo-status';
+    statusEl.style.display = 'none';
+    if(agentSelect && !agentSelect.value){
+      statusEl.textContent = 'Selecciona un agente para reactivarlo.';
+      statusEl.className = 'directorio-tipo-status error';
+      statusEl.style.display = 'block';
+      return;
+    }
+    reactivarLeadBtn.disabled = true;
+    reactivarLeadBtn.textContent = 'Reactivando...';
+    try{
+      await window.tres65Sync.reactivarComoLead(rowKey, agentSelect ? agentSelect.value : undefined);
+      renderDirectorio();
+    }catch(err){
+      statusEl.textContent = err.message || 'Error reactivando el contacto.';
+      statusEl.className = 'directorio-tipo-status error';
+      statusEl.style.display = 'block';
+      reactivarLeadBtn.disabled = false;
+      reactivarLeadBtn.textContent = 'Reactivar como lead';
+    }
+  };
+}
+
 function renderDirectorioTable(entries){
   const body = document.getElementById('directorio-body');
+  directorioVisible = entries;
+  directorioRowChecks = new Map();
   if(!entries.length){
     body.innerHTML = '<p class="empty-note">No hay entradas que coincidan.</p>';
     return;
@@ -1693,106 +2281,91 @@ function renderDirectorioTable(entries){
   const puedeGestionar = currentSession && (currentSession.isAdmin || currentSession.uid === '5219992399890');
   const table = document.createElement('table');
   table.className = 'roster-table';
-  table.innerHTML = '<thead><tr><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>Agente</th><th></th></tr></thead>';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  const colCount = (directorioEditMode ? 1 : 0) + 6;
+  if(directorioEditMode){
+    const thCheck = document.createElement('th');
+    thCheck.className = 'directorio-check-col';
+    const selectAll = document.createElement('input');
+    selectAll.type = 'checkbox';
+    selectAll.id = 'directorio-select-all';
+    selectAll.className = 'directorio-check';
+    selectAll.title = 'Seleccionar todos los visibles';
+    selectAll.setAttribute('aria-label', 'Seleccionar todos los visibles');
+    selectAll.onchange = ()=> toggleDirectorioAllVisible(selectAll.checked);
+    thCheck.appendChild(selectAll);
+    headRow.appendChild(thCheck);
+  }
+  ['Nombre', 'Celular', 'Email', 'Tipo de contacto', 'Asignado a', ''].forEach(t=>{
+    const th = document.createElement('th');
+    th.textContent = t;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
   const tbody = document.createElement('tbody');
   entries.forEach(e=>{
+    const rowKey = directorioRowKey(e);
     const tr = document.createElement('tr');
-    // Una fila de directorio_manual con client_token es el ESPEJO de un cliente (índice
-    // interno), no un registro manual independiente: sin "(manual)" y sin acciones de
-    // borrar/editar del directorio (se gestiona desde Mis clientes).
-    const esEspejoCliente = !!e.client_token;
-    const statusDisplay = (e.source === 'manual' && !esEspejoCliente) ? (e.status || 'Cliente potencial') + ' (manual)' : e.status;
-    [e.name, e.phone, e.email, statusDisplay, e.assignee_name || 'Sin asignar'].forEach(val=>{
+    if(directorioEditMode){
+      const checkTd = document.createElement('td');
+      checkTd.className = 'directorio-check-col';
+      const rowCheck = document.createElement('input');
+      rowCheck.type = 'checkbox';
+      rowCheck.className = 'directorio-check';
+      rowCheck.checked = directorioSelected.has(rowKey);
+      rowCheck.setAttribute('aria-label', 'Seleccionar ' + (e.name || 'fila'));
+      rowCheck.onchange = ()=> toggleDirectorioRow(rowKey, rowCheck.checked);
+      directorioRowChecks.set(rowKey, rowCheck);
+      checkTd.appendChild(rowCheck);
+      tr.appendChild(checkTd);
+    }
+    const tipoCellHTML = (CONTACT_TYPE_LABELS[e.contact_type] || 'Cliente') + directorioStateChipHTML(e);
+    [e.name || '—', e.phone || '—', e.email || '—'].forEach(val=>{
       const td = document.createElement('td');
-      td.textContent = val || '—';
+      td.textContent = val;
       tr.appendChild(td);
     });
-    const actionTd = document.createElement('td');
-    const actions = document.createElement('div');
-    actions.className = 'directorio-row-actions';
+    const tipoTd = document.createElement('td');
+    tipoTd.innerHTML = tipoCellHTML;
+    tr.appendChild(tipoTd);
+    const agenteTd = document.createElement('td');
+    agenteTd.textContent = e.assignee_name || 'Sin asignar';
+    tr.appendChild(agenteTd);
 
-    if(e.status === 'Cierre perdido' && e.source !== 'manual'){
-      const btn = document.createElement('button');
-      btn.className = 'search-btn secondary';
-      btn.style.fontSize = '12px';
-      btn.style.padding = '4px 10px';
-      btn.textContent = 'Reactivar';
-      btn.onclick = async ()=>{
-        btn.disabled = true;
-        btn.textContent = 'Reactivando...';
-        try{
-          await window.tres65Sync.reactivarLead(e.conv_id);
-          renderDirectorio();
-        }catch(err){
-          alert(err.message || 'Error reactivando el lead.');
-          btn.disabled = false;
-          btn.textContent = 'Reactivar';
-        }
-      };
-      actions.appendChild(btn);
-    }
-
-    if(e.source === 'manual' && !esEspejoCliente && puedeGestionar){
-      const editBtn = document.createElement('button');
-      editBtn.className = 'directorio-edit-btn';
-      editBtn.title = 'Editar';
-      editBtn.setAttribute('aria-label', 'Editar');
-      editBtn.innerHTML = '<i data-lucide="pencil"></i>';
-      editBtn.onclick = ()=> openDirectorioEditModal(e);
-      actions.appendChild(editBtn);
-    }
-
-    // CIERRE PERDIDO: cambio de ESTADO del lead (historial comercial), no borrar. Acción propia
-    // (botón de texto, no la X). El BACKEND decide por fila si corresponde (puede_cierre_perdido):
-    // Admin/Moises en cualquier lead activo; un agente normal solo en conversaciones asignadas a él;
-    // nunca en clientes ni en registros manuales. El contacto sigue en el Directorio como "Cierre perdido".
-    if(e.puede_cierre_perdido === true){
-      const lostBtn = document.createElement('button');
-      lostBtn.className = 'search-btn secondary';
-      lostBtn.style.fontSize = '12px';
-      lostBtn.style.padding = '4px 10px';
-      lostBtn.textContent = 'Cierre perdido';
-      lostBtn.title = 'Marcar el lead como perdido (no lo borra del Directorio)';
-      lostBtn.onclick = ()=>{
-        openDeleteReasonModal(e.name, async (reason)=>{
-          try{
-            await window.tres65Sync.markLeadLost(e.conv_id, reason);
-            renderDirectorio();
-          }catch(err){
-            alert(err.message || 'Error marcando el lead como perdido.');
-          }
-        }, '¿Por qué se cierra como perdido a ');
-      };
-      actions.appendChild(lostBtn);
-    }
-
-    // BORRAR DEL DIRECTORIO: la X. Acción distinta y destructiva; la autorización la decide
-    // el BACKEND por fila (puede_borrar = Admin/Moises y solo entradas manuales independientes).
-    // Un agente normal nunca la ve, y aunque llamara al endpoint recibiría 403.
-    if(e.puede_borrar === true){
-      const delBtn = document.createElement('button');
-      delBtn.className = 'directorio-delete-x';
-      delBtn.title = 'Borrar para siempre';
-      delBtn.setAttribute('aria-label', 'Borrar para siempre');
-      delBtn.innerHTML = '<i data-lucide="x"></i>';
-      delBtn.onclick = async ()=>{
-        const ok = confirm('¿Borrar a "' + e.name + '" del directorio?\n\nEsta acción es DEFINITIVA: se borra para siempre de la base de datos (no solo del dashboard) y no se puede deshacer.');
-        if(!ok) return;
-        delBtn.disabled = true;
-        try{
-          await window.tres65Sync.deleteDirectorioManual(e.manual_id);
-          renderDirectorio();
-        }catch(err){
-          alert(err.message || 'Error borrando la entrada.');
-          delBtn.disabled = false;
-        }
-      };
-      actions.appendChild(delBtn);
-    }
-
-    actionTd.appendChild(actions);
-    tr.appendChild(actionTd);
+    const expandTd = document.createElement('td');
+    const expandBtn = document.createElement('button');
+    expandBtn.className = 'directorio-expand-btn';
+    expandBtn.type = 'button';
+    expandBtn.title = 'Ver detalle';
+    expandBtn.setAttribute('aria-label', 'Ver detalle de ' + (e.name || 'este contacto'));
+    expandBtn.setAttribute('aria-expanded', 'false');
+    expandBtn.innerHTML = '<i data-lucide="chevron-down"></i>';
+    expandTd.appendChild(expandBtn);
+    tr.appendChild(expandTd);
     tbody.appendChild(tr);
+
+    const detailTr = document.createElement('tr');
+    detailTr.className = 'directorio-detail-row';
+    detailTr.style.display = 'none';
+    const detailTd = document.createElement('td');
+    detailTd.colSpan = colCount;
+    detailTd.innerHTML = directorioDetailRowHTML(e, rowKey, colCount, puedeGestionar);
+    detailTr.appendChild(detailTd);
+    tbody.appendChild(detailTr);
+    let wired = false;
+    expandBtn.onclick = ()=>{
+      const open = detailTr.style.display !== 'none';
+      detailTr.style.display = open ? 'none' : 'table-row';
+      expandBtn.classList.toggle('open', !open);
+      expandBtn.setAttribute('aria-expanded', String(!open));
+      if(!open && !wired){
+        wireDirectorioDetailRow(detailTd, e, rowKey);
+        wired = true;
+        if(window.lucide) lucide.createIcons();
+      }
+    };
   });
   table.appendChild(tbody);
   body.innerHTML = '';
@@ -1810,7 +2383,9 @@ function renderDirectorioFiltered(){
   if(searchClear) searchClear.classList.toggle('visible', !!(searchInput && searchInput.value));
   const filtered = filterDirectorioBySearch(directorioCache, searchInput ? searchInput.value : '');
   const sorted = sortDirectorioEntries(filtered, sortMode);
+  pruneDirectorioSelection(sorted);   // lo que un filtro oculta deja de estar seleccionado (ordenar no cambia nada)
   renderDirectorioTable(sorted);
+  updateDirectorioSelectionUI();
 }
 
 async function renderDirectorio(){
@@ -1820,10 +2395,12 @@ async function renderDirectorio(){
     directorioCache = await window.tres65Sync.getDirectorio();
   }catch(err){
     body.innerHTML = '<p class="empty-note">' + (err.message || 'Error cargando el directorio.') + '</p>';
+    pruneDirectorioSelection([]); directorioVisible = []; updateDirectorioSelectionUI();
     return;
   }
   if(!directorioCache.length){
     body.innerHTML = '<p class="empty-note">Todavía no hay leads registrados.</p>';
+    pruneDirectorioSelection([]); directorioVisible = []; updateDirectorioSelectionUI();
     return;
   }
   const agenteSortBtn = document.getElementById('directorio-sort-btn-agente');
@@ -2402,7 +2979,11 @@ async function boot(){
   });
   document.getElementById('directorio-modal-close-x').addEventListener('click', ()=>{
     document.getElementById('directorio-modal').classList.remove('open');
+    exitDirectorioEditMode();
   });
+  initDirectorioSelection();
+  document.getElementById('directorio-manual-tipo-fieldset').innerHTML = tipoFieldsetHTML('directorio-manual-tipo');
+  wireTipoFieldset('directorio-manual-tipo');
 
   document.querySelectorAll('#directorio-sort-toggle .sort-toggle-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -2419,13 +3000,19 @@ async function boot(){
   });
 
   const puedeGestionarDirectorio = session.isAdmin || session.uid === '5219992399890';
+  // Importar CSV es un permiso propio de Admin/Moises (el backend ya lo exige) — un agente
+  // normal sigue pudiendo agregar contactos uno por uno con "+ Agregar manual".
+  document.getElementById('directorio-import-csv-btn').style.display = puedeGestionarDirectorio ? '' : 'none';
   if(puedeGestionarDirectorio){
+    // "Sin asignar" es una opción real y seleccionable (no un placeholder deshabilitado):
+    // el contacto queda bajo administración, sin agente, hasta que Admin lo asigne después.
+    // Antes el placeholder ("Selecciona un agente") estaba deshabilitado y no representaba
+    // ningún valor guardable, así que dejar la asignación vacía nunca se veía reflejado bien
+    // en el selector al reabrir "Editar" — este es el fix.
     const dirAgentSelect = document.getElementById('directorio-manual-agent');
     const dirPlaceholder = document.createElement('option');
     dirPlaceholder.value = '';
-    dirPlaceholder.textContent = 'Selecciona un agente';
-    dirPlaceholder.selected = true;
-    dirPlaceholder.disabled = true;
+    dirPlaceholder.textContent = 'Sin asignar (bajo administración)';
     dirAgentSelect.appendChild(dirPlaceholder);
     AGENTS.forEach(a=>{
       const opt = document.createElement('option');
@@ -2446,6 +3033,7 @@ async function boot(){
       document.getElementById(id).value = '';
     });
     document.getElementById('directorio-manual-agent').value = '';
+    setTipoFieldsetValues('directorio-manual-tipo', {});
     directorioEditingId = null;
     document.querySelector('#directorio-manual-modal h3').textContent = 'Agregar al directorio';
     document.getElementById('directorio-manual-save').textContent = 'Agregar';
@@ -2474,19 +3062,25 @@ async function boot(){
       errorEl.style.display = 'block';
       return;
     }
-    if(!agent_uid){
-      errorEl.textContent = 'Selecciona un agente antes de guardar.';
-      errorEl.style.display = 'block';
-      return;
-    }
+    // agent_uid vacío ("Sin asignar") es válido a propósito — el contacto queda bajo
+    // administración; solo Admin/Moises ven este selector, así que nunca lo manda un agente.
     const editingId = directorioEditingId;
     btn.disabled = true;
     btn.textContent = editingId ? 'Guardando...' : 'Agregando...';
     try{
+      let manualId = editingId;
       if(editingId){
         await window.tres65Sync.editDirectorioManual(editingId, {name, phone, email, status, agent_uid});
       } else {
-        await window.tres65Sync.addDirectorioManual({name, phone, email, status, agent_uid});
+        const result = await window.tres65Sync.addDirectorioManual({name, phone, email, status, agent_uid});
+        manualId = result.manual_id;
+      }
+      if(manualId){
+        try{
+          await window.tres65Sync.setDirectorioTipo('manual:' + manualId, readTipoFieldsetValues('directorio-manual-tipo'));
+        }catch(tipoErr){
+          console.error('[Directorio] error guardando tipo de contacto:', tipoErr);
+        }
       }
       successEl.textContent = editingId ? 'Cambios guardados.' : 'Agregado al directorio.';
       successEl.style.display = 'block';
@@ -2509,11 +3103,8 @@ async function boot(){
     if(!file) return;
     const statusEl = document.getElementById('directorio-import-status');
     statusEl.style.display = 'block';
-    const agent_uid_check = document.getElementById('directorio-manual-agent').value;
-    if(!agent_uid_check){
-      statusEl.textContent = 'Selecciona un agente antes de importar el CSV.';
-      return;
-    }
+    // agent_uid vacío es válido ("Sin asignar" para Admin/Moises; para un agente normal el
+    // backend fuerza su propio uid sin importar lo que llegue aquí) — ya no se bloquea.
     statusEl.textContent = 'Leyendo archivo...';
     try{
       const text = await file.text();
