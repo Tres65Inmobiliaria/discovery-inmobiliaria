@@ -960,6 +960,10 @@
     </div>
     <p class="modal-error" id="directorio-import-status" style="display:none;"></p>
     <p class="modal-success" id="directorio-action-status" role="status" style="display:none;"></p>
+    <div class="sort-toggle" id="directorio-filtro-toggle" style="margin-bottom:8px;">
+      <button type="button" class="sort-toggle-btn" data-filtro="todos">Todos</button>
+      <button type="button" class="sort-toggle-btn" data-filtro="cliente">Solo clientes</button>
+    </div>
     <div class="clients-controls" style="margin-bottom:12px;">
       <div class="clients-search-wrap">
         <i data-lucide="search"></i>
@@ -1829,11 +1833,23 @@ let directorioCache = [];
 let directorioExpandedKeys = new Set();
 let directorioEditingId = null;
 const DIRECTORIO_VIEW_KEY = 'tres65_directorio_sort';
+const DIRECTORIO_FILTRO_KEY = 'tres65_directorio_filtro_tipo';
 const DIRECTORIO_STATUS_ORDER = ['Cliente potencial', 'Listo para asesor', 'Cierre perdido'];
 
 function getDirectorioSort(){
   const v = localStorage.getItem(DIRECTORIO_VIEW_KEY);
   return (v === 'nombre' || v === 'agente') ? v : 'proceso';
+}
+
+// Filtro por tipo de contacto ("Todos" / "Solo clientes") — independiente del orden (Por
+// estado/A-Z/Por agente): uno u otro filtro puede combinarse con cualquiera de los 3 órdenes.
+function getDirectorioFiltroTipo(){
+  return localStorage.getItem(DIRECTORIO_FILTRO_KEY) === 'cliente' ? 'cliente' : 'todos';
+}
+
+function filterDirectorioByTipo(entries, filtro){
+  if(filtro !== 'cliente') return entries;
+  return entries.filter(e => (e.contact_type || 'cliente') === 'cliente');
 }
 
 function filterDirectorioBySearch(entries, query){
@@ -2511,10 +2527,15 @@ function renderDirectorioFiltered(){
   document.querySelectorAll('#directorio-sort-toggle .sort-toggle-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.sort === sortMode);
   });
+  const filtroTipo = getDirectorioFiltroTipo();
+  document.querySelectorAll('#directorio-filtro-toggle .sort-toggle-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.filtro === filtroTipo);
+  });
   const searchInput = document.getElementById('directorio-search-input');
   const searchClear = document.getElementById('directorio-search-clear');
   if(searchClear) searchClear.classList.toggle('visible', !!(searchInput && searchInput.value));
-  const filtered = filterDirectorioBySearch(directorioCache, searchInput ? searchInput.value : '');
+  const porTipo = filterDirectorioByTipo(directorioCache, filtroTipo);
+  const filtered = filterDirectorioBySearch(porTipo, searchInput ? searchInput.value : '');
   const sorted = sortDirectorioEntries(filtered, sortMode);
   pruneDirectorioSelection(sorted);   // lo que un filtro oculta deja de estar seleccionado (ordenar no cambia nada)
   renderDirectorioTable(sorted);
@@ -3121,6 +3142,12 @@ async function boot(){
   document.querySelectorAll('#directorio-sort-toggle .sort-toggle-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       localStorage.setItem(DIRECTORIO_VIEW_KEY, btn.dataset.sort);
+      renderDirectorioFiltered();
+    });
+  });
+  document.querySelectorAll('#directorio-filtro-toggle .sort-toggle-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      localStorage.setItem(DIRECTORIO_FILTRO_KEY, btn.dataset.filtro);
       renderDirectorioFiltered();
     });
   });
