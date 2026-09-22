@@ -2179,6 +2179,19 @@ function directorioDetailRowHTML(e, rowKey, colspan, puedeGestionar){
         </div>` : ''}
         <p class="directorio-tipo-status" id="${idp}-detalle-status"></p>
       </div>
+      ${!esEspejoCliente ? `
+      <div class="directorio-detail-block">
+        <h4>Notas ${e.puede_editar_tipo ? `<button type="button" class="directorio-edit-btn" data-act="editar-nota" title="Editar nota" aria-label="Editar nota"><i data-lucide="pencil"></i></button>` : ''}</h4>
+        <p id="${idp}-nota-texto" style="margin:0 0 8px; white-space:pre-wrap;"></p>
+        <div id="${idp}-nota-form" style="display:none;">
+          <textarea id="${idp}-nota-input" rows="3" placeholder="Nota libre sobre este contacto"></textarea>
+          <div class="directorio-detail-actions">
+            <button type="button" class="search-btn secondary" data-act="guardar-nota">Guardar</button>
+            <button type="button" class="search-btn secondary" data-act="cancelar-nota">Cancelar</button>
+          </div>
+        </div>
+        <p class="directorio-tipo-status" id="${idp}-nota-status"></p>
+      </div>` : ''}
       ${e.puede_editar_tipo ? `
       <div class="directorio-detail-block">
         <h4>Clasificar contacto</h4>
@@ -2251,6 +2264,43 @@ function wireDirectorioDetailRow(detailTd, e, rowKey){
       statusEl.style.display = 'block';
     }
     guardarIdentidadBtn.disabled = false;
+  };
+
+  // Notas: nota libre sobre CUALQUIER contacto sin ficha de cliente (manual o lead de
+  // Chatwoot) — un cliente con portal ya tiene "Tareas" en cliente-detalle.html para esto.
+  const notaTextoEl = document.getElementById(idp + '-nota-texto');
+  if(notaTextoEl) notaTextoEl.textContent = e.notes || 'Sin notas.';
+  const notaForm = document.getElementById(idp + '-nota-form');
+  const editarNotaBtn = detailTd.querySelector('[data-act="editar-nota"]');
+  if(editarNotaBtn && notaForm) editarNotaBtn.onclick = ()=>{
+    document.getElementById(idp + '-nota-input').value = e.notes || '';
+    notaForm.style.display = 'block';
+  };
+  const cancelarNotaBtn = detailTd.querySelector('[data-act="cancelar-nota"]');
+  if(cancelarNotaBtn && notaForm) cancelarNotaBtn.onclick = ()=>{ notaForm.style.display = 'none'; };
+  const guardarNotaBtn = detailTd.querySelector('[data-act="guardar-nota"]');
+  if(guardarNotaBtn) guardarNotaBtn.onclick = async ()=>{
+    const statusEl = document.getElementById(idp + '-nota-status');
+    const notes = document.getElementById(idp + '-nota-input').value.trim();
+    statusEl.style.display = 'none';
+    guardarNotaBtn.disabled = true;
+    try{
+      // Se manda junto con el tipo/estado ACTUALES (sin cambiarlos) — este endpoint guarda el
+      // documento completo, así que hay que reenviar lo que ya había para no borrarlo.
+      await window.tres65Sync.setDirectorioTipo(rowKey, {
+        contact_type: e.contact_type || 'cliente', contact_type_data: e.contact_type_data || {},
+        client_state: e.client_state || 'activo', client_state_notes: e.client_state_notes || '',
+        notes,
+      });
+      notaForm.style.display = 'none';
+      mostrarConfirmacion(statusEl, 'Nota guardada.');
+      refrescarConDemora();
+    }catch(err){
+      statusEl.textContent = err.message || 'Error guardando la nota.';
+      statusEl.className = 'directorio-tipo-status error';
+      statusEl.style.display = 'block';
+    }
+    guardarNotaBtn.disabled = false;
   };
 
   const detalleStatusEl = document.getElementById(idp + '-detalle-status');
