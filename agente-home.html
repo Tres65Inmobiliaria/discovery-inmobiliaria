@@ -2146,6 +2146,9 @@ function directorioDetailRowHTML(e, rowKey, colspan, puedeGestionar){
     tipoDetalleLineas.push('Servicio: ' + (data.servicio === 'Otro' ? (data.servicio_otro || 'Otro') : data.servicio));
   }
   if(e.client_state === 'cierre_ganado' && e.client_state_notes) tipoDetalleLineas.push('Notas: ' + e.client_state_notes);
+  // Nombre/correo de un lead de Chatwoot se editan aquí mismo (escriben directo en el contacto
+  // de Chatwoot); el teléfono NUNCA se edita — es la identidad de la conversación de WhatsApp.
+  const esChatwootEditable = e.source === 'chatwoot' && !esEspejoCliente;
 
   return `
     <div class="directorio-detail-grid">
@@ -2158,9 +2161,22 @@ function directorioDetailRowHTML(e, rowKey, colspan, puedeGestionar){
           <button type="button" class="search-btn secondary" data-act="share">Compartir por WhatsApp</button>
           <button type="button" class="search-btn secondary" data-act="copy">Copiar contacto</button>
           ${(e.source === 'manual' && !esEspejoCliente && e.puede_editar_tipo) ? '<button type="button" class="search-btn secondary" data-act="editar">Editar</button>' : ''}
+          ${(esChatwootEditable && e.puede_editar_tipo) ? '<button type="button" class="search-btn secondary" data-act="editar-identidad">Editar nombre/correo</button>' : ''}
           ${e.puede_cierre_perdido ? '<button type="button" class="search-btn secondary" data-act="cierre-perdido">Cierre perdido</button>' : ''}
           ${(e.status === 'Cierre perdido' && e.source !== 'manual') ? '<button type="button" class="search-btn secondary" data-act="reactivar-lead-perdido">Reactivar</button>' : ''}
         </div>
+        ${(esChatwootEditable && e.puede_editar_tipo) ? `
+        <div id="${idp}-identidad-form" style="display:none; margin-top:8px;">
+          <label for="${idp}-identidad-name">Nombre</label>
+          <input type="text" id="${idp}-identidad-name">
+          <label for="${idp}-identidad-email">Correo</label>
+          <input type="email" id="${idp}-identidad-email">
+          <p style="margin:0 0 8px; font-size:11.5px; color:var(--texto-suave);">El teléfono no se puede editar aquí — es la identidad de la conversación de WhatsApp.</p>
+          <div class="directorio-detail-actions">
+            <button type="button" class="search-btn secondary" data-act="guardar-identidad">Guardar</button>
+            <button type="button" class="search-btn secondary" data-act="cancelar-identidad">Cancelar</button>
+          </div>
+        </div>` : ''}
         <p class="directorio-tipo-status" id="${idp}-detalle-status"></p>
       </div>
       ${e.puede_editar_tipo ? `
@@ -2201,6 +2217,41 @@ function wireDirectorioDetailRow(detailTd, e, rowKey){
 
   const editBtn = detailTd.querySelector('[data-act="editar"]');
   if(editBtn) editBtn.onclick = ()=> openDirectorioEditModal(e);
+
+  const identidadForm = document.getElementById(idp + '-identidad-form');
+  const editIdentidadBtn = detailTd.querySelector('[data-act="editar-identidad"]');
+  if(editIdentidadBtn && identidadForm) editIdentidadBtn.onclick = ()=>{
+    document.getElementById(idp + '-identidad-name').value = e.name || '';
+    document.getElementById(idp + '-identidad-email').value = e.email || '';
+    identidadForm.style.display = 'block';
+  };
+  const cancelarIdentidadBtn = detailTd.querySelector('[data-act="cancelar-identidad"]');
+  if(cancelarIdentidadBtn && identidadForm) cancelarIdentidadBtn.onclick = ()=>{ identidadForm.style.display = 'none'; };
+  const guardarIdentidadBtn = detailTd.querySelector('[data-act="guardar-identidad"]');
+  if(guardarIdentidadBtn) guardarIdentidadBtn.onclick = async ()=>{
+    const statusEl = document.getElementById(idp + '-detalle-status');
+    const name = document.getElementById(idp + '-identidad-name').value.trim();
+    const email = document.getElementById(idp + '-identidad-email').value.trim();
+    statusEl.style.display = 'none';
+    if(!name){
+      statusEl.textContent = 'Falta el nombre.';
+      statusEl.className = 'directorio-tipo-status error';
+      statusEl.style.display = 'block';
+      return;
+    }
+    guardarIdentidadBtn.disabled = true;
+    try{
+      await window.tres65Sync.editarIdentidadDirectorio(rowKey, name, email);
+      identidadForm.style.display = 'none';
+      mostrarConfirmacion(statusEl, 'Nombre/correo guardados.');
+      refrescarConDemora();
+    }catch(err){
+      statusEl.textContent = err.message || 'Error guardando los cambios.';
+      statusEl.className = 'directorio-tipo-status error';
+      statusEl.style.display = 'block';
+    }
+    guardarIdentidadBtn.disabled = false;
+  };
 
   const detalleStatusEl = document.getElementById(idp + '-detalle-status');
   const mostrarConfirmacion = (el, texto)=>{

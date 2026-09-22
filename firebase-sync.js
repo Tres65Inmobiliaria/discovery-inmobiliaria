@@ -346,6 +346,13 @@ async function reactivarComoLead(row_key, agent_uid){
   return _authedPost("/portal/directorio/reactivar", agent_uid ? {row_key, agent_uid} : {row_key});
 }
 
+// Editar nombre/correo de un lead de Chatwoot (nunca el teléfono, que es la identidad de la
+// conversación de WhatsApp) — para "manual:" usa editDirectorioManual, para "cliente:" el
+// backend redirige a editar desde la ficha.
+async function editarIdentidadDirectorio(row_key, name, email){
+  return _authedPost("/portal/directorio/editar-identidad", {row_key, name, email});
+}
+
 async function mariaPausa(accion){
   const data = await _authedPost("/portal/maria-pausa", {accion});
   return data.paused;
@@ -558,7 +565,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis, setTourInterest,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteFromDirectorio, editDirectorioManual, setDirectorioTipo, reactivarComoLead, mariaPausa,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteFromDirectorio, editDirectorioManual, setDirectorioTipo, reactivarComoLead, editarIdentidadDirectorio, mariaPausa,
   getClientDetail, editClientInfo, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
