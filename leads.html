@@ -119,6 +119,22 @@
 
   .status-row{display:flex; align-items:center; gap:8px; margin-top:12px;}
   .status-row .label{font-size:11.5px; color:var(--texto-suave); font-family:'Montserrat',sans-serif; font-weight:600;}
+  .status-row .label.asistente{background:#FDF3C8; padding:2px 6px; border-radius:4px;}
+  .nota-manual-row{display:flex; align-items:flex-start; gap:6px; margin-top:10px;}
+  .nota-manual-row .resumen-text{flex:1; margin-top:0;}
+  .nota-edit-btn{
+    width:24px; height:24px; flex-shrink:0; margin-top:1px;
+    border:none; background:none; color:var(--texto-suave); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; padding:0;
+  }
+  .nota-edit-btn:hover{color:var(--profundo);}
+  .nota-edit-btn svg{width:14px; height:14px;}
+  .nota-edit-form{margin-top:8px;}
+  .nota-edit-form textarea{
+    width:100%; font-family:'Raleway',sans-serif; font-size:12px; padding:8px 10px;
+    border-radius:8px; border:1px solid var(--borde); resize:vertical; box-sizing:border-box;
+  }
+  .nota-edit-actions{display:flex; gap:8px; margin-top:6px;}
   .answer-badge{font-size:11px; font-weight:700; font-family:'Montserrat',sans-serif; padding:3px 10px; border-radius:20px;}
   .contact-timer{
     display:flex; align-items:center; gap:6px; margin-top:8px; padding:6px 10px;
@@ -456,12 +472,66 @@ function buildLeadCard(lead){
     card.appendChild(resumen);
   }
 
-  if(lead.nota_manual){
+  {
+    // Nota manual editable: Chatwoot no permite modificar un mensaje ya enviado, así que
+    // "editar" manda un mensaje privado NUEVO con el texto corregido (el backend ya lee el
+    // más reciente con prefijo 📞, no el más viejo) -> siempre se ve el último guardado.
+    const notaRow = document.createElement('div');
+    notaRow.className = 'nota-manual-row';
     const nota = document.createElement('p');
     nota.className = 'resumen-text';
     nota.style.whiteSpace = 'pre-line';
-    nota.textContent = lead.nota_manual;
-    card.appendChild(nota);
+    nota.textContent = lead.nota_manual || '';
+    nota.style.display = lead.nota_manual ? '' : 'none';
+    const editNotaBtn = document.createElement('button');
+    editNotaBtn.type = 'button';
+    editNotaBtn.className = 'nota-edit-btn';
+    editNotaBtn.title = lead.nota_manual ? 'Editar nota' : 'Agregar nota';
+    editNotaBtn.setAttribute('aria-label', editNotaBtn.title);
+    editNotaBtn.innerHTML = '<i data-lucide="pencil"></i>';
+    notaRow.appendChild(nota);
+    notaRow.appendChild(editNotaBtn);
+    card.appendChild(notaRow);
+
+    const notaForm = document.createElement('div');
+    notaForm.className = 'nota-edit-form';
+    notaForm.style.display = 'none';
+    const notaTextarea = document.createElement('textarea');
+    notaTextarea.rows = 3;
+    notaTextarea.placeholder = 'Nota sobre este lead';
+    const notaActions = document.createElement('div');
+    notaActions.className = 'nota-edit-actions';
+    const notaGuardarBtn = document.createElement('button');
+    notaGuardarBtn.type = 'button';
+    notaGuardarBtn.className = 'btn profile';
+    notaGuardarBtn.textContent = 'Guardar';
+    const notaCancelarBtn = document.createElement('button');
+    notaCancelarBtn.type = 'button';
+    notaCancelarBtn.className = 'btn';
+    notaCancelarBtn.textContent = 'Cancelar';
+    notaActions.appendChild(notaGuardarBtn);
+    notaActions.appendChild(notaCancelarBtn);
+    notaForm.appendChild(notaTextarea);
+    notaForm.appendChild(notaActions);
+    card.appendChild(notaForm);
+
+    editNotaBtn.addEventListener('click', ()=>{
+      notaTextarea.value = lead.nota_manual || '';
+      notaForm.style.display = 'block';
+    });
+    notaCancelarBtn.addEventListener('click', ()=>{ notaForm.style.display = 'none'; });
+    notaGuardarBtn.addEventListener('click', async ()=>{
+      const text = notaTextarea.value.trim();
+      if(!text) return;
+      notaGuardarBtn.disabled = true;
+      try{
+        await window.tres65Sync.editarNotaLead(lead.conv_id, text);
+        await loadLeads();
+      }catch(err){
+        alert(err.message || 'Error guardando la nota.');
+        notaGuardarBtn.disabled = false;
+      }
+    });
   }
 
   const attempts = lead.contact_attempts || [];
@@ -498,7 +568,7 @@ function buildLeadCard(lead){
     const statusRow = document.createElement('div');
     statusRow.className = 'status-row';
     const statusLabel = document.createElement('span');
-    statusLabel.className = 'label';
+    statusLabel.className = 'label' + (att.method === 'Asistente' ? ' asistente' : '');
     statusLabel.textContent = 'Contacto ' + att.attempt_number + (att.method ? ' (' + att.method + '):' : ':');
     statusRow.appendChild(statusLabel);
     const badge = document.createElement('span');
@@ -560,7 +630,7 @@ function buildLeadCard(lead){
 
   const methodRow = document.createElement('div');
   methodRow.className = 'method-row';
-  const METHODS = [['Llamada', 'phone'], ['WhatsApp', 'message-circle'], ['Chatwoot', 'message-square'], ['Email', 'mail']];
+  const METHODS = [['Llamada', 'phone'], ['WhatsApp', 'message-circle'], ['Chatwoot', 'message-square'], ['Email', 'mail'], ['Asistente', 'user-round-pen']];
   const methodBtns = METHODS.map(([label, icon])=>{
     const btn = document.createElement('button');
     btn.type = 'button';

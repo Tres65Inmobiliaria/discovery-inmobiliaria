@@ -235,6 +235,12 @@ async function logLeadContact(conv_id, contacted, result, method){
   return data.attempts;
 }
 
+// Editar la nota manual de un lead: Chatwoot no permite modificar un mensaje ya enviado, así
+// que esto manda uno PRIVADO nuevo con el texto corregido — el backend ya lee el más reciente.
+async function editarNotaLead(conv_id, text){
+  return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/nota", {text});
+}
+
 async function deleteLead(conv_id, reason){
   // Ruta LEGACY (leads.html): en el backend ya solo marca como perdido; nunca borró nada.
   return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/borrar", {reason});
@@ -565,7 +571,7 @@ window.tres65Sync = {
   searchProperties, askLegal, summarizeLink, addProperties, addPropertiesItems, resolverPropiedad, removeProperty, runAnalysis, setTourInterest,
   aceptarPropiedadSugerida, descartarPropiedadSugerida,
   correctAnalysis, shareAnalysis, getLeadsPotenciales, getLeadsCount, sendWelcomeMessage,
-  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteFromDirectorio, editDirectorioManual, setDirectorioTipo, reactivarComoLead, editarIdentidadDirectorio, mariaPausa,
+  runLeadsRoundRobin, crearLeadManual, convertLeadToListo, logLeadContact, editarNotaLead, deleteLead, markLeadLost, reactivarLead, getLeadsPerdidos, getLeadsPerdidosCount, getLeadsSinContactarCount, getMensajesEasyBroker, atenderMensajeEasyBroker, getDirectorio, addDirectorioManual, importDirectorioCsv, deleteFromDirectorio, editDirectorioManual, setDirectorioTipo, reactivarComoLead, editarIdentidadDirectorio, mariaPausa,
   getClientDetail, editClientInfo, addClientNote, toggleClientNote, deleteClientNote, deleteClient, addClientEmail, markSaleClosed, sendPixelIds,
   getAgentTasks, createAgentTask, toggleAgentTask, deleteAgentTask, getTareasPorCliente
 };
