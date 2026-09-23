@@ -121,7 +121,6 @@
   .status-row .label{font-size:11.5px; color:var(--texto-suave); font-family:'Montserrat',sans-serif; font-weight:600;}
   .nota-manual-row{position:relative; margin-top:10px;}
   .nota-manual-row .resumen-text{margin:0; padding-right:26px; box-sizing:border-box;}
-  .nota-manual-row .resumen-text.asistente{background:#FDF3C8;}
   .nota-edit-btn{
     position:absolute; top:6px; right:4px;
     width:22px; height:22px;
@@ -146,6 +145,7 @@
   .answer-badge.yes{background:var(--menta); color:var(--medio);}
   .answer-badge.no{background:var(--alerta-bg); color:var(--alerta);}
   .answer-badge.unknown{background:var(--menta); color:var(--texto-suave);}
+  .answer-badge.asistente{background:#FDF3C8;}
 
   .actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
   .btn{
@@ -483,15 +483,10 @@ function buildLeadCard(lead){
     // Nota manual editable: Chatwoot no permite modificar un mensaje ya enviado, así que
     // "editar" manda un mensaje privado NUEVO con el texto corregido (el backend ya lee el
     // más reciente con prefijo 📞, no el más viejo) -> siempre se ve el último guardado.
-    // Si el último intento de contacto fue por "Asistente", la nota se resalta en amarillo
-    // muy tenue (mismo color de letra de siempre — solo cambia el fondo).
-    const ultimoIntento = (lead.contact_attempts || [])[(lead.contact_attempts || []).length - 1];
-    const notaPorAsistente = ultimoIntento && ultimoIntento.method === 'Asistente';
-
     const notaRow = document.createElement('div');
     notaRow.className = 'nota-manual-row';
     const nota = document.createElement('p');
-    nota.className = 'resumen-text' + (notaPorAsistente ? ' asistente' : '');
+    nota.className = 'resumen-text';
     nota.style.whiteSpace = 'pre-line';
     nota.textContent = lead.nota_manual || '';
     nota.style.display = lead.nota_manual ? '' : 'none';
@@ -584,7 +579,7 @@ function buildLeadCard(lead){
     statusLabel.textContent = 'Contacto ' + att.attempt_number + (att.method ? ' (' + att.method + '):' : ':');
     statusRow.appendChild(statusLabel);
     const badge = document.createElement('span');
-    badge.className = 'answer-badge ' + (att.contacted ? 'yes' : 'no');
+    badge.className = 'answer-badge ' + (att.contacted ? 'yes' : 'no') + (att.method === 'Asistente' ? ' asistente' : '');
     badge.textContent = att.contacted ? (att.result || 'Contestó') : 'Sin respuesta';
     statusRow.appendChild(badge);
     card.appendChild(statusRow);
