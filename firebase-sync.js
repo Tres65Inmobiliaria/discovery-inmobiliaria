@@ -241,9 +241,11 @@ async function editarNotaLead(conv_id, text){
   return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/nota", {text});
 }
 
-async function deleteLead(conv_id, reason){
+async function deleteLead(conv_id, reason, password){
   // Ruta LEGACY (leads.html): en el backend ya solo marca como perdido; nunca borró nada.
-  return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/borrar", {reason});
+  // A petición del usuario, esta ruta (a diferencia de markLeadLost/cierre-perdido) exige
+  // además la misma contraseña de borrado que protege el Directorio.
+  return _authedPost("/portal/leads/" + encodeURIComponent(conv_id) + "/borrar", {reason, password});
 }
 
 // CIERRE PERDIDO: cambio de estado del lead (no borra contacto ni conversación).

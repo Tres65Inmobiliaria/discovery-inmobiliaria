@@ -119,11 +119,12 @@
 
   .status-row{display:flex; align-items:center; gap:8px; margin-top:12px;}
   .status-row .label{font-size:11.5px; color:var(--texto-suave); font-family:'Montserrat',sans-serif; font-weight:600;}
-  .status-row .label.asistente{background:#FDF3C8; padding:2px 6px; border-radius:4px;}
-  .nota-manual-row{display:flex; align-items:flex-start; gap:6px; margin-top:10px;}
-  .nota-manual-row .resumen-text{flex:1; margin-top:0;}
+  .nota-manual-row{position:relative; margin-top:10px;}
+  .nota-manual-row .resumen-text{margin:0; padding-right:26px; box-sizing:border-box;}
+  .nota-manual-row .resumen-text.asistente{background:#FDF3C8;}
   .nota-edit-btn{
-    width:24px; height:24px; flex-shrink:0; margin-top:1px;
+    position:absolute; top:6px; right:4px;
+    width:22px; height:22px;
     border:none; background:none; color:var(--texto-suave); cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center; padding:0;
   }
@@ -198,8 +199,12 @@
   .modal-error{color:#C0453A; font-size:12px; margin:-6px 0 12px; display:none;}
   .modal-success{color:var(--acento); font-size:12px; margin:-6px 0 12px; display:none;}
 
-  .btn.danger{background:#F5E4E1; border-color:#F5E4E1; color:#C0453A; flex:1 1 100%; margin-top:8px;}
-  .btn.danger:hover{background:#EFD3CE;}
+  .btn-icon-danger{
+    width:26px; height:26px; border:none; background:none; color:#C0453A; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:50%;
+  }
+  .btn-icon-danger:hover{background:#F5E4E1;}
+  .btn-icon-danger svg{width:15px; height:15px;}
   .btn.reactivar{background:var(--acento); border-color:var(--acento); color:#fff;}
   .btn.reactivar:hover{opacity:.9;}
   .btn.reactivar:disabled{opacity:.6; cursor:default;}
@@ -362,6 +367,8 @@
   <div class="modal-card">
     <button class="modal-close" id="delete-modal-close-x" type="button" aria-label="Cerrar">×</button>
     <h3 id="delete-modal-title">¿Por qué se pierde este lead?</h3>
+    <label for="delete-modal-password">Contraseña de borrado</label>
+    <input type="password" id="delete-modal-password" autocomplete="new-password" spellcheck="false" maxlength="200" placeholder="Contraseña de borrado" style="margin-bottom:12px;">
     <div class="delete-reason-options" id="delete-reason-options">
       <button class="delete-reason-btn" data-reason="Nunca contestó" type="button">Nunca contestó</button>
       <button class="delete-reason-btn" data-reason="Se fue con otro agente" type="button">Se fue con otro agente</button>
@@ -476,10 +483,15 @@ function buildLeadCard(lead){
     // Nota manual editable: Chatwoot no permite modificar un mensaje ya enviado, así que
     // "editar" manda un mensaje privado NUEVO con el texto corregido (el backend ya lee el
     // más reciente con prefijo 📞, no el más viejo) -> siempre se ve el último guardado.
+    // Si el último intento de contacto fue por "Asistente", la nota se resalta en amarillo
+    // muy tenue (mismo color de letra de siempre — solo cambia el fondo).
+    const ultimoIntento = (lead.contact_attempts || [])[(lead.contact_attempts || []).length - 1];
+    const notaPorAsistente = ultimoIntento && ultimoIntento.method === 'Asistente';
+
     const notaRow = document.createElement('div');
     notaRow.className = 'nota-manual-row';
     const nota = document.createElement('p');
-    nota.className = 'resumen-text';
+    nota.className = 'resumen-text' + (notaPorAsistente ? ' asistente' : '');
     nota.style.whiteSpace = 'pre-line';
     nota.textContent = lead.nota_manual || '';
     nota.style.display = lead.nota_manual ? '' : 'none';
@@ -568,7 +580,7 @@ function buildLeadCard(lead){
     const statusRow = document.createElement('div');
     statusRow.className = 'status-row';
     const statusLabel = document.createElement('span');
-    statusLabel.className = 'label' + (att.method === 'Asistente' ? ' asistente' : '');
+    statusLabel.className = 'label';
     statusLabel.textContent = 'Contacto ' + att.attempt_number + (att.method ? ' (' + att.method + '):' : ':');
     statusRow.appendChild(statusLabel);
     const badge = document.createElement('span');
@@ -698,21 +710,28 @@ function buildLeadCard(lead){
     answeredBtn.disabled = true;
   });
 
+  const deleteRow = document.createElement('div');
+  deleteRow.style.display = 'flex';
+  deleteRow.style.justifyContent = 'flex-end';
+  deleteRow.style.marginTop = '8px';
   const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'btn danger';
+  deleteBtn.className = 'btn-icon-danger';
   deleteBtn.type = 'button';
-  deleteBtn.innerHTML = '<i data-lucide="trash-2"></i> Borrar lead';
+  deleteBtn.title = 'Borrar lead';
+  deleteBtn.setAttribute('aria-label', 'Borrar lead');
+  deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
   deleteBtn.addEventListener('click', ()=>{
-    openDeleteReasonModal(lead.name, async (reason)=>{
-      await window.tres65Sync.deleteLead(lead.conv_id, reason);
+    openDeleteReasonModal(lead.name, async (reason, password)=>{
+      await window.tres65Sync.deleteLead(lead.conv_id, reason, password);
       await loadLeads();
     });
   });
+  deleteRow.appendChild(deleteBtn);
 
   card.appendChild(actions);
   card.appendChild(contactRow);
   card.appendChild(methodRow);
-  card.appendChild(deleteBtn);
+  card.appendChild(deleteRow);
   return card;
 }
 
@@ -721,6 +740,7 @@ let deleteReasonCallback = null;
 function openDeleteReasonModal(leadName, onConfirm){
   deleteReasonCallback = onConfirm;
   document.getElementById('delete-modal-title').textContent = '¿Por qué se pierde ' + (leadName && leadName !== 'Por definir' ? leadName : 'este lead') + '?';
+  document.getElementById('delete-modal-password').value = '';
   document.getElementById('delete-reason-options').style.display = 'flex';
   document.getElementById('delete-reason-other-wrap').style.display = 'none';
   document.getElementById('delete-reason-other-input').value = '';
@@ -1175,8 +1195,14 @@ async function boot(){
     const errorNote = document.getElementById('delete-modal-error');
     errorNote.style.display = 'none';
     if(!deleteReasonCallback) return;
+    const password = document.getElementById('delete-modal-password').value;
+    if(!password){
+      errorNote.textContent = 'Falta la contraseña de borrado.';
+      errorNote.style.display = 'block';
+      return;
+    }
     try{
-      await deleteReasonCallback(reason);
+      await deleteReasonCallback(reason, password);
       document.getElementById('delete-modal').classList.remove('open');
       deleteReasonCallback = null;
     }catch(err){
