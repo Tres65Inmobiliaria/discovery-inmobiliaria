@@ -863,10 +863,15 @@ function renderQuestion(q, index, container){
 
   if(q.text){
     const t = document.createElement(q.numeric ? 'input' : 'textarea');
-    if(q.numeric) t.type = 'number';
+    // type="text" + inputmode, no type="number": con "3,500,000" o "$3,500,000"
+    // un input number reporta value "" y la pregunta queda como no respondida.
+    if(q.numeric){ t.type = 'text'; t.inputMode = 'numeric'; }
     t.placeholder = displayPlaceholder(q);
     if(!q.numeric) t.style.minHeight = '64px';
-    t.addEventListener('input', e=>{ state[q.id].text = e.target.value; saveLocal(); });
+    t.addEventListener('input', e=>{
+      state[q.id].text = e.target.value;
+      if(NOTES_CAN_ANSWER.includes(q.id)) updateProgress(); else saveLocal();
+    });
     t.addEventListener('keydown', e=>{
       if(e.key === 'Enter' && !e.shiftKey){
         e.preventDefault();
@@ -1060,7 +1065,7 @@ function restoreLocal(){
     state[q.id].followUp = snap.followUp || '';
     paintQuestion(q);
     const block = document.querySelector('.q-block[data-qid="'+q.id+'"]');
-    const ta = block && block.querySelector('textarea');
+    const ta = block && block.querySelector('textarea, input[type="text"]');
     if(ta) ta.value = state[q.id].text;
     if(q.followUpOptions){
       const fu = block && block.querySelector('.followup');
