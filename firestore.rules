@@ -1,15 +1,34 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Admin: claim admin=true (cuenta admin-tres65).
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    // Agente: inicia sesión con correo y contraseña. Los clientes entran con
+    // un custom token (sign_in_provider "custom") y nunca cuentan como agente,
+    // aunque su uid coincida con el de un agente.
+    function isPasswordUser() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     match /clients/{token} {
-      allow read: if request.auth != null &&
-        (request.auth.token.admin == true || resource.data.agent_uid == request.auth.uid);
-      allow create, update: if request.auth != null &&
-        (request.auth.token.admin == true || request.resource.data.agent_uid == request.auth.uid);
+      allow read: if isAdmin() ||
+        (isPasswordUser() && resource.data.agent_uid == request.auth.uid);
+
+      allow create: if isAdmin() ||
+        (isPasswordUser() && request.resource.data.agent_uid == request.auth.uid);
+
+      // Update: el asesor asignado en el documento EXISTENTE (no el que se
+      // propone) y sin cambiar agent_uid; reasignar es solo de Admin.
+      allow update: if isAdmin() ||
+        (isPasswordUser()
+          && resource.data.agent_uid == request.auth.uid
+          && request.resource.data.agent_uid == resource.data.agent_uid);
     }
   }
 }
