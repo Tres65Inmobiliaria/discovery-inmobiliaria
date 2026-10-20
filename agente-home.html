@@ -1293,7 +1293,7 @@ function renderClients(clients, onDelete){
   document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.view === view);
   });
-  document.querySelectorAll('.sort-toggle-btn').forEach(btn=>{
+  document.querySelectorAll('#clients-sort-toggle .sort-toggle-btn').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.sort === sortMode);
   });
   const searchInput = document.getElementById('clients-search-input');
@@ -1322,7 +1322,9 @@ document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
   });
 });
 
-document.querySelectorAll('.sort-toggle-btn').forEach(btn=>{
+// Solo los botones de Mis clientes: el Directorio tiene sus propios .sort-toggle-btn
+// (orden y filtro) con su propia llave de localStorage.
+document.querySelectorAll('#clients-sort-toggle .sort-toggle-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     localStorage.setItem(CLIENTS_SORT_KEY, btn.dataset.sort);
     renderClients(clientsCache, deleteClientAndRerender);
