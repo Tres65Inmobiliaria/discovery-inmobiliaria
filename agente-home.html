@@ -131,6 +131,7 @@
     cursor:pointer;
   }
   .sort-toggle-btn.active{background:var(--acento); border-color:var(--acento); color:#fff;}
+  #clients-sort-toggle{flex-wrap:wrap;}
 
   .agent-group-head{
     font-family:'Montserrat',sans-serif; font-size:12px; font-weight:700;
@@ -731,6 +732,8 @@
       <button type="button" class="sort-toggle-btn" data-sort="proceso">Por proceso</button>
       <button type="button" class="sort-toggle-btn" data-sort="nombre">A-Z</button>
       <button type="button" class="sort-toggle-btn" data-sort="agente" id="sort-btn-agente" style="display:none;">Por agente</button>
+      <button type="button" class="sort-toggle-btn" data-sort="recientes">Más recientes primero</button>
+      <button type="button" class="sort-toggle-btn" data-sort="antiguos">Más antiguos primero</button>
     </div>
   </div>
 
@@ -1222,9 +1225,26 @@ function getClientsView(){
   return localStorage.getItem(CLIENTS_VIEW_KEY) === 'list' ? 'list' : 'kanban';
 }
 
+const CLIENTS_SORT_MODES = ['proceso', 'nombre', 'agente', 'recientes', 'antiguos'];
+
 function getClientsSort(){
   const v = localStorage.getItem(CLIENTS_SORT_KEY);
-  return (v === 'nombre' || v === 'agente') ? v : 'proceso';
+  return CLIENTS_SORT_MODES.includes(v) ? v : 'proceso';
+}
+
+// Fecha de ingreso del cliente: clients/{token}.created_at, que el backend escribe siempre
+// como ISO sin zona (datetime.now().isoformat()). Se parsea a mano, sin Date.parse, para que
+// todos los navegadores (Safari incluido) lean igual los microsegundos y la falta de zona.
+// Devuelve null si no hay fecha o no se puede leer.
+function clientCreatedAtMs(c){
+  const v = c && c.created_at;
+  if(typeof v === 'number' && isFinite(v) && v > 0) return v < 1e12 ? v * 1000 : v;
+  if(typeof v !== 'string') return null;
+  const m = v.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?/);
+  if(!m) return null;
+  const ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  const micro = +((m[7] || '').slice(0, 6).padEnd(6, '0'));   // Python guarda microsegundos
+  return isNaN(ms) ? null : ms + micro / 1000;
 }
 
 function filterClientsBySearch(clients, query){
@@ -1248,6 +1268,14 @@ function sortClients(clients, mode){
       const ia = order.indexOf(a.agent_uid);
       const ib = order.indexOf(b.agent_uid);
       return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+    });
+  } else if(mode === 'recientes' || mode === 'antiguos'){
+    // Sin fecha: siempre al final, en ambos sentidos.
+    const dir = mode === 'recientes' ? -1 : 1;
+    arr.sort((a, b)=>{
+      const ta = clientCreatedAtMs(a), tb = clientCreatedAtMs(b);
+      if(ta === null || tb === null) return (ta === null) - (tb === null);
+      return (ta - tb) * dir;
     });
   } else {
     arr.sort((a, b)=>{
